@@ -25,7 +25,21 @@ const manifest: Partial<ManifestOptions> | false = {
   lang: "ru-RU",
   name: "neshopify",
   short_name: "neshopify",
-  start_url: "/"
+  start_url: "/",
+  icons: [
+    {
+      purpose: "maskable",
+      sizes: "512x512",
+      src: "icon512_maskable.png",
+      type: "image/png"
+    },
+    {
+      purpose: "any",
+      sizes: "512x512",
+      src: "icon512_rounded.png",
+      type: "image/png"
+    }
+  ]
 }
 
 // https://vite.dev/config/
