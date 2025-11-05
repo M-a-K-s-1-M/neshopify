@@ -1,10 +1,10 @@
 
+import { Router } from './providers/router'
+
 function App() {
 
   return (
-    <>
-      App
-    </>
+    <Router />
   )
 }
 
