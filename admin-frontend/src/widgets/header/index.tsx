@@ -1,4 +1,4 @@
-import { Flex, Text, Group, Avatar, Burger, Button, useMantineColorScheme, ActionIcon, useMantineTheme } from "@mantine/core"
+import { Flex, Text, Group, Avatar, Burger, useMantineColorScheme, ActionIcon } from "@mantine/core"
 import { IconMoon, IconSun } from "@tabler/icons-react";
 
 

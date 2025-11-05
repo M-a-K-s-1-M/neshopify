@@ -1,4 +1,4 @@
-import { Group, Stack, Text, } from "@mantine/core"
+import { Stack, Text, } from "@mantine/core"
 import { NavLink, useLocation } from "react-router-dom"
 import styles from './styles.module.scss';
 
