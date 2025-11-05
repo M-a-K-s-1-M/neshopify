@@ -9,7 +9,7 @@ export interface IDashboardCard {
     icon?: string; // optional icon name/key
 }
 
-export const dashboardCards: DashboardCard[] = [
+export const dashboardCards: IDashboardCard[] = [
     {
         id: 'users',
         title: 'Всего пользователей',

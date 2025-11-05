@@ -1,0 +1,12 @@
+.analytics_card {
+    border: 1px solid var(--app-shell-border-color);
+
+    &__title {
+        color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-5));
+    }
+
+    &__change_label {
+        color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-gray-6));
+        ;
+    }
+}
