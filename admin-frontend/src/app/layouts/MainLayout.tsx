@@ -1,20 +1,9 @@
 import { Header } from "@/widgets/header";
 import { Navbar } from "@/widgets/navbar";
-import { AppShell, Avatar, Burger, Flex, Group, Stack, Text } from "@mantine/core";
+import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { NavLink, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
-
-interface InavbarItem {
-    label: string,
-    path: string,
-}
-
-const navbarItems: InavbarItem[] = [
-    { label: 'Обзор', path: '/' },
-    { label: 'Управление пользователями', path: '/user-management' },
-    { label: 'Аналитика', path: '/analytics' },
-]
 
 export function MainLayout() {
     const [opened, { toggle }] = useDisclosure();

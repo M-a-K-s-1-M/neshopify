@@ -1,19 +1,22 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+
 import '@mantine/core/styles.css';
 import './index.css'
-import App from './App.tsx'
 
 import { registerSW } from 'virtual:pwa-register'
-import { MantineProvider } from '@mantine/core'
+import { ThemeProvider } from './providers/theme.tsx';
+
+import App from './App.tsx'
+
 
 registerSW({ immediate: true });
 
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <MantineProvider>
+    <ThemeProvider>
       <App />
-    </MantineProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

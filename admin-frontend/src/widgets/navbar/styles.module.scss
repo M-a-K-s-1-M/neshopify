@@ -1,4 +1,20 @@
 .navbar {
 
-    &__link {}
+    &__link {
+        transition: all 0.3s ease;
+        color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-gray-6));
+
+        &:hover {
+            background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-gray-8));
+        }
+
+        &_active {
+            background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
+        }
+    }
+
+    &__footer {
+        padding-top: 1rem;
+        border-top: 1px solid var(--app-shell-border-color)
+    }
 }
