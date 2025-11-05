@@ -1,6 +1,10 @@
-import { Flex, Text, Group, Avatar, Burger } from "@mantine/core"
+import { Flex, Text, Group, Avatar, Burger, Button, useMantineColorScheme, ActionIcon, useMantineTheme } from "@mantine/core"
+import { IconMoon, IconSun } from "@tabler/icons-react";
+
 
 export function Header({ opened, toggle }: { opened: boolean, toggle: () => void }) {
+    const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+
     return (
         <>
             <Flex justify={'space-between'} align={'center'}>
@@ -15,8 +19,16 @@ export function Header({ opened, toggle }: { opened: boolean, toggle: () => void
                 <Group>
                     <Text>Уведомления</Text>
 
-                    <Group gap={'xs'}>
-                        <Avatar />
+                    <ActionIcon variant="outline" onClick={() => toggleColorScheme()}>
+                        {colorScheme === 'dark' ?
+                            <IconSun size={20} />
+                            :
+                            <IconMoon size={20} />
+                        }
+                    </ActionIcon>
+
+                    <Group gap={5} >
+                        <Avatar size={'sm'} />
                         <Text>Админ</Text>
                     </Group>
                 </Group>
