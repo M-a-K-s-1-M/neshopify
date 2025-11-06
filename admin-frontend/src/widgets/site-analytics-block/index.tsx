@@ -1,12 +1,16 @@
 import dashboardCards from "@/shared/mocks/dashboardCards";
-import { Group } from "@mantine/core";
+import { Grid } from "@mantine/core";
 import { AnalyticsCard } from "./ui";
 
 
 export function SiteAnalyticsBlock() {
     return (
-        <Group w={'wrap'} justify="space-between" gap={'xs'}>
-            {dashboardCards?.map(card => <AnalyticsCard key={card.id} card={card} />)}
-        </Group>
+        <Grid grow>
+            {dashboardCards?.map(card =>
+                <Grid.Col key={card.id} span={3}>
+                    <AnalyticsCard card={card} />
+                </Grid.Col>
+            )}
+        </Grid>
     )
 }
