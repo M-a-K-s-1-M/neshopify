@@ -1,6 +1,6 @@
 import { Stack, Text, } from "@mantine/core"
 import { NavLink, useLocation } from "react-router-dom"
-import styles from './styles.module.scss';
+import './styles.scss';
 
 
 interface INavbarItem {
@@ -18,7 +18,7 @@ export function Navbar() {
     const pathname = location.pathname;
 
     return (
-        <Stack className={styles.navbar} gap={5}>
+        <Stack className={"navbar"} gap={5}>
             {navbarItems?.map(navItem => {
                 return <Text
                     key={navItem.label}
@@ -27,20 +27,20 @@ export function Navbar() {
                     bdrs={'sm'}
                     component={NavLink}
                     to={navItem.path}
-                    className={pathname === navItem.path ? styles.navbar__link_active : styles.navbar__link}
+                    className={pathname === navItem.path ? "navbar__link--active" : "navbar__link"}
                 >
                     {navItem.label}
                 </Text>
             })}
 
-            <Stack gap={5} className={styles.navbar__footer} mt={'auto'}>
+            <Stack gap={5} className={"navbar__footer"} mt={'auto'}>
                 <Text
                     size="sm"
                     p={6}
                     bdrs={'sm'}
                     component={NavLink}
                     to={'/'}
-                    className={pathname === '/settings' ? styles.navbar__link_active : styles.navbar__link}
+                    className={pathname === '/settings' ? "navbar__link--active " : "navbar__link"}
                 >
                     Настройки
                 </Text>
@@ -51,7 +51,7 @@ export function Navbar() {
                     bdrs={'sm'}
                     component={NavLink}
                     to={'/'}
-                    className={pathname === '/exit' ? styles.navbar__link_active : styles.navbar__link}
+                    className={pathname === '/exit' ? "navbar__link--active" : "navbar__link"}
                 >
                     Выйти
                 </Text>

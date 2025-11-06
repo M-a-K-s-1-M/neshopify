@@ -1,0 +1,77 @@
+export type IUserStatus = 'active' | 'blocked' | 'pending' | 'invited'
+
+export interface IUserRow {
+    id: string
+    name: string
+    email: string
+    avatar?: string | null
+    plan: string
+    sites: number
+    status: IUserStatus
+    createdAt: string // ISO date
+}
+
+export const usersMock: IUserRow[] = [
+    {
+        id: 'u_001',
+        name: 'Иван Петров',
+        email: 'ivan@example.com',
+        avatar: null,
+        plan: 'Премиум',
+        sites: 3,
+        status: 'active',
+        createdAt: '2024-09-12T10:23:00.000Z'
+    },
+    {
+        id: 'u_002',
+        name: 'Мария Сидорова',
+        email: 'maria@example.com',
+        avatar: null,
+        plan: 'Базовый',
+        sites: 1,
+        status: 'active',
+        createdAt: '2025-01-03T14:10:00.000Z'
+    },
+    {
+        id: 'u_003',
+        name: 'Сергей Иванов',
+        email: 'sergey.ivanov@example.com',
+        avatar: null,
+        plan: 'Пробный',
+        sites: 0,
+        status: 'invited',
+        createdAt: '2025-03-18T08:45:00.000Z'
+    },
+    {
+        id: 'u_004',
+        name: 'Елена Смирнова',
+        email: 'elena.smirnova@example.com',
+        avatar: null,
+        plan: 'Премиум',
+        sites: 5,
+        status: 'blocked',
+        createdAt: '2023-11-22T09:00:00.000Z'
+    },
+    {
+        id: 'u_005',
+        name: 'Алексей Кузнецов',
+        email: 'aleksey.k@example.com',
+        avatar: null,
+        plan: 'Базовый',
+        sites: 2,
+        status: 'pending',
+        createdAt: '2025-05-02T12:30:00.000Z'
+    },
+    {
+        id: 'u_006',
+        name: 'Ольга Попова',
+        email: 'olga.popova@example.com',
+        avatar: null,
+        plan: 'Базовый',
+        sites: 1,
+        status: 'active',
+        createdAt: '2024-06-10T16:20:00.000Z'
+    }
+]
+
+export default usersMock

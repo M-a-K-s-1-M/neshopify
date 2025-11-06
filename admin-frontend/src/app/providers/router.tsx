@@ -1,9 +1,10 @@
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from "react-router-dom";
-import { Review } from "@/pages/review";
 import { MainLayout } from "@/app/layouts/MainLayout";
-import { UserManagement } from "@/pages/user-management";
-import { Analytics } from "@/pages/analytics";
-import { Auth } from "@/pages/auth";
+
+import { Review } from "@/pages/index";
+import { UserManagement } from "@/pages/index";
+import { Analytics } from "@/pages/index";
+import { Auth } from "@/pages/index";
 
 const router = createBrowserRouter(
     createRoutesFromElements(

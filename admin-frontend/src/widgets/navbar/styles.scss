@@ -8,7 +8,7 @@
             background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-gray-8));
         }
 
-        &_active {
+        &--active {
             background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-8));
         }
     }

@@ -7,14 +7,17 @@ export function Header({ opened, toggle }: { opened: boolean, toggle: () => void
 
     return (
         <>
-            <Flex justify={'space-between'} align={'center'}>
-                <Burger
-                    opened={opened}
-                    onClick={toggle}
-                    hiddenFrom="sm"
-                    size={'sm'}
-                />
-                <Text fw={700} size="lg">Админ-панель</Text>
+            <Flex justify={'space-between'} align={'center'} >
+                <Group>
+                    <Burger
+                        opened={opened}
+                        onClick={toggle}
+                        // hiddenFrom="sm"
+                        size={'sm'}
+                    />
+
+                    <Text fw={700} size={'xl'} visibleFrom="sm">Админ-панель</Text>
+                </Group>
 
                 <Group>
                     <Text>Уведомления</Text>
