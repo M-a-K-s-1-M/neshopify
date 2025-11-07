@@ -11,7 +11,10 @@ export function DomainsTableMini({ data }: { data: IDomainRow[] }) {
             <Table stickyHeader striped withTableBorder className="domains-table-mini" classNames={{ table: 'domains-table-mini__table' }}>
                 <Table.Thead>
                     <Table.Tr>
-                        {tableHeading?.map(tableHeading => <Table.Th ta={tableHeading === 'Действия' ? 'center' : 'left'} key={tableHeading}>{tableHeading}</Table.Th>)}
+                        {tableHeading?.map(tableHeading =>
+                            <Table.Th ta={tableHeading === 'Действия' ? 'center' : 'left'} key={tableHeading}>
+                                {tableHeading}
+                            </Table.Th>)}
                     </Table.Tr>
                 </Table.Thead>
 

@@ -10,7 +10,7 @@ interface INavbarItem {
 
 const navbarItems: INavbarItem[] = [
     { label: 'Обзор', path: '/' },
-    { label: 'Управление пользователями', path: '/user-management' },
+    { label: 'Управление пользователями', path: '/users-management' },
     { label: 'Аналитика', path: '/analytics' },
 ]
 export function Navbar() {
