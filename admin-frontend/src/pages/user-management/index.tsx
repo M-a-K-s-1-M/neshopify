@@ -1,5 +1,6 @@
 import { AddUser } from "@/features/user";
 import { UsersAnalytics } from "@/widgets/site-analytics-block";
+import { UsersTableWithSearchAndEdit } from "@/widgets/users-table-with-search-and-edit";
 import { Box, Flex, Text } from "@mantine/core";
 
 export function UserManagement() {
@@ -11,8 +12,12 @@ export function UserManagement() {
                 <AddUser />
             </Flex>
 
-            <Box component="div">
+            <Box component="div" mb={'xl'}>
                 <UsersAnalytics />
+            </Box>
+
+            <Box component="div">
+                <UsersTableWithSearchAndEdit />
             </Box>
         </Box>
     )

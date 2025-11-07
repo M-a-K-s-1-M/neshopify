@@ -30,7 +30,7 @@ const theme = createTheme({
         }),
 
         backgroundSecondary: virtualColor({
-            name: 'background-secondary',
+            name: 'backgroundSecondary',
             dark: 'gray',
             light: 'gray',
         }),
@@ -47,11 +47,23 @@ const theme = createTheme({
             light: 'gray',
         }),
 
+        border: virtualColor({
+            name: 'border',
+            dark: 'gray',
+            light: 'gray',
+        }),
+
         button: virtualColor({
             name: 'button',
             dark: 'gray',
             light: 'gray',
-        })
+        }),
+
+        actionIcon: virtualColor({
+            name: 'actionIcon',
+            dark: 'gray',
+            light: 'gray',
+        }),
     }
 })
 
