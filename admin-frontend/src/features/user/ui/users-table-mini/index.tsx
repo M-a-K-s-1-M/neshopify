@@ -12,7 +12,7 @@ export function UsersTableMini({ data }: { data: IUserRow[] }) {
             <Table stickyHeader striped withTableBorder className={'users-table-mini'} classNames={{ table: 'users-table-mini__table' }}>
                 <Table.Thead>
                     <Table.Tr>
-                        {tableHeading?.map(tableHeading => <Table.Th key={tableHeading}>{tableHeading}</Table.Th>)}
+                        {tableHeading?.map(tableHeading => <Table.Th ta={tableHeading === 'Действия' ? 'center' : 'left'} key={tableHeading}>{tableHeading}</Table.Th>)}
                     </Table.Tr>
                 </Table.Thead>
 
@@ -44,7 +44,7 @@ export function UsersTableMini({ data }: { data: IUserRow[] }) {
                             </Table.Td>
 
                             <Table.Td>
-                                <Group>
+                                <Group justify="center">
                                     <Button variant="outline" color={'button'}>Редактировать</Button>
                                     <Button variant="outline" color={"button"} >Заблокировать</Button>
                                 </Group>

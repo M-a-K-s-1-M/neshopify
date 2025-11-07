@@ -11,7 +11,7 @@ export function DomainsTableMini({ data }: { data: IDomainRow[] }) {
             <Table stickyHeader striped withTableBorder className="domains-table-mini" classNames={{ table: 'domains-table-mini__table' }}>
                 <Table.Thead>
                     <Table.Tr>
-                        {tableHeading?.map(tableHeading => <Table.Th key={tableHeading}>{tableHeading}</Table.Th>)}
+                        {tableHeading?.map(tableHeading => <Table.Th ta={tableHeading === 'Действия' ? 'center' : 'left'} key={tableHeading}>{tableHeading}</Table.Th>)}
                     </Table.Tr>
                 </Table.Thead>
 
@@ -35,7 +35,7 @@ export function DomainsTableMini({ data }: { data: IDomainRow[] }) {
                             </Table.Td>
 
                             <Table.Td>
-                                <Group>
+                                <Group justify="center">
                                     <Button variant="outline" color={'button'}>Продлить</Button>
                                     <Button variant="outline" color={"button"} >Настроить</Button>
                                 </Group>
@@ -45,6 +45,6 @@ export function DomainsTableMini({ data }: { data: IDomainRow[] }) {
 
                 </Table.Tbody>
             </Table>
-        </Table.ScrollContainer>
+        </Table.ScrollContainer >
     )
 }
