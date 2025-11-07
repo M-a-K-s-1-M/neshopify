@@ -12,7 +12,7 @@ export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
         case '/':
             return <Box className={'analytics-card'} component="div" p={'lg'} w={{ base: '100%', xs: 250 }} bdrs={'md'}>
                 <Stack gap={2} >
-                    <Text className={"analytics-card__title"}>{card.title}</Text>
+                    <Text className={"analytics-card__title"} style={{ textWrap: 'nowrap' }}>{card.title}</Text>
                     <Text size="xl" fw={700}>{card.value}</Text>
                     <Text className={'analytics-card__change-label'} size="sm">{card.changeLabel}</Text>
                 </Stack>
@@ -22,7 +22,7 @@ export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
             return <Box component="div" className="analytics-card" bdrs={'md'} px={'lg'} py={'md'}>
                 <Flex gap={'xs'} justify={'space-between'}>
                     <Stack gap={0}>
-                        <Text className="analytics-card__title">{card.title}</Text>
+                        <Text className="analytics-card__title" style={{ textWrap: 'nowrap' }}>{card.title}</Text>
                         <Text size="xl" fw={700}>{card.value}</Text>
                     </Stack>
 
