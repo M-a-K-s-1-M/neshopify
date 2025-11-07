@@ -8,7 +8,7 @@ export function SearchUsersWithFilters() {
         <Box component="div" p={'lg'} className="search-users-with-filters" bdrs={'md'}>
             <Flex justify={'space-between'} gap={'xs'}>
                 <Group>
-                    <TextInput placeholder="Поиск пользователей..." leftSection={<IconSearch size={16} />} w={{ base: 200, sm: 250 }} />
+                    <TextInput placeholder="Поиск пользователей..." leftSection={<IconSearch size={16} />} w={{ base: 'full', sm: 250 }} />
                     <MultiSelect placeholder="Роль" />
                     <MultiSelect placeholder="Статус" />
                 </Group>
