@@ -1,0 +1,9 @@
+.domains-table-mini {
+
+    &__table {
+        border-radius: var(--mantine-radius-md);
+        overflow: hidden;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+}

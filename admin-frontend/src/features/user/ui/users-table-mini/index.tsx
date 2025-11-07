@@ -2,7 +2,7 @@ import type { IUserRow } from "@/shared/mocks/users";
 import { Avatar, Badge, Box, Button, Group, Table, Text } from "@mantine/core";
 import './styles.scss';
 
-const tableHeading = ['Пользователь', 'Тариф', 'Сайтов', 'Статус', 'Действия']
+const tableHeading: string[] = ['Пользователь', 'Тариф', 'Сайтов', 'Статус', 'Действия']
 
 
 export function UsersTableMini({ data }: { data: IUserRow[] }) {
