@@ -19,7 +19,7 @@ export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
             </Box>;
 
         case '/users-management':
-            return <Box component="div" className="analytics-card" bdrs={'md'} p={'lg'} >
+            return <Box component="div" className="analytics-card" bdrs={'md'} px={'lg'} py={'md'}>
                 <Flex gap={'xs'} justify={'space-between'}>
                     <Stack gap={0}>
                         <Text className="analytics-card__title">{card.title}</Text>
