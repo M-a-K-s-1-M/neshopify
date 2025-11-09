@@ -52,6 +52,7 @@ export function UsersTableMini({ data }: { data: IUserRow[] }) {
                         </Table.Tr>
                     )}
                 </Table.Tbody>
+
             </Table>
         </Table.ScrollContainer>
     )

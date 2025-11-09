@@ -5,7 +5,9 @@ import { Box } from '@mantine/core'
 export function UsersTableWithSearchAndEdit() {
     return (
         <Box component='div'>
-            <SearchUsersWithFilters />
+            <Box component='div' mb={'md'}>
+                <SearchUsersWithFilters />
+            </Box>
 
             <UsersTable />
         </Box>
