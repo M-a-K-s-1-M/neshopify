@@ -1,2 +1,2 @@
-export { useUserStore } from './useUserStore';
+export * from './stores/index';
 export type { IUserFilters } from './userTypes';
