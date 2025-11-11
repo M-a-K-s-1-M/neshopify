@@ -1,11 +1,8 @@
-import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Table, Checkbox, Pagination, Group, Avatar, Box, Text, Badge, ActionIcon } from '@mantine/core';
 import { IconEdit, IconEye, IconTrash } from '@tabler/icons-react';
 import './sytels.scss';
 import { useQuery } from '@tanstack/react-query';
-import { useUserStore } from '@/entities/user';
-import { useUsersTable } from '@/entities/user/model/stores/useUsersTable';
 import { getUsers, } from '@/shared';
 
 // Заголовки (кроме колонки чекбокса). Используем для вычисления colSpan футера.
@@ -13,59 +10,15 @@ const tableHeadings = ['Пользователь', 'Email', 'Роль', 'Ста�
 
 export function UsersTable() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { filters } = useUserStore();
+    const page: number = searchParams.get('_page') ? Number(searchParams.get('_page')) : 1;
+    const limit: number = 5;
 
-    console.log(searchParams);
-
-    // Стор таблицы
-    const {
-        page, limit, setPage, setLimit,
-        selectedIds, setSelectedId, setSelectedIds,
-        search, setSearch,
-    } = useUsersTable();
-
-    // Синхронизация с URL при монтировании
-    useEffect(() => {
-        const urlPage = parseInt(searchParams.get('table_page') || '1', 10);
-        const urlLimit = parseInt(searchParams.get('table_limit') || '5', 10);
-        const urlSearch = searchParams.get('table_search') || '';
-
-        setPage(urlPage);
-        setLimit(urlLimit);
-
-        if (search !== '') setSearch(urlSearch);
-
-
-    }, [searchParams, setPage, setLimit, setSearch]);
-
-    // Синхронизация в URL при изменениях
-    useEffect(() => {
-        const params = new URLSearchParams(searchParams);
-        params.set('table_page', page.toString());
-        params.set('table_limit', limit.toString());
-
-        if (search !== '') params.set('table_search', search);
-
-        setSearchParams(params, { replace: true });
-    }, [page, limit, search, setSearchParams, searchParams]);
+    const search: string = searchParams.get('_search') ?? '';
 
     const { data: users, isPending, isError } = useQuery({
-        queryKey: ['users', filters],
-        queryFn: () => getUsers(filters),
-    })
-
-    const all = users ?? [];
-    const pageCount = Math.ceil(all.length / limit) || 1;
-    const start = (page - 1) * limit;
-    const pageUsers = all.slice(start, start + limit);
-    const usersIds = all.map(u => u.id);
-    const allUsersSelected = all.length > 0 && all.every(u => selectedIds.includes(u.id));
-    const somePageSelected = all.some(u => selectedIds.includes(u.id));
-
-    // Сброс страницы при смене фильтров или данных
-    useEffect(() => {
-        setPage(1);
-    }, [filters, all.length, setPage]);
+        queryKey: ['users-table', search],
+        queryFn: () => getUsers({ search }),
+    });
 
     if (isPending) {
         return <div>Загрузка...</div>;
@@ -75,16 +28,16 @@ export function UsersTable() {
         return <div>Ошибка загрузки пользователей</div>;
     }
 
-    const rows = pageUsers.map((user) => (
+    const rows = users.slice((page - 1) * limit, page * limit).map((user) => (
         <Table.Tr
             key={user.id}
-            bg={selectedIds.includes(user.id) ? 'var(--mantine-color-blue-light)' : undefined}
+        // bg={selectedIds.includes(user.id) ? 'var(--mantine-color-blue-light)' : undefined}
         >
             <Table.Td>
                 <Checkbox
                     aria-label="Select row"
-                    checked={selectedIds.includes(user.id)}
-                    onChange={() => setSelectedId(user.id)}
+                // checked={ }
+                // onChange={() => setSelectedId(user.id)}
                 />
             </Table.Td>
 
@@ -140,15 +93,15 @@ export function UsersTable() {
                         <Table.Th>
                             <Checkbox
                                 aria-label="Select all rows"
-                                checked={allUsersSelected}
-                                indeterminate={!allUsersSelected && somePageSelected}
-                                onChange={(e) => {
-                                    if (e.currentTarget.checked) {
-                                        setSelectedIds(Array.from(new Set([...selectedIds, ...usersIds])));
-                                    } else {
-                                        setSelectedIds(selectedIds.filter(id => !usersIds.includes(id)));
-                                    }
-                                }}
+                            // checked={allUsersSelected}
+                            // indeterminate={!allUsersSelected && somePageSelected}
+                            // onChange={(e) => {
+                            //     if (e.currentTarget.checked) {
+                            //         setSelectedIds(Array.from(new Set([...selectedIds, ...usersIds])));
+                            //     } else {
+                            //         setSelectedIds(selectedIds.filter(id => !usersIds.includes(id)));
+                            //     }
+                            // }}
                             />
                         </Table.Th>
                         {tableHeadings.map(h => <Table.Th key={h}>{h}</Table.Th>)}
@@ -162,14 +115,14 @@ export function UsersTable() {
                         {/* +1 за колонку чекбокса */}
                         <Table.Td colSpan={tableHeadings.length + 1} >
                             <Group justify='space-between' p={'sm'}>
-                                <Text size='lg' fw={500}>{selectedIds.length}/{all.length}</Text>
-                                <Pagination total={pageCount} value={page} onChange={setPage} />
+                                <Text size='lg' fw={500}>{users.length}/{users.length}</Text>
+                                <Pagination total={Math.ceil(users.length / limit)} value={page} onChange={e => setSearchParams({ _page: e.toString() })} />
                             </Group>
                         </Table.Td>
                     </Table.Tr>
                 </Table.Tfoot>
             </Table>
-        </Table.ScrollContainer>
+        </Table.ScrollContainer >
 
     );
 }
