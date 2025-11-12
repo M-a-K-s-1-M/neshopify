@@ -1,10 +1,7 @@
 import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from "react-router-dom";
 import { MainLayout } from "@/app/layouts/MainLayout";
 
-import { Review } from "@/pages/index";
-import { UserManagement } from "@/pages/index";
-import { Analytics } from "@/pages/index";
-import { Auth } from "@/pages/index";
+import { DomainsManagement, Review, UsersManagement, Analytics, Auth } from "@/pages/index";
 
 const router = createBrowserRouter(
     createRoutesFromElements(
@@ -14,9 +11,11 @@ const router = createBrowserRouter(
             <Route path="/" element={<MainLayout />}>
                 <Route index element={<Review />} />
 
-                <Route path="users-management" element={<UserManagement />} />
+                <Route path="users-management" element={<UsersManagement />} />
 
                 <Route path="analytics" element={<Analytics />} />
+
+                <Route path="domains-management" element={<DomainsManagement />} />
             </Route>
 
             <Route path="*" element={<MainLayout />} />

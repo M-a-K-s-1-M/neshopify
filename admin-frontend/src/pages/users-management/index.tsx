@@ -3,7 +3,7 @@ import { UsersAnalytics } from "@/widgets/site-analytics-block";
 import { UsersTableWithSearchAndEdit } from "@/widgets/users-table-with-search-and-edit";
 import { Box, Flex, Text } from "@mantine/core";
 
-export function UserManagement() {
+export function UsersManagement() {
     return (
         <Box component="div" p={'xl'}>
             <Flex justify={'space-between'} gap={'xs'} mb={'md'}>

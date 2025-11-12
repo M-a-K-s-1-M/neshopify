@@ -77,7 +77,11 @@ export function UsersTableMini() {
                         {/* +1 за колонку чекбокса */}
                         <Table.Td colSpan={tableHeading.length} >
                             <Group justify='center' p={'sm'}>
-                                <Pagination total={Math.ceil((users?.length || 0) / limit)} value={page} onChange={e => onChangePagination(e)} />
+                                <Pagination
+                                    total={Math.ceil((users?.length || 0) / limit)}
+                                    value={page}
+                                    onChange={e => onChangePagination(e)}
+                                />
                             </Group>
                         </Table.Td>
                     </Table.Tr>

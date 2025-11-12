@@ -2,7 +2,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { IUserRow } from '../mocks/users';
 import type { IDomainRow } from '../mocks/domains';
 
-export const useTable = (prefix: 'users' | 'domains' | 'users-mini') => {
+export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-mini') => {
     const [searchParams, setSearchParams] = useSearchParams();
     const page: number = searchParams.get(`_${prefix}-table-page`) ? Number(searchParams.get(`_${prefix}-table-page`)) : 1;
     const limit: number = 5;

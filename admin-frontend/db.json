@@ -236,6 +236,111 @@
             "ownerEmail": "owner@nova-market.app",
             "status": "suspended",
             "expiresAt": "2025-04-10T00:00:00.000Z"
+        },
+        {
+            "id": "d_006",
+            "domain": "techstore.online",
+            "ownerEmail": "admin@techstore.online",
+            "status": "active",
+            "expiresAt": "2025-12-01T00:00:00.000Z"
+        },
+        {
+            "id": "d_007",
+            "domain": "fashionhub.ru",
+            "ownerEmail": "manager@fashionhub.ru",
+            "status": "active",
+            "expiresAt": "2026-01-15T00:00:00.000Z"
+        },
+        {
+            "id": "d_008",
+            "domain": "gadgetworld.com",
+            "ownerEmail": "support@gadgetworld.com",
+            "status": "expiring",
+            "expiresAt": "2025-11-20T00:00:00.000Z"
+        },
+        {
+            "id": "d_009",
+            "domain": "bookstore.net",
+            "ownerEmail": "owner@bookstore.net",
+            "status": "expired",
+            "expiresAt": "2024-09-05T00:00:00.000Z"
+        },
+        {
+            "id": "d_010",
+            "domain": "sportgear.app",
+            "ownerEmail": "sales@sportgear.app",
+            "status": "active",
+            "expiresAt": "2025-08-30T00:00:00.000Z"
+        },
+        {
+            "id": "d_011",
+            "domain": "homestyle.ru",
+            "ownerEmail": "contact@homestyle.ru",
+            "status": "suspended",
+            "expiresAt": "2025-03-12T00:00:00.000Z"
+        },
+        {
+            "id": "d_012",
+            "domain": "musiczone.io",
+            "ownerEmail": "admin@musiczone.io",
+            "status": "active",
+            "expiresAt": "2026-02-28T00:00:00.000Z"
+        },
+        {
+            "id": "d_013",
+            "domain": "petshop.store",
+            "ownerEmail": "info@petshop.store",
+            "status": "expiring",
+            "expiresAt": "2025-10-25T00:00:00.000Z"
+        },
+        {
+            "id": "d_014",
+            "domain": "travelblog.com",
+            "ownerEmail": "editor@travelblog.com",
+            "status": "expired",
+            "expiresAt": "2024-07-18T00:00:00.000Z"
+        },
+        {
+            "id": "d_015",
+            "domain": "foodie.ru",
+            "ownerEmail": "chef@foodie.ru",
+            "status": "active",
+            "expiresAt": "2025-11-05T00:00:00.000Z"
+        },
+        {
+            "id": "d_016",
+            "domain": "artgallery.net",
+            "ownerEmail": "artist@artgallery.net",
+            "status": "suspended",
+            "expiresAt": "2025-01-20T00:00:00.000Z"
+        },
+        {
+            "id": "d_017",
+            "domain": "fitnessclub.app",
+            "ownerEmail": "trainer@fitnessclub.app",
+            "status": "active",
+            "expiresAt": "2026-03-10T00:00:00.000Z"
+        },
+        {
+            "id": "d_018",
+            "domain": "autoparts.io",
+            "ownerEmail": "parts@autoparts.io",
+            "status": "expiring",
+            "expiresAt": "2025-12-15T00:00:00.000Z"
+        },
+        {
+            "id": "d_019",
+            "domain": "jewelrybox.com",
+            "ownerEmail": "designer@jewelrybox.com",
+            "status": "expired",
+            "expiresAt": "2024-05-30T00:00:00.000Z"
+        },
+        {
+            "id": "d_020",
+            "domain": "gardentools.ru",
+            "ownerEmail": "gardener@gardentools.ru",
+            "status": "active",
+            "expiresAt": "2025-09-22T00:00:00.000Z"
         }
     ]
 }

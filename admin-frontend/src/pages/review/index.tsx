@@ -1,6 +1,5 @@
 import { AddDomain, DomainsTableMini } from "@/features/domain";
 import { AddUser, SearchUsers, UsersTableMini } from "@/features/user";
-import usersMock from "@/shared/mocks/users";
 import domainsMock from "@/shared/mocks/domains";
 import { Box, Flex, Group, Text } from "@mantine/core";
 import { ReviewAnalytics } from "@/widgets/site-analytics-block";
@@ -25,7 +24,7 @@ export function Review() {
                     </Group>
                 </Flex>
 
-                <UsersTableMini data={usersMock} />
+                <UsersTableMini />
             </Box>
 
             <Box component="div" mb={'md'}>
@@ -35,7 +34,7 @@ export function Review() {
                     <AddDomain />
                 </Flex>
 
-                <DomainsTableMini data={domainsMock} />
+                <DomainsTableMini />
             </Box>
         </Box>
     )

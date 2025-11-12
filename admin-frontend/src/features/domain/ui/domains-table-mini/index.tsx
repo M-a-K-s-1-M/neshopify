@@ -1,11 +1,28 @@
-import type { IDomainRow } from "@/shared/mocks/domains";
-import { Badge, Button, Group, Table, Text } from "@mantine/core";
+import { Badge, Button, Group, Pagination, Table, Text } from "@mantine/core";
 import { format } from 'date-fns';
 import './styles.scss';
+import { useTable } from "@/shared/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { getDomains } from "@/shared";
 
 const tableHeading: string[] = ['Домен', 'Владелец', 'Статус', 'Истекает', 'Действия']
 
-export function DomainsTableMini({ data }: { data: IDomainRow[] }) {
+export function DomainsTableMini() {
+    const { page, limit, pageEnd, pageStart, onChangePagination } = useTable('domains-mini')
+
+    const { data: domains, isPending, isError } = useQuery({
+        queryKey: ['domains-mini'],
+        queryFn: () => getDomains(),
+    })
+
+    if (isPending) {
+        return <div>Загрузка...</div>;
+    }
+
+    if (isError) {
+        return <div>Ошибка загрузки доменов</div>;
+    }
+
     return (
         <Table.ScrollContainer minWidth={900}>
             <Table stickyHeader striped withTableBorder className="domains-table-mini" classNames={{ table: 'domains-table-mini__table' }}>
@@ -19,7 +36,7 @@ export function DomainsTableMini({ data }: { data: IDomainRow[] }) {
                 </Table.Thead>
 
                 <Table.Tbody>
-                    {data?.map(domain =>
+                    {domains?.slice(pageStart, pageEnd).map(domain =>
                         <Table.Tr key={domain.id}>
                             <Table.Td>
                                 <Text>{domain.domain}</Text>
@@ -45,8 +62,21 @@ export function DomainsTableMini({ data }: { data: IDomainRow[] }) {
                             </Table.Td>
                         </Table.Tr>
                     )}
-
                 </Table.Tbody>
+
+                <Table.Tfoot>
+                    <Table.Tr>
+                        <Table.Td colSpan={tableHeading.length}>
+                            <Group p={'sm'} justify="center">
+                                <Pagination
+                                    total={Math.ceil((domains?.length || 0) / limit)}
+                                    value={page}
+                                    onChange={e => onChangePagination(e)}
+                                />
+                            </Group>
+                        </Table.Td>
+                    </Table.Tr>
+                </Table.Tfoot>
             </Table>
         </Table.ScrollContainer >
     )

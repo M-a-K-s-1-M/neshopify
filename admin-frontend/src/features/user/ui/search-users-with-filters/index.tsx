@@ -9,7 +9,7 @@ import { useDebouncedCallback } from "@mantine/hooks";
 export function SearchUsersWithFilters() {
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const search: string = searchParams.get('_search') ?? '';
+    const search: string = searchParams.get('_users-search') ?? '';
     const [searchInput, setSearchInput] = useState<string>(search);
 
     const [loading, setLoading] = useState<boolean>(false);
@@ -27,7 +27,7 @@ export function SearchUsersWithFilters() {
         setLoading(false);
     }, 500);
 
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChangeInput = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchInput(event.target.value);
         handleSearch(event.target.value);
     }
@@ -42,7 +42,7 @@ export function SearchUsersWithFilters() {
                         leftSection={loading ? <Loader size={20} /> : <IconSearch size={16} />}
                         w={{ base: 'full', sm: 250 }}
                         value={searchInput}
-                        onChange={handleChange}
+                        onChange={handleChangeInput}
 
                     />
                     <MultiSelect placeholder="Роль" />
