@@ -2,7 +2,7 @@ import { Box, Center, Flex, Stack, Text, ThemeIcon } from "@mantine/core";
 import { useLocation } from "react-router-dom";
 import type { IAnalyticsCardVM } from "../model";
 import './styles.scss';
-import { IconCircleCheck, IconCircleCheckFilled, IconClockHour4Filled, IconInfoTriangleFilled, IconUser, IconUserCheck, IconUserOff, IconUserPlus, IconWorldWww } from "@tabler/icons-react";
+import { IconCircleCheckFilled, IconClockHour4Filled, IconInfoTriangleFilled, IconUser, IconUserCheck, IconUserOff, IconUserPlus, IconWorldWww } from "@tabler/icons-react";
 
 export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
     const location = useLocation();
@@ -10,7 +10,7 @@ export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
 
     switch (pathname) {
         case '/':
-            return <Box className={'analytics-card'} component="div" p={'lg'} w={{ base: '100%', xs: 250 }} bdrs={'md'}>
+            return <Box className={'analytics-card'} component="div" p={'lg'} bdrs={'md'}>
                 <Stack gap={2} >
                     <Text className={"analytics-card__title"} style={{ textWrap: 'nowrap' }}>{card.title}</Text>
                     <Text size="xl" fw={700}>{card.value}</Text>

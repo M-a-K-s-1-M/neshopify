@@ -1,6 +1,5 @@
 import { AddDomain, DomainsTableMini } from "@/features/domain";
 import { AddUser, SearchUsers, UsersTableMini } from "@/features/user";
-import domainsMock from "@/shared/mocks/domains";
 import { Box, Flex, Group, Text } from "@mantine/core";
 import { ReviewAnalytics } from "@/widgets/site-analytics-block";
 
