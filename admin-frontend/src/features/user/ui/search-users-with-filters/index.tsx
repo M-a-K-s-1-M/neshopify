@@ -18,9 +18,9 @@ export function SearchUsersWithFilters() {
         setLoading(true);
 
         if (query !== '') {
-            setSearchParams({ _search: query })
+            setSearchParams({ "_users-search": query })
         } else {
-            searchParams.delete('_search');
+            searchParams.delete('_users-search');
             setSearchParams(searchParams);
         }
 

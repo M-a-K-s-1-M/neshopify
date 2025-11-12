@@ -1,24 +1,55 @@
-import { useSearchParams } from 'react-router-dom';
 import { Table, Checkbox, Pagination, Group, Avatar, Box, Text, Badge, ActionIcon } from '@mantine/core';
 import { IconEdit, IconEye, IconTrash } from '@tabler/icons-react';
 import './sytels.scss';
 import { useQuery } from '@tanstack/react-query';
 import { getUsers, } from '@/shared';
+import { useTable } from '@/shared/hooks';
 
 // Заголовки (кроме колонки чекбокса). Используем для вычисления colSpan футера.
 const tableHeadings = ['Пользователь', 'Email', 'Роль', 'Статус', 'Последний вход', 'Действия'];
 
 export function UsersTable() {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const page: number = searchParams.get('_page') ? Number(searchParams.get('_page')) : 1;
-    const limit: number = 5;
+    // const [searchParams, setSearchParams] = useSearchParams();
+    // const page: number = searchParams.get('_users-table-page') ? Number(searchParams.get('_users-table-page')) : 1;
+    // const limit: number = 5;
 
-    const search: string = searchParams.get('_search') ?? '';
+    // const selectedIds: string[] = searchParams.get('_users-selected-ids') ? searchParams.get('_users-selected-ids')!.split(',').filter(Boolean) : [];
+
+    // const search: string = searchParams.get('_users-search') ?? '';
+    const { page, limit, selectedIds, search, pageStart, pageEnd, onChangePagination, onChangeCeckbox, onChangeCeckboxAll, isCheckedAll, isIndeterminate } = useTable('users');
 
     const { data: users, isPending, isError } = useQuery({
         queryKey: ['users-table', search],
         queryFn: () => getUsers({ search }),
     });
+
+    // const onChangePagination = (e: number) => {
+    //     setSearchParams(prev => {
+    //         const newParams = new URLSearchParams(prev);
+    //         newParams.set('_users-table-page', e.toString());
+    //         return newParams;
+    //     })
+    // }
+
+    // const onChangeCeckbox = (userId: string) => {
+    //     setSearchParams(prev => {
+    //         const newParams = new URLSearchParams(prev);
+    //         if (selectedIds.includes(userId)) {
+    //             const newSelectedIds = selectedIds.filter(id => id !== userId);
+    //             if (newSelectedIds.length > 0) {
+    //                 newParams.set('_users-selected-ids', newSelectedIds.join(','));
+    //                 return newParams;
+    //             } else {
+    //                 newParams.delete('_users-selected-ids');
+    //                 return newParams;
+    //             }
+    //         } else {
+    //             const newSelectedIds = [...selectedIds, userId];
+    //             newParams.set('_users-selected-ids', newSelectedIds.join(','));
+    //             return newParams;
+    //         }
+    //     })
+    // }
 
     if (isPending) {
         return <div>Загрузка...</div>;
@@ -28,16 +59,16 @@ export function UsersTable() {
         return <div>Ошибка загрузки пользователей</div>;
     }
 
-    const rows = users.slice((page - 1) * limit, page * limit).map((user) => (
+    const rows = users.slice(pageStart, pageEnd).map((user) => (
         <Table.Tr
             key={user.id}
-        // bg={selectedIds.includes(user.id) ? 'var(--mantine-color-blue-light)' : undefined}
+            bg={selectedIds.includes(user.id) ? 'var(--mantine-color-blue-light)' : undefined}
         >
             <Table.Td>
                 <Checkbox
                     aria-label="Select row"
-                // checked={ }
-                // onChange={() => setSelectedId(user.id)}
+                    checked={selectedIds.includes(user.id)}
+                    onChange={() => onChangeCeckbox(user.id)}
                 />
             </Table.Td>
 
@@ -93,15 +124,9 @@ export function UsersTable() {
                         <Table.Th>
                             <Checkbox
                                 aria-label="Select all rows"
-                            // checked={allUsersSelected}
-                            // indeterminate={!allUsersSelected && somePageSelected}
-                            // onChange={(e) => {
-                            //     if (e.currentTarget.checked) {
-                            //         setSelectedIds(Array.from(new Set([...selectedIds, ...usersIds])));
-                            //     } else {
-                            //         setSelectedIds(selectedIds.filter(id => !usersIds.includes(id)));
-                            //     }
-                            // }}
+                                checked={isCheckedAll(users)}
+                                // indeterminate={!allUsersSelected && somePageSelected}
+                                onChange={(e) => onChangeCeckboxAll(e, users)}
                             />
                         </Table.Th>
                         {tableHeadings.map(h => <Table.Th key={h}>{h}</Table.Th>)}
@@ -115,14 +140,13 @@ export function UsersTable() {
                         {/* +1 за колонку чекбокса */}
                         <Table.Td colSpan={tableHeadings.length + 1} >
                             <Group justify='space-between' p={'sm'}>
-                                <Text size='lg' fw={500}>{users.length}/{users.length}</Text>
-                                <Pagination total={Math.ceil(users.length / limit)} value={page} onChange={e => setSearchParams({ _page: e.toString() })} />
+                                <Text size='lg' fw={500}>{selectedIds.length ?? 0}/{users.length}</Text>
+                                <Pagination total={Math.ceil(users.length / limit)} value={page} onChange={e => onChangePagination(e)} />
                             </Group>
                         </Table.Td>
                     </Table.Tr>
                 </Table.Tfoot>
             </Table>
         </Table.ScrollContainer >
-
     );
 }
