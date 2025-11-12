@@ -54,7 +54,7 @@ export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
                         <ThemeIcon color="gray" variant="light" size={'xl'} >
                             {card.title === "Всего доменов" ? <IconWorldWww />
                                 :
-                                card.title === "Активныe" ? <IconCircleCheckFilled />
+                                card.title === "Активные" ? <IconCircleCheckFilled />
                                     :
                                     card.title === "Ожидают" ? <IconClockHour4Filled />
                                         :

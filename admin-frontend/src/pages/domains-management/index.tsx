@@ -1,4 +1,5 @@
 import { AddDomain } from "@/features/domain";
+import { DomainsTableWithSerachAndEdit } from "@/widgets";
 import { DomainsAnalytics } from "@/widgets/site-analytics-block";
 import { Box, Flex, Text } from "@mantine/core";
 
@@ -11,8 +12,12 @@ export function DomainsManagement() {
                 <AddDomain />
             </Flex>
 
-            <Box component="div">
+            <Box component="div" mb={'xl'}>
                 <DomainsAnalytics />
+            </Box>
+
+            <Box component="div">
+                <DomainsTableWithSerachAndEdit />
             </Box>
         </Box>
     )

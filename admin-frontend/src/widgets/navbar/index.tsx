@@ -11,8 +11,8 @@ interface INavbarItem {
 const navbarItems: INavbarItem[] = [
     { label: 'Обзор', path: '/' },
     { label: 'Управление пользователями', path: '/users-management' },
+    { label: 'Управление доменами', path: '/domains-management' },
     { label: 'Аналитика', path: '/analytics' },
-    { label: 'Управление доменами', path: '/domains-management' }
 ]
 export function Navbar() {
     const location = useLocation();
