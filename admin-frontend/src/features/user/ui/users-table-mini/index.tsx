@@ -1,11 +1,30 @@
-import type { IUserRow } from "@/shared/mocks/users";
-import { Avatar, Badge, Box, Button, Group, Table, Text } from "@mantine/core";
+import { Avatar, Badge, Box, Button, Group, Table, Text, Pagination } from "@mantine/core";
 import './styles.scss';
+import { getUsers } from "@/shared";
+import { useQuery } from "@tanstack/react-query";
+import { useTable } from "@/shared/hooks";
 
 const tableHeading: string[] = ['Пользователь', 'Тариф', 'Сайтов', 'Статус', 'Действия']
 
 
-export function UsersTableMini({ data }: { data: IUserRow[] }) {
+export function UsersTableMini() {
+    const { page, limit,
+        search, pageStart, pageEnd,
+        onChangePagination,
+    } = useTable('users-mini');
+
+    const { data: users, isPending, isError } = useQuery({
+        queryKey: ['users-mini-table', search],
+        queryFn: () => getUsers({ search }),
+    });
+
+    if (isPending) {
+        return <div>Загрузка...</div>;
+    }
+
+    if (isError) {
+        return <div>Ошибка загрузки пользователей</div>;
+    }
 
     return (
         <Table.ScrollContainer minWidth={900}>
@@ -17,7 +36,7 @@ export function UsersTableMini({ data }: { data: IUserRow[] }) {
                 </Table.Thead>
 
                 <Table.Tbody>
-                    {data?.map(user =>
+                    {users?.slice(pageStart, pageEnd).map(user =>
                         <Table.Tr key={user.id}>
                             <Table.Td>
                                 <Group >
@@ -52,6 +71,17 @@ export function UsersTableMini({ data }: { data: IUserRow[] }) {
                         </Table.Tr>
                     )}
                 </Table.Tbody>
+
+                <Table.Tfoot>
+                    <Table.Tr>
+                        {/* +1 за колонку чекбокса */}
+                        <Table.Td colSpan={tableHeading.length} >
+                            <Group justify='center' p={'sm'}>
+                                <Pagination total={Math.ceil((users?.length || 0) / limit)} value={page} onChange={e => onChangePagination(e)} />
+                            </Group>
+                        </Table.Td>
+                    </Table.Tr>
+                </Table.Tfoot>
 
             </Table>
         </Table.ScrollContainer>

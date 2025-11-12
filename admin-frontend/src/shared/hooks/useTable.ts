@@ -2,15 +2,13 @@ import { useSearchParams } from 'react-router-dom';
 import type { IUserRow } from '../mocks/users';
 import type { IDomainRow } from '../mocks/domains';
 
-export const useTable = (prefix: 'users' | 'domains') => {
+export const useTable = (prefix: 'users' | 'domains' | 'users-mini') => {
     const [searchParams, setSearchParams] = useSearchParams();
     const page: number = searchParams.get(`_${prefix}-table-page`) ? Number(searchParams.get(`_${prefix}-table-page`)) : 1;
     const limit: number = 5;
 
     const pageStart: number = (page - 1) * limit;
     const pageEnd: number = pageStart + limit;
-
-    // const indertaminate: boolean = searchParams.get(`_${prefix}-selected-ids`) ? searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).length > 0 && searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).length < limit : false;
 
     const selectedIds: string[] = searchParams.get(`_${prefix}-selected-ids`) ? searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).filter(Boolean) : [];
 

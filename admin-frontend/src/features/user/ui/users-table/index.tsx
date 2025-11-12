@@ -9,47 +9,16 @@ import { useTable } from '@/shared/hooks';
 const tableHeadings = ['Пользователь', 'Email', 'Роль', 'Статус', 'Последний вход', 'Действия'];
 
 export function UsersTable() {
-    // const [searchParams, setSearchParams] = useSearchParams();
-    // const page: number = searchParams.get('_users-table-page') ? Number(searchParams.get('_users-table-page')) : 1;
-    // const limit: number = 5;
-
-    // const selectedIds: string[] = searchParams.get('_users-selected-ids') ? searchParams.get('_users-selected-ids')!.split(',').filter(Boolean) : [];
-
-    // const search: string = searchParams.get('_users-search') ?? '';
-    const { page, limit, selectedIds, search, pageStart, pageEnd, onChangePagination, onChangeCeckbox, onChangeCeckboxAll, isCheckedAll, isIndeterminate } = useTable('users');
+    const { page, limit, selectedIds,
+        search, pageStart, pageEnd,
+        onChangePagination, onChangeCeckbox, onChangeCeckboxAll,
+        isCheckedAll, isIndeterminate
+    } = useTable('users');
 
     const { data: users, isPending, isError } = useQuery({
         queryKey: ['users-table', search],
         queryFn: () => getUsers({ search }),
     });
-
-    // const onChangePagination = (e: number) => {
-    //     setSearchParams(prev => {
-    //         const newParams = new URLSearchParams(prev);
-    //         newParams.set('_users-table-page', e.toString());
-    //         return newParams;
-    //     })
-    // }
-
-    // const onChangeCeckbox = (userId: string) => {
-    //     setSearchParams(prev => {
-    //         const newParams = new URLSearchParams(prev);
-    //         if (selectedIds.includes(userId)) {
-    //             const newSelectedIds = selectedIds.filter(id => id !== userId);
-    //             if (newSelectedIds.length > 0) {
-    //                 newParams.set('_users-selected-ids', newSelectedIds.join(','));
-    //                 return newParams;
-    //             } else {
-    //                 newParams.delete('_users-selected-ids');
-    //                 return newParams;
-    //             }
-    //         } else {
-    //             const newSelectedIds = [...selectedIds, userId];
-    //             newParams.set('_users-selected-ids', newSelectedIds.join(','));
-    //             return newParams;
-    //         }
-    //     })
-    // }
 
     if (isPending) {
         return <div>Загрузка...</div>;
@@ -125,7 +94,7 @@ export function UsersTable() {
                             <Checkbox
                                 aria-label="Select all rows"
                                 checked={isCheckedAll(users)}
-                                // indeterminate={!allUsersSelected && somePageSelected}
+                                indeterminate={isIndeterminate(users)}
                                 onChange={(e) => onChangeCeckboxAll(e, users)}
                             />
                         </Table.Th>
