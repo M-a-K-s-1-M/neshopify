@@ -12,6 +12,7 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run server\" "
   },
   "dependencies": {
+    "@mantine/charts": "^8.3.7",
     "@mantine/core": "^8.3.6",
     "@mantine/hooks": "^8.3.6",
     "@tabler/icons-react": "^3.35.0",
@@ -22,6 +23,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.5",
+    "recharts": "^3.4.1",
     "sass-embedded": "^1.93.3",
     "zustand": "^5.0.8"
   },

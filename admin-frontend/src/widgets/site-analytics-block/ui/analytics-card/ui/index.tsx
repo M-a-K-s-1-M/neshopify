@@ -18,6 +18,15 @@ export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
                 </Stack>
             </Box>;
 
+        case '/analytics':
+            return <Box className={'analytics-card'} component="div" p={'lg'} bdrs={'md'}>
+                <Stack gap={2} >
+                    <Text className={"analytics-card__title"} style={{ textWrap: 'nowrap' }}>{card.title}</Text>
+                    <Text size="xl" fw={700}>{card.value}</Text>
+                    <Text className={'analytics-card__change-label'} size="sm">{card.changeLabel}</Text>
+                </Stack>
+            </Box>
+
         case '/users-management':
             return <Box component="div" className="analytics-card" bdrs={'md'} px={'lg'} py={'md'}>
                 <Flex gap={'xs'} justify={'space-between'}>
@@ -46,8 +55,8 @@ export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
             return <Box component="div" className="analytics-card" bdrs={'md'} px={'lg'} py={'md'}>
                 <Flex gap={'xl'} justify={'space-between'}>
                     <Stack gap={0}>
-                        <Text>{card.title}</Text>
-                        <Text>{card.value}</Text>
+                        <Text className="analytics-card__title" style={{ textWrap: 'nowrap' }}>{card.title}</Text>
+                        <Text size="xl" fw={700}>{card.value}</Text>
                     </Stack>
 
                     <Center>
