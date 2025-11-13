@@ -1,5 +1,5 @@
-import { BlockChartsRevenueAndActivityUsers, ReviewAnalytics } from "@/widgets";
-import { Box, Text } from "@mantine/core";
+import { BlockChartsRevenueAndActivityUsers, LastTransactions, ReviewAnalytics, TopStores } from "@/widgets";
+import { Box, Grid, Text } from "@mantine/core";
 
 export function Analytics() {
     return (
@@ -10,8 +10,20 @@ export function Analytics() {
                 <ReviewAnalytics />
             </Box>
 
-            <Box component='div'>
+            <Box component='div' mb={'md'}>
                 <BlockChartsRevenueAndActivityUsers />
+            </Box>
+
+            <Box component="div">
+                <Grid grow>
+                    <Grid.Col span={6}>
+                        <TopStores />
+                    </Grid.Col>
+
+                    <Grid.Col span={6}>
+                        <LastTransactions />
+                    </Grid.Col>
+                </Grid>
             </Box>
         </Box>
     )

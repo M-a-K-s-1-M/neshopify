@@ -1,3 +1,5 @@
+export { LastTransactions } from './last-transactions/index';
+export { TopStores } from './top-stores/index';
 export { BlockChartsRevenueAndActivityUsers } from './block-charts-revenue-and-activity-users/index';
 export { DomainsTableWithSerachAndEdit } from './domains-table-with-search-and-edit/index';
 export { Header } from './header/index';
