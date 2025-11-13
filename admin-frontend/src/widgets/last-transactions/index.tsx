@@ -1,12 +1,14 @@
 import { lastTransactionsMock } from "@/shared";
-import { Accordion, Avatar, Flex, Group, Stack, Text } from "@mantine/core";
+import { Accordion, Flex, Group, Stack, Text } from "@mantine/core";
 import { formatDate } from "date-fns";
 
 export function LastTransactions() {
     return (
         <Accordion>
             <Accordion.Item value="Недавние транзакции">
-                <Accordion.Control>Недавние транзакции</Accordion.Control>
+                <Accordion.Control w={'100%'}>
+                    <Text style={{ textWrap: 'nowrap' }}>Недавние транзакции</Text>
+                </Accordion.Control>
                 <Accordion.Panel>
                     {lastTransactionsMock.map(transaction => (
                         <Flex wrap={'wrap'} gap='xs' justify={'space-between'} align={'center'} p={'xs'}>
@@ -22,6 +24,6 @@ export function LastTransactions() {
                     ))}
                 </Accordion.Panel>
             </Accordion.Item>
-        </Accordion>
+        </Accordion >
     )
 }

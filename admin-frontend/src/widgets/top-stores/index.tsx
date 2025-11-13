@@ -6,7 +6,9 @@ export function TopStores() {
     return (
         <Accordion>
             <Accordion.Item value="Топ магазинов">
-                <Accordion.Control>Топ магазинов</Accordion.Control>
+                <Accordion.Control>
+                    <Text style={{ textWrap: 'nowrap' }}>Топ магазинов</Text>
+                </Accordion.Control>
                 <Accordion.Panel>
                     {topStoresMock.map(store => (
                         <Flex wrap={'wrap'} gap='xs' justify={'space-between'} align={'center'} p={'xs'}>
