@@ -3,10 +3,15 @@ import { useLocation } from "react-router-dom";
 import type { IAnalyticsCardVM } from "../model";
 import './styles.scss';
 import { IconCircleCheckFilled, IconClockHour4Filled, IconInfoTriangleFilled, IconUser, IconUserCheck, IconUserOff, IconUserPlus, IconWorldWww } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
 
 export function AnalyticsCard({ card }: { card: IAnalyticsCardVM }) {
     const location = useLocation();
     const pathname = location.pathname;
+
+    // const { data, isPending, isError } = useQuery({
+    //     queryKey: ['analyticsCard', card.title],
+    // })
 
     switch (pathname) {
         case '/':
