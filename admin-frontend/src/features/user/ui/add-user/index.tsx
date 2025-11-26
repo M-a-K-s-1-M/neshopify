@@ -9,7 +9,7 @@ export function AddUser() {
         <>
             <Button onClick={open} color="button">Добавить пользователя</Button>
 
-            <CreateUserModal opened={opened} onClose={close} />
+            <CreateUserModal opened={opened} close={close} />
         </>
     )
 }

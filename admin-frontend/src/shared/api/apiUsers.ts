@@ -1,6 +1,8 @@
+/* eslint-disable no-useless-catch */
 import axios from "axios";
 import { env } from "../config/env";
 import type { IUserRow } from "../mocks/users";
+import { $api } from "../config";
 
 interface IUserFilters {
     page?: number;
@@ -14,3 +16,13 @@ export const getUsers = async (filters?: IUserFilters): Promise<IUserRow[]> => {
     return res.data;
 }
 
+export default class UsersService {
+    static async create(data: { email: string; password: string; roles: string[] }) {
+        try {
+            const res = await $api.post(`/users`, data);
+            return res.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+}
