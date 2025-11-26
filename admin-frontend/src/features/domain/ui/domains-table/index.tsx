@@ -1,6 +1,6 @@
 import { useTable } from "@/shared/hooks/useTable";
 import { getDomains } from "@/shared";
-import { Table, Checkbox, Group, Avatar, Box, Text, Badge, Pagination, ActionIcon } from "@mantine/core";
+import { Table, Checkbox, Group, Avatar, Box, Text, Badge, Pagination, ActionIcon, Skeleton } from "@mantine/core";
 import { IconEdit, IconTrash, IconSettings } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -19,7 +19,7 @@ export function DomainsTable() {
     });
 
     if (isPending) {
-        return <div>Загрузка...</div>;
+        return <Skeleton height={400} radius={'md'} />
     }
 
     if (isError) {

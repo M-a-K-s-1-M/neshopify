@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Pagination, Table, Text } from "@mantine/core";
+import { Badge, Button, Group, Pagination, Skeleton, Table, Text } from "@mantine/core";
 import { format } from 'date-fns';
 import './styles.scss';
 import { useTable } from "@/shared/hooks";
@@ -16,7 +16,7 @@ export function DomainsTableMini() {
     })
 
     if (isPending) {
-        return <div>Загрузка...</div>;
+        return <Skeleton height={400} radius={'md'} />
     }
 
     if (isError) {
