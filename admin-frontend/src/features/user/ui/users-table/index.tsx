@@ -1,4 +1,4 @@
-import { Table, Checkbox, Pagination, Group, Avatar, Box, Text, Badge, ActionIcon } from '@mantine/core';
+import { Table, Checkbox, Pagination, Group, Avatar, Box, Text, Badge, ActionIcon, Skeleton } from '@mantine/core';
 import { IconEdit, IconEye, IconTrash } from '@tabler/icons-react';
 import './sytels.scss';
 import { useQuery } from '@tanstack/react-query';
@@ -21,7 +21,7 @@ export function UsersTable() {
     });
 
     if (isPending) {
-        return <div>Загрузка...</div>;
+        return <Skeleton height={400} radius="md" />;
     }
 
     if (isError) {

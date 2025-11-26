@@ -1,4 +1,4 @@
-import { Avatar, Badge, Box, Button, Group, Table, Text, Pagination } from "@mantine/core";
+import { Avatar, Badge, Box, Button, Group, Table, Text, Pagination, Skeleton } from "@mantine/core";
 import './styles.scss';
 import { getUsers } from "@/shared";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +19,8 @@ export function UsersTableMini() {
     });
 
     if (isPending) {
-        return <div>Загрузка...</div>;
+        // return <div>Загрузка...</div>;
+        return <Skeleton height={400} radius={'md'} />
     }
 
     if (isError) {
