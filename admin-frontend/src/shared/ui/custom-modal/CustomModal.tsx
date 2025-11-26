@@ -1,10 +1,9 @@
 import { Modal } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
 
-export function CustomModal({ children, title }: { children: React.ReactNode, title: string }) {
-    const [opened, { open, close }] = useDisclosure(false);
+export function CustomModal({ children, title, opened, onClose }:
+    { children: React.ReactNode, title: string, opened: boolean, onClose: () => void }) {
 
     return (
-        <Modal opened={opened} onClose={close} title={title}>{children}</Modal>
+        <Modal opened={opened} onClose={onClose} title={title}>{children}</Modal>
     )
 }
