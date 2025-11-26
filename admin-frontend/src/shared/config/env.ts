@@ -10,13 +10,13 @@
 export const env = {
     // API настройки
     api: {
-        url: import.meta.env.VITE_API_URL || 'http://localhost:3001',
+        url: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
         timeout: 10000,
     },
 
     // Приложение
     app: {
-        name: import.meta.env.VITE_APP_NAME || 'Admin Panel',
+        name: import.meta.env.VITE_APP_NAME || 'Cosmiq Admin',
         version: '1.0.0',
     },
 
@@ -27,7 +27,7 @@ export const env = {
 
     // Получить полный URL для API
     apiUrl: (path: string = '') => {
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
         return `${baseUrl}${path}`;
     },
 } as const;

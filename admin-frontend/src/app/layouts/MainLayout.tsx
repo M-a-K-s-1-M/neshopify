@@ -29,7 +29,7 @@ export function MainLayout() {
                 <Navbar />
             </AppShell.Navbar>
 
-            <AppShell.Main>
+            <AppShell.Main >
                 <Outlet />
             </AppShell.Main>
         </AppShell>

@@ -23,7 +23,7 @@ export function DomainsTable() {
     }
 
     if (isError) {
-        return <div>Ошибка загрузки пользователей</div>;
+        return <div>Ошибка загрузки доменов</div>;
     }
 
     const rows = domains?.slice(pageStart, pageEnd).map((domain) => (

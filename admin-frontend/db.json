@@ -1,346 +1,573 @@
 {
-    "users": [
-        {
-            "id": "u_001",
-            "name": "Иван Петров",
-            "email": "ivan@example.com",
-            "avatar": null,
-            "plan": "Премиум",
-            "sites": 3,
-            "status": "active",
-            "createdAt": "2024-09-12T10:23:00.000Z"
-        },
-        {
-            "id": "u_002",
-            "name": "Мария Сидорова",
-            "email": "maria@example.com",
-            "avatar": null,
-            "plan": "Базовый",
-            "sites": 1,
-            "status": "active",
-            "createdAt": "2025-01-03T14:10:00.000Z"
-        },
-        {
-            "id": "u_003",
-            "name": "Сергей Иванов",
-            "email": "sergey.ivanov@example.com",
-            "avatar": null,
-            "plan": "Пробный",
-            "sites": 0,
-            "status": "invited",
-            "createdAt": "2025-03-18T08:45:00.000Z"
-        },
-        {
-            "id": "u_004",
-            "name": "Елена Смирнова",
-            "email": "elena.smirnova@example.com",
-            "avatar": null,
-            "plan": "Премиум",
-            "sites": 5,
-            "status": "blocked",
-            "createdAt": "2023-11-22T09:00:00.000Z"
-        },
-        {
-            "id": "u_005",
-            "name": "Алексей Кузнецов",
-            "email": "aleksey.k@example.com",
-            "avatar": null,
-            "plan": "Базовый",
-            "sites": 2,
-            "status": "pending",
-            "createdAt": "2025-05-02T12:30:00.000Z"
-        },
-        {
-            "id": "u_006",
-            "name": "Ольга Попова",
-            "email": "olga.popova@example.com",
-            "avatar": null,
-            "plan": "Базовый",
-            "sites": 1,
-            "status": "active",
-            "createdAt": "2024-06-10T16:20:00.000Z"
-        },
-        {
-            "id": "u_007",
-            "name": "Павел Егоров",
-            "email": "pavel.egorov@example.com",
-            "avatar": null,
-            "plan": "Пробный",
-            "sites": 0,
-            "status": "pending",
-            "createdAt": "2025-07-01T09:15:00.000Z"
-        },
-        {
-            "id": "u_008",
-            "name": "Кирилл Орлов",
-            "email": "kirill.orlov@example.com",
-            "avatar": null,
-            "plan": "Премиум",
-            "sites": 4,
-            "status": "active",
-            "createdAt": "2024-12-05T11:05:00.000Z"
-        },
-        {
-            "id": "u_009",
-            "name": "Татьяна Волкова",
-            "email": "t.volkova@example.com",
-            "avatar": null,
-            "plan": "Базовый",
-            "sites": 2,
-            "status": "active",
-            "createdAt": "2025-02-14T07:50:00.000Z"
-        },
-        {
-            "id": "u_010",
-            "name": "Роман Зайцев",
-            "email": "roman.z@example.com",
-            "avatar": null,
-            "plan": "Enterprise",
-            "sites": 12,
-            "status": "active",
-            "createdAt": "2023-08-30T13:40:00.000Z"
-        },
-        {
-            "id": "u_011",
-            "name": "Виктория Гусева",
-            "email": "v.guseva@example.com",
-            "avatar": null,
-            "plan": "Премиум",
-            "sites": 6,
-            "status": "active",
-            "createdAt": "2024-04-21T18:05:00.000Z"
-        },
-        {
-            "id": "u_012",
-            "name": "Дмитрий Савельев",
-            "email": "d.savelyev@example.com",
-            "avatar": null,
-            "plan": "Базовый",
-            "sites": 1,
-            "status": "blocked",
-            "createdAt": "2024-10-11T10:10:00.000Z"
-        },
-        {
-            "id": "u_013",
-            "name": "Светлана Алексеева",
-            "email": "svetlana.alex@example.com",
-            "avatar": null,
-            "plan": "Пробный",
-            "sites": 0,
-            "status": "invited",
-            "createdAt": "2025-07-20T09:00:00.000Z"
-        },
-        {
-            "id": "u_014",
-            "name": "Григорий Фомин",
-            "email": "grigory.fomin@example.com",
-            "avatar": null,
-            "plan": "Базовый",
-            "sites": 2,
-            "status": "pending",
-            "createdAt": "2025-06-28T12:55:00.000Z"
-        },
-        {
-            "id": "u_015",
-            "name": "Анастасия Лебедева",
-            "email": "a.lebedeva@example.com",
-            "avatar": null,
-            "plan": "Премиум",
-            "sites": 7,
-            "status": "active",
-            "createdAt": "2024-03-03T08:25:00.000Z"
-        },
-        {
-            "id": "u_016",
-            "name": "Игорь Никитин",
-            "email": "igor.nikitin@example.com",
-            "avatar": null,
-            "plan": "Enterprise",
-            "sites": 15,
-            "status": "active",
-            "createdAt": "2023-07-19T16:45:00.000Z"
-        },
-        {
-            "id": "u_017",
-            "name": "Екатерина Морозова",
-            "email": "k.morozova@example.com",
-            "avatar": null,
-            "plan": "Базовый",
-            "sites": 3,
-            "status": "active",
-            "createdAt": "2025-01-27T09:35:00.000Z"
-        },
-        {
-            "id": "u_018",
-            "name": "Владислав Чернов",
-            "email": "v.chernov@example.com",
-            "avatar": null,
-            "plan": "Пробный",
-            "sites": 0,
-            "status": "invited",
-            "createdAt": "2025-07-05T11:11:00.000Z"
-        },
-        {
-            "id": "u_019",
-            "name": "Наталья Киселева",
-            "email": "n.kiseleva@example.com",
-            "avatar": null,
-            "plan": "Премиум",
-            "sites": 5,
-            "status": "active",
-            "createdAt": "2024-05-17T15:00:00.000Z"
-        },
-        {
-            "id": "u_020",
-            "name": "Юрий Богданов",
-            "email": "y.bogdanov@example.com",
-            "avatar": null,
-            "plan": "Базовый",
-            "sites": 2,
-            "status": "blocked",
-            "createdAt": "2024-11-02T13:10:00.000Z"
-        }
-    ],
-    "domains": [
-        {
-            "id": "d_001",
-            "domain": "example-shop.ru",
-            "ownerEmail": "ivan@example.com",
-            "status": "active",
-            "expiresAt": "2024-12-15T00:00:00.000Z"
-        },
-        {
-            "id": "d_002",
-            "domain": "mybusiness.com",
-            "ownerEmail": "maria@example.com",
-            "status": "active",
-            "expiresAt": "2025-01-03T00:00:00.000Z"
-        },
-        {
-            "id": "d_003",
-            "domain": "coolbrand.store",
-            "ownerEmail": "support@coolbrand.store",
-            "status": "expiring",
-            "expiresAt": "2024-11-20T00:00:00.000Z"
-        },
-        {
-            "id": "d_004",
-            "domain": "archi-dev.io",
-            "ownerEmail": "admin@archi-dev.io",
-            "status": "expired",
-            "expiresAt": "2024-08-01T00:00:00.000Z"
-        },
-        {
-            "id": "d_005",
-            "domain": "nova-market.app",
-            "ownerEmail": "owner@nova-market.app",
-            "status": "suspended",
-            "expiresAt": "2025-04-10T00:00:00.000Z"
-        },
-        {
-            "id": "d_006",
-            "domain": "techstore.online",
-            "ownerEmail": "admin@techstore.online",
-            "status": "active",
-            "expiresAt": "2025-12-01T00:00:00.000Z"
-        },
-        {
-            "id": "d_007",
-            "domain": "fashionhub.ru",
-            "ownerEmail": "manager@fashionhub.ru",
-            "status": "active",
-            "expiresAt": "2026-01-15T00:00:00.000Z"
-        },
-        {
-            "id": "d_008",
-            "domain": "gadgetworld.com",
-            "ownerEmail": "support@gadgetworld.com",
-            "status": "expiring",
-            "expiresAt": "2025-11-20T00:00:00.000Z"
-        },
-        {
-            "id": "d_009",
-            "domain": "bookstore.net",
-            "ownerEmail": "owner@bookstore.net",
-            "status": "expired",
-            "expiresAt": "2024-09-05T00:00:00.000Z"
-        },
-        {
-            "id": "d_010",
-            "domain": "sportgear.app",
-            "ownerEmail": "sales@sportgear.app",
-            "status": "active",
-            "expiresAt": "2025-08-30T00:00:00.000Z"
-        },
-        {
-            "id": "d_011",
-            "domain": "homestyle.ru",
-            "ownerEmail": "contact@homestyle.ru",
-            "status": "suspended",
-            "expiresAt": "2025-03-12T00:00:00.000Z"
-        },
-        {
-            "id": "d_012",
-            "domain": "musiczone.io",
-            "ownerEmail": "admin@musiczone.io",
-            "status": "active",
-            "expiresAt": "2026-02-28T00:00:00.000Z"
-        },
-        {
-            "id": "d_013",
-            "domain": "petshop.store",
-            "ownerEmail": "info@petshop.store",
-            "status": "expiring",
-            "expiresAt": "2025-10-25T00:00:00.000Z"
-        },
-        {
-            "id": "d_014",
-            "domain": "travelblog.com",
-            "ownerEmail": "editor@travelblog.com",
-            "status": "expired",
-            "expiresAt": "2024-07-18T00:00:00.000Z"
-        },
-        {
-            "id": "d_015",
-            "domain": "foodie.ru",
-            "ownerEmail": "chef@foodie.ru",
-            "status": "active",
-            "expiresAt": "2025-11-05T00:00:00.000Z"
-        },
-        {
-            "id": "d_016",
-            "domain": "artgallery.net",
-            "ownerEmail": "artist@artgallery.net",
-            "status": "suspended",
-            "expiresAt": "2025-01-20T00:00:00.000Z"
-        },
-        {
-            "id": "d_017",
-            "domain": "fitnessclub.app",
-            "ownerEmail": "trainer@fitnessclub.app",
-            "status": "active",
-            "expiresAt": "2026-03-10T00:00:00.000Z"
-        },
-        {
-            "id": "d_018",
-            "domain": "autoparts.io",
-            "ownerEmail": "parts@autoparts.io",
-            "status": "expiring",
-            "expiresAt": "2025-12-15T00:00:00.000Z"
-        },
-        {
-            "id": "d_019",
-            "domain": "jewelrybox.com",
-            "ownerEmail": "designer@jewelrybox.com",
-            "status": "expired",
-            "expiresAt": "2024-05-30T00:00:00.000Z"
-        },
-        {
-            "id": "d_020",
-            "domain": "gardentools.ru",
-            "ownerEmail": "gardener@gardentools.ru",
-            "status": "active",
-            "expiresAt": "2025-09-22T00:00:00.000Z"
-        }
-    ]
+  "users": [
+    {
+      "id": "u_001",
+      "name": "Иван Петров",
+      "email": "ivan@example.com",
+      "avatar": null,
+      "plan": "Премиум",
+      "sites": 3,
+      "status": "active",
+      "createdAt": "2024-09-12T10:23:00.000Z"
+    },
+    {
+      "id": "u_002",
+      "name": "Мария Сидорова",
+      "email": "maria@example.com",
+      "avatar": null,
+      "plan": "Базовый",
+      "sites": 1,
+      "status": "active",
+      "createdAt": "2025-01-03T14:10:00.000Z"
+    },
+    {
+      "id": "u_003",
+      "name": "Сергей Иванов",
+      "email": "sergey.ivanov@example.com",
+      "avatar": null,
+      "plan": "Пробный",
+      "sites": 0,
+      "status": "invited",
+      "createdAt": "2025-03-18T08:45:00.000Z"
+    },
+    {
+      "id": "u_004",
+      "name": "Елена Смирнова",
+      "email": "elena.smirnova@example.com",
+      "avatar": null,
+      "plan": "Премиум",
+      "sites": 5,
+      "status": "blocked",
+      "createdAt": "2023-11-22T09:00:00.000Z"
+    },
+    {
+      "id": "u_005",
+      "name": "Алексей Кузнецов",
+      "email": "aleksey.k@example.com",
+      "avatar": null,
+      "plan": "Базовый",
+      "sites": 2,
+      "status": "pending",
+      "createdAt": "2025-05-02T12:30:00.000Z"
+    },
+    {
+      "id": "u_006",
+      "name": "Ольга Попова",
+      "email": "olga.popova@example.com",
+      "avatar": null,
+      "plan": "Базовый",
+      "sites": 1,
+      "status": "active",
+      "createdAt": "2024-06-10T16:20:00.000Z"
+    },
+    {
+      "id": "u_007",
+      "name": "Павел Егоров",
+      "email": "pavel.egorov@example.com",
+      "avatar": null,
+      "plan": "Пробный",
+      "sites": 0,
+      "status": "pending",
+      "createdAt": "2025-07-01T09:15:00.000Z"
+    },
+    {
+      "id": "u_008",
+      "name": "Кирилл Орлов",
+      "email": "kirill.orlov@example.com",
+      "avatar": null,
+      "plan": "Премиум",
+      "sites": 4,
+      "status": "active",
+      "createdAt": "2024-12-05T11:05:00.000Z"
+    },
+    {
+      "id": "u_009",
+      "name": "Татьяна Волкова",
+      "email": "t.volkova@example.com",
+      "avatar": null,
+      "plan": "Базовый",
+      "sites": 2,
+      "status": "active",
+      "createdAt": "2025-02-14T07:50:00.000Z"
+    },
+    {
+      "id": "u_010",
+      "name": "Роман Зайцев",
+      "email": "roman.z@example.com",
+      "avatar": null,
+      "plan": "Enterprise",
+      "sites": 12,
+      "status": "active",
+      "createdAt": "2023-08-30T13:40:00.000Z"
+    },
+    {
+      "id": "u_011",
+      "name": "Виктория Гусева",
+      "email": "v.guseva@example.com",
+      "avatar": null,
+      "plan": "Премиум",
+      "sites": 6,
+      "status": "active",
+      "createdAt": "2024-04-21T18:05:00.000Z"
+    },
+    {
+      "id": "u_012",
+      "name": "Дмитрий Савельев",
+      "email": "d.savelyev@example.com",
+      "avatar": null,
+      "plan": "Базовый",
+      "sites": 1,
+      "status": "blocked",
+      "createdAt": "2024-10-11T10:10:00.000Z"
+    },
+    {
+      "id": "u_013",
+      "name": "Светлана Алексеева",
+      "email": "svetlana.alex@example.com",
+      "avatar": null,
+      "plan": "Пробный",
+      "sites": 0,
+      "status": "invited",
+      "createdAt": "2025-07-20T09:00:00.000Z"
+    },
+    {
+      "id": "u_014",
+      "name": "Григорий Фомин",
+      "email": "grigory.fomin@example.com",
+      "avatar": null,
+      "plan": "Базовый",
+      "sites": 2,
+      "status": "pending",
+      "createdAt": "2025-06-28T12:55:00.000Z"
+    },
+    {
+      "id": "u_015",
+      "name": "Анастасия Лебедева",
+      "email": "a.lebedeva@example.com",
+      "avatar": null,
+      "plan": "Премиум",
+      "sites": 7,
+      "status": "active",
+      "createdAt": "2024-03-03T08:25:00.000Z"
+    },
+    {
+      "id": "u_016",
+      "name": "Игорь Никитин",
+      "email": "igor.nikitin@example.com",
+      "avatar": null,
+      "plan": "Enterprise",
+      "sites": 15,
+      "status": "active",
+      "createdAt": "2023-07-19T16:45:00.000Z"
+    },
+    {
+      "id": "u_017",
+      "name": "Екатерина Морозова",
+      "email": "k.morozova@example.com",
+      "avatar": null,
+      "plan": "Базовый",
+      "sites": 3,
+      "status": "active",
+      "createdAt": "2025-01-27T09:35:00.000Z"
+    },
+    {
+      "id": "u_018",
+      "name": "Владислав Чернов",
+      "email": "v.chernov@example.com",
+      "avatar": null,
+      "plan": "Пробный",
+      "sites": 0,
+      "status": "invited",
+      "createdAt": "2025-07-05T11:11:00.000Z"
+    },
+    {
+      "id": "u_019",
+      "name": "Наталья Киселева",
+      "email": "n.kiseleva@example.com",
+      "avatar": null,
+      "plan": "Премиум",
+      "sites": 5,
+      "status": "active",
+      "createdAt": "2024-05-17T15:00:00.000Z"
+    },
+    {
+      "id": "u_020",
+      "name": "Юрий Богданов",
+      "email": "y.bogdanov@example.com",
+      "avatar": null,
+      "plan": "Базовый",
+      "sites": 2,
+      "status": "blocked",
+      "createdAt": "2024-11-02T13:10:00.000Z"
+    },
+    {
+      "id": "dc3c",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "ADMIN",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "4901",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "ADMIN",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "80fb",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "ADMIN",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "3545",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "ADMIN",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "cfe7",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "ADMIN",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "ec7c",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "7f41",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "ef6f",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "9b22",
+      "email": "test@test.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "e5f4",
+      "email": "test@test.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "45b6",
+      "email": "test@test.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER",
+        "CUSTOMER"
+      ]
+    },
+    {
+      "id": "809e",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "87b7",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "62b6",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "b1c8",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "005e",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "d6c9",
+      "email": "t@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "ebf3",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "f78a",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "09e7",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "5dc7",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "c539",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "6dcd",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "8d47",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "e36b",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "424e",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    },
+    {
+      "id": "3a77",
+      "email": "t2@t.ru",
+      "password": "123456",
+      "roles": [
+        "SITE_OWNER"
+      ]
+    }
+  ],
+  "domains": [
+    {
+      "id": "d_001",
+      "domain": "example-shop.ru",
+      "ownerEmail": "ivan@example.com",
+      "status": "active",
+      "expiresAt": "2024-12-15T00:00:00.000Z"
+    },
+    {
+      "id": "d_002",
+      "domain": "mybusiness.com",
+      "ownerEmail": "maria@example.com",
+      "status": "active",
+      "expiresAt": "2025-01-03T00:00:00.000Z"
+    },
+    {
+      "id": "d_003",
+      "domain": "coolbrand.store",
+      "ownerEmail": "support@coolbrand.store",
+      "status": "expiring",
+      "expiresAt": "2024-11-20T00:00:00.000Z"
+    },
+    {
+      "id": "d_004",
+      "domain": "archi-dev.io",
+      "ownerEmail": "admin@archi-dev.io",
+      "status": "expired",
+      "expiresAt": "2024-08-01T00:00:00.000Z"
+    },
+    {
+      "id": "d_005",
+      "domain": "nova-market.app",
+      "ownerEmail": "owner@nova-market.app",
+      "status": "suspended",
+      "expiresAt": "2025-04-10T00:00:00.000Z"
+    },
+    {
+      "id": "d_006",
+      "domain": "techstore.online",
+      "ownerEmail": "admin@techstore.online",
+      "status": "active",
+      "expiresAt": "2025-12-01T00:00:00.000Z"
+    },
+    {
+      "id": "d_007",
+      "domain": "fashionhub.ru",
+      "ownerEmail": "manager@fashionhub.ru",
+      "status": "active",
+      "expiresAt": "2026-01-15T00:00:00.000Z"
+    },
+    {
+      "id": "d_008",
+      "domain": "gadgetworld.com",
+      "ownerEmail": "support@gadgetworld.com",
+      "status": "expiring",
+      "expiresAt": "2025-11-20T00:00:00.000Z"
+    },
+    {
+      "id": "d_009",
+      "domain": "bookstore.net",
+      "ownerEmail": "owner@bookstore.net",
+      "status": "expired",
+      "expiresAt": "2024-09-05T00:00:00.000Z"
+    },
+    {
+      "id": "d_010",
+      "domain": "sportgear.app",
+      "ownerEmail": "sales@sportgear.app",
+      "status": "active",
+      "expiresAt": "2025-08-30T00:00:00.000Z"
+    },
+    {
+      "id": "d_011",
+      "domain": "homestyle.ru",
+      "ownerEmail": "contact@homestyle.ru",
+      "status": "suspended",
+      "expiresAt": "2025-03-12T00:00:00.000Z"
+    },
+    {
+      "id": "d_012",
+      "domain": "musiczone.io",
+      "ownerEmail": "admin@musiczone.io",
+      "status": "active",
+      "expiresAt": "2026-02-28T00:00:00.000Z"
+    },
+    {
+      "id": "d_013",
+      "domain": "petshop.store",
+      "ownerEmail": "info@petshop.store",
+      "status": "expiring",
+      "expiresAt": "2025-10-25T00:00:00.000Z"
+    },
+    {
+      "id": "d_014",
+      "domain": "travelblog.com",
+      "ownerEmail": "editor@travelblog.com",
+      "status": "expired",
+      "expiresAt": "2024-07-18T00:00:00.000Z"
+    },
+    {
+      "id": "d_015",
+      "domain": "foodie.ru",
+      "ownerEmail": "chef@foodie.ru",
+      "status": "active",
+      "expiresAt": "2025-11-05T00:00:00.000Z"
+    },
+    {
+      "id": "d_016",
+      "domain": "artgallery.net",
+      "ownerEmail": "artist@artgallery.net",
+      "status": "suspended",
+      "expiresAt": "2025-01-20T00:00:00.000Z"
+    },
+    {
+      "id": "d_017",
+      "domain": "fitnessclub.app",
+      "ownerEmail": "trainer@fitnessclub.app",
+      "status": "active",
+      "expiresAt": "2026-03-10T00:00:00.000Z"
+    },
+    {
+      "id": "d_018",
+      "domain": "autoparts.io",
+      "ownerEmail": "parts@autoparts.io",
+      "status": "expiring",
+      "expiresAt": "2025-12-15T00:00:00.000Z"
+    },
+    {
+      "id": "d_019",
+      "domain": "jewelrybox.com",
+      "ownerEmail": "designer@jewelrybox.com",
+      "status": "expired",
+      "expiresAt": "2024-05-30T00:00:00.000Z"
+    },
+    {
+      "id": "d_020",
+      "domain": "gardentools.ru",
+      "ownerEmail": "gardener@gardentools.ru",
+      "status": "active",
+      "expiresAt": "2025-09-22T00:00:00.000Z"
+    }
+  ]
 }
