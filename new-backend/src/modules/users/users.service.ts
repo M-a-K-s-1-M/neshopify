@@ -30,4 +30,11 @@ export class UsersService {
     async getByEmail(email: string): Promise<User | null> {
         return await this.prisma.user.findUnique({ where: { email } });
     }
+
+    async getById(id: string): Promise<Prisma.UserGetPayload<{ include: { roles: true } }> | null> {
+        return await this.prisma.user.findUnique({
+            where: { id },
+            include: { roles: true }
+        });
+    }
 }
