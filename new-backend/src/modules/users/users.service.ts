@@ -3,19 +3,21 @@ import { Prisma, User } from 'generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user-dto';
+import { TokenService } from '../tokens/token.service';
 
 @Injectable()
 export class UsersService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService,
+        private readonly tokenService: TokenService) { }
 
     async findAll(): Promise<Prisma.UserGetPayload<{ include: { roles: true } }>[]> {
         return await this.prisma.user.findMany({ include: { roles: true } });
     }
 
-    async create(dto: CreateUserDto): Promise<Prisma.UserGetPayload<{ include: { roles: true } }>> {
+    async create(dto: CreateUserDto) {
         const { email, password, roles } = dto;
         const passwordHash = await bcrypt.hash(password, 10);
-        return await this.prisma.user.create({
+        const user = await this.prisma.user.create({
             data: {
                 email: email,
                 passwordHash: passwordHash,
@@ -25,6 +27,11 @@ export class UsersService {
             },
             include: { roles: true }
         });
+
+        const tokens = await this.tokenService.generateTokens({ ...user })
+        await this.tokenService.saveToken(user.id, tokens.refreshToken);
+
+        return { ...tokens, user };
     }
 
     async getByEmail(email: string): Promise<User | null> {
