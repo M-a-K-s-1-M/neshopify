@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpException, HttpStatus, Param, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user-dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -29,5 +30,10 @@ export class UsersController {
       throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
     }
     return user;
+  }
+
+  @Post('update')
+  async update(@Body('id') id: string, @Body() dto: UpdateUserDto) {
+    return this.usersService.update(id, dto);
   }
 }
