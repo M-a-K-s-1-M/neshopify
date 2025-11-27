@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { Prisma, User } from 'generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import bcrypt from 'bcrypt';
-import { CreateUserDto } from './dto/create-user-dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { TokenService } from '../tokens/token.service';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -41,6 +42,25 @@ export class UsersService {
     async getById(id: string): Promise<Prisma.UserGetPayload<{ include: { roles: true } }> | null> {
         return await this.prisma.user.findUnique({
             where: { id },
+            include: { roles: true }
+        });
+    }
+
+    async update(id: string, dto: UpdateUserDto) {
+        const data: any = {
+            email: dto.email,
+            roles: {
+                set: dto.roles.map(role => ({ value: role }))
+            }
+        };
+
+        if (dto.password) {
+            data.passwordHash = await bcrypt.hash(dto.password, 10);
+        }
+
+        return this.prisma.user.update({
+            where: { id },
+            data,
             include: { roles: true }
         });
     }

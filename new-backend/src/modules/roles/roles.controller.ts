@@ -20,7 +20,7 @@ export class RolesController {
     return this.rolesService.deleteByValue(data.value);
   }
 
-  @Post(':value')
+  @Get(':value')
   async getByValue(@Param('value') value: string) {
     return this.rolesService.getByValue(value);
   }
