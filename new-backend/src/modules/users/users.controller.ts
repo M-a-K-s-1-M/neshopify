@@ -18,7 +18,8 @@ export class UsersController {
       throw new HttpException('Пользователь с таким email уже существует', HttpStatus.BAD_REQUEST);
     }
 
-    return this.usersService.create(dto);
+    const { accessToken, user } = await this.usersService.create(dto);
+    return { accessToken, user };
   }
 
   @Get(':id')
