@@ -11,8 +11,8 @@ export class UsersService {
     constructor(private readonly prisma: PrismaService,
         private readonly tokenService: TokenService) { }
 
-    async getAll(): Promise<Prisma.UserGetPayload<{ include: { roles: true } }>[]> {
-        return await this.prisma.user.findMany({ include: { roles: true } });
+    async getAll() {
+        return await this.prisma.user.findMany({ omit: { passwordHash: true }, include: { userRoles: { include: { role: true } } } });
     }
 
     async create(dto: CreateUserDto) {
@@ -22,11 +22,15 @@ export class UsersService {
             data: {
                 email: email,
                 passwordHash: passwordHash,
-                roles: {
-                    connect: roles.map(role => ({ value: role }))
+                userRoles: {
+                    create: roles.map(roleValue => ({
+                        role: {
+                            connect: { value: roleValue }
+                        }
+                    }))
                 }
             },
-            include: { roles: true }
+            include: { userRoles: { include: { role: true } } }
         });
 
         const tokens = await this.tokenService.generateTokens({ ...user })
@@ -35,24 +39,40 @@ export class UsersService {
         return { ...tokens, user };
     }
 
-    async getByEmail(email: string): Promise<User | null> {
-        return await this.prisma.user.findUnique({ where: { email } });
+    async getByEmail(email: string) {
+        return await this.prisma.user.findUnique({
+            where: { email },
+            include: {
+                userRoles: {
+                    include: { role: true }
+                }
+            }
+        });
     }
 
-    async getById(id: string): Promise<Prisma.UserGetPayload<{ include: { roles: true } }> | null> {
+    async getById(id: string) {
         return await this.prisma.user.findUnique({
             where: { id },
-            include: { roles: true }
+            include: { userRoles: { include: { role: true } } }
         });
     }
 
     async update(id: string, dto: UpdateUserDto) {
         const data: any = {
             email: dto.email,
-            roles: {
-                set: dto.roles.map(role => ({ value: role }))
-            }
         };
+
+        if (dto.roles) {
+            await this.prisma.userRole.deleteMany({
+                where: { userId: id }
+            })
+
+            data.userRoles = {
+                create: dto.roles.map(roleValue => ({
+                    role: { connect: { value: roleValue } }
+                }))
+            }
+        }
 
         if (dto.password) {
             data.passwordHash = await bcrypt.hash(dto.password, 10);
@@ -61,7 +81,18 @@ export class UsersService {
         return this.prisma.user.update({
             where: { id },
             data,
-            include: { roles: true }
+            include: { userRoles: { include: { role: true } } },
+        });
+    }
+
+    async deleteById(id: string) {
+        return await this.prisma.user.delete({
+            where: { id },
+            include: {
+                userRoles: {
+                    include: { role: true }
+                }
+            }
         });
     }
 }

@@ -2,18 +2,25 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { TokenService } from '../tokens/token.service';
-import { RolesService } from '../roles/roles.service';
+import { Prisma } from 'generated/prisma/client';
 
 @Injectable()
 export class AuthService {
 
     constructor(
         private tokenService: TokenService,
-        private rolesService: RolesService,
         private prisma: PrismaService) { }
 
     async login(email: string, password: string) {
-        const user = await this.prisma.user.findUnique({ where: { email }, include: { roles: true } });
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+            include: {
+                userRoles: {
+                    include: { role: true }
+                }
+            },
+            omit: { passwordHash: false }
+        });
         if (!user) throw new UnauthorizedException('Пользователя с таким email не существует');
 
         const comparePasswords = await bcrypt.compare(password, user.passwordHash);
@@ -33,19 +40,22 @@ export class AuthService {
 
         const passwordHash = await bcrypt.hash(password, 10);
 
-        // const role = await this.prisma.role.findUnique({ where: { value: 'ADMIN' } });
-        // const role = await this.prisma.role.findUnique({ where: { value: 'CITE_OWNER' } });
-        // if (!role) {
-        //     await this.rolesService.create('ADMIN', 'Администратор');
-        // }
-
         const user = await this.prisma.user.create({
             data: {
                 email,
                 passwordHash,
-                roles: { connect: [{ value: 'SITE_OWNER' }] }
+                userRoles: {
+                    create: {
+                        role: {
+                            connect: { value: 'SITE_OWNER' }
+                        }
+                    }
+                }
             },
-            include: { roles: true }
+            include: {
+                userRoles:
+                    { include: { role: true } }
+            },
         })
 
         const tokens = await this.tokenService.generateTokens({ ...user })
@@ -74,7 +84,7 @@ export class AuthService {
             throw new UnauthorizedException('Пользователь не авторизован');
         }
 
-        const user = await this.prisma.user.findUnique({ where: { id: userData.id }, include: { roles: true } });
+        const user = await this.prisma.user.findUnique({ where: { id: userData.id }, include: { userRoles: { include: { role: true } } } });
         if (!user) {
             throw new UnauthorizedException('Пользователь не авторизован');
         }
