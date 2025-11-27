@@ -11,7 +11,7 @@ export class UsersService {
     constructor(private readonly prisma: PrismaService,
         private readonly tokenService: TokenService) { }
 
-    async findAll(): Promise<Prisma.UserGetPayload<{ include: { roles: true } }>[]> {
+    async getAll(): Promise<Prisma.UserGetPayload<{ include: { roles: true } }>[]> {
         return await this.prisma.user.findMany({ include: { roles: true } });
     }
 
