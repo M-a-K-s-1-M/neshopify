@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -7,7 +8,7 @@ export class RolesService {
 
     // ADMIN, SITE_OWNER, CUSTOMER  
     async getAll() {
-        return this.prisma.role.findMany({ include: { users: true } });
+        return this.prisma.role.findMany({ include: { userRoles: { include: { user: true } } } });
     }
 
     async create(value: string, description: string) {
@@ -20,7 +21,7 @@ export class RolesService {
     }
 
     async getByValue(value: string) {
-        const role = await this.prisma.role.findUnique({ where: { value }, include: { users: true } });
+        const role = await this.prisma.role.findUnique({ where: { value }, include: { userRoles: { include: { user: true } } } });
         if (!role) throw new Error(`Role with value ${value} not found`);
         return role;
     }

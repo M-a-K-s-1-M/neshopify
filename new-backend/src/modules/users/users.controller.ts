@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -9,7 +9,7 @@ export class UsersController {
 
   @Get()
   async getAll() {
-    return this.usersService.getAll();
+    return await this.usersService.getAll();
   }
 
   @Post()
@@ -34,6 +34,15 @@ export class UsersController {
 
   @Post('update')
   async update(@Body('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+    return await this.usersService.update(id, dto);
   }
+
+  @Delete(':id')
+  async deleteById(@Param('id') id: string) {
+    const candidate = await this.getById(id);
+    if (!candidate) throw new HttpException('Такого пользователя не существует', HttpStatus.NOT_FOUND);
+
+    return await this.usersService.deleteById(id);
+  }
+
 }

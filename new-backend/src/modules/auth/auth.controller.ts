@@ -1,14 +1,15 @@
 import { Body, Controller, Post, Req, Res, UseGuards, } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { Request, Response } from 'express';
+import { RegistrationUserDto } from './dto/registration-user.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
   @Post('login')
-  async login(@Body() body: { email: string; password: string }, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.login(body.email, body.password);
+  async login(@Body() dto: RegistrationUserDto, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken, user } = await this.authService.login(dto.email, dto.password);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -19,8 +20,8 @@ export class AuthController {
   }
 
   @Post('registration')
-  async registration(@Body() body: { email: string; password: string }, @Res({ passthrough: true }) res: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.ragistration(body.email, body.password);
+  async registration(@Body() dto: RegistrationUserDto, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken, user } = await this.authService.ragistration(dto.email, dto.password);
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
