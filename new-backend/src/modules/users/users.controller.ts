@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user-dto';
 
@@ -19,5 +19,14 @@ export class UsersController {
     }
 
     return this.usersService.create(dto);
+  }
+
+  @Get(':id')
+  async getById(@Param('id') id: string) {
+    const user = await this.usersService.getById(id);
+    if (!user) {
+      throw new HttpException('Пользователь не найден', HttpStatus.NOT_FOUND);
+    }
+    return user;
   }
 }
