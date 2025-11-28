@@ -6,7 +6,7 @@ import { ReviewAnalytics } from "@/widgets/site-analytics-block";
 
 export function Review() {
     return (
-        <Box component="div" p={'xl'}>
+        <Box component="div" p={'xl'} bg={'white'}>
             <Text fz={'2xl'} fw={700} mb={'md'}>Обзор</Text>
 
             <Box component="div" mb={'2xl'}>

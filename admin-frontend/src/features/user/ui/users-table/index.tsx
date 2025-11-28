@@ -1,9 +1,10 @@
-import { Table, Checkbox, Pagination, Group, Avatar, Box, Text, Badge, ActionIcon, Skeleton } from '@mantine/core';
-import { IconEdit, IconEye, IconTrash } from '@tabler/icons-react';
+import { Table, Checkbox, Pagination, Group, Avatar, Box, Text, Badge, ActionIcon, Skeleton, Stack } from '@mantine/core';
+import { IconEye, IconTrash } from '@tabler/icons-react';
 import './sytels.scss';
 import { useQuery } from '@tanstack/react-query';
-import { getUsers, } from '@/shared';
 import { useTable } from '@/shared/hooks';
+import { EditUserIcon } from '../edit-user';
+import { UsersService } from '@/shared';
 
 // Заголовки (кроме колонки чекбокса). Используем для вычисления colSpan футера.
 const tableHeadings = ['Пользователь', 'Email', 'Роль', 'Статус', 'Последний вход', 'Действия'];
@@ -17,7 +18,7 @@ export function UsersTable() {
 
     const { data: users, isPending, isError } = useQuery({
         queryKey: ['users-table', search],
-        queryFn: () => getUsers({ search }),
+        queryFn: async () => await UsersService.getAll(),
     });
 
     if (isPending) {
@@ -45,8 +46,8 @@ export function UsersTable() {
                 <Group wrap='nowrap'>
                     <Avatar />
                     <Box component="div">
-                        <Text>{user.name}</Text>
-                        <Text c='textSecondary.6'>{user.id}</Text>
+                        <Text fw={500}>{user.email}</Text>
+                        <Text c='textSecondary.6'>ID: {user.id}</Text>
                     </Box>
                 </Group>
             </Table.Td>
@@ -55,12 +56,14 @@ export function UsersTable() {
                 <Text>{user.email}</Text>
             </Table.Td>
 
-            <Table.Td>
-                <Badge color='background'>Владелец магазина</Badge>
+            <Table.Td w={150}>
+                <Stack>
+                    {user.userRoles.map((userRole, i) => <Badge key={i} color='background'>{userRole.role?.value}</Badge>)}
+                </Stack>
             </Table.Td>
 
-            <Table.Td>
-                <Badge color="background">{user.status}</Badge>
+            <Table.Td w={150}>
+                <Badge color="background">Активный/Забанен</Badge>
             </Table.Td>
 
             <Table.Td>
@@ -73,9 +76,7 @@ export function UsersTable() {
                         <IconEye />
                     </ActionIcon>
 
-                    <ActionIcon>
-                        <IconEdit />
-                    </ActionIcon>
+                    <EditUserIcon user={user} />
 
                     <ActionIcon>
                         <IconTrash />

@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
-import type { IUserRow } from '../mocks/users';
 import type { IDomainRow } from '../mocks/domains';
+import type { IUser } from '@/entities/user';
 
 export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-mini') => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -10,7 +10,9 @@ export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-m
     const pageStart: number = (page - 1) * limit;
     const pageEnd: number = pageStart + limit;
 
-    const selectedIds: string[] = searchParams.get(`_${prefix}-selected-ids`) ? searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).filter(Boolean) : [];
+    const selectedIds: string[] = searchParams.get(`_${prefix}-selected-ids`) ?
+        searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).filter(Boolean)
+        : [];
 
     const search: string = searchParams.get(`_${prefix}-search`) ?? ``;
 
@@ -22,12 +24,16 @@ export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-m
         })
     }
 
-    const isCheckedAll = (data: IUserRow[] | IDomainRow[]) => {
-        return searchParams.get(`_${prefix}-selected-ids`) ? searchParams.get(`_${prefix}-selected-ids`)?.split(',').length === data.length : false
+    const isCheckedAll = (data: IUser[] | IDomainRow[]) => {
+        return searchParams.get(`_${prefix}-selected-ids`) ?
+            searchParams.get(`_${prefix}-selected-ids`)?.split(',').length === data.length
+            : false
     }
 
-    const isIndeterminate = (data: IUserRow[] | IDomainRow[]) => {
-        const selectedCount = searchParams.get(`_${prefix}-selected-ids`) ? searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).length : 0;
+    const isIndeterminate = (data: IUser[] | IDomainRow[]) => {
+        const selectedCount = searchParams.get(`_${prefix}-selected-ids`) ?
+            searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).length
+            : 0;
         return selectedCount > 0 && selectedCount < data.length;
     }
 
@@ -51,7 +57,7 @@ export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-m
         })
     }
 
-    const onChangeCeckboxAll = (e: React.ChangeEvent<HTMLInputElement>, data: IUserRow[] | IDomainRow[]) => {
+    const onChangeCeckboxAll = (e: React.ChangeEvent<HTMLInputElement>, data: IUser[] | IDomainRow[]) => {
         if (e.target.checked) {
             setSearchParams(prev => {
                 const newParams = new URLSearchParams(prev);
