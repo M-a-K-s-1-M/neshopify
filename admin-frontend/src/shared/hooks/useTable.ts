@@ -4,35 +4,35 @@ import type { IUser } from '@/entities/user';
 
 export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-mini') => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const page: number = searchParams.get(`_${prefix}-table-page`) ? Number(searchParams.get(`_${prefix}-table-page`)) : 1;
+    const page: number = searchParams.get(`${prefix}-table-page`) ? Number(searchParams.get(`${prefix}-table-page`)) : 1;
     const limit: number = 5;
 
     const pageStart: number = (page - 1) * limit;
     const pageEnd: number = pageStart + limit;
 
-    const selectedIds: string[] = searchParams.get(`_${prefix}-selected-ids`) ?
-        searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).filter(Boolean)
+    const selectedIds: string[] = searchParams.get(`${prefix}-selected-ids`) ?
+        searchParams.get(`${prefix}-selected-ids`)!.split(`,`).filter(Boolean)
         : [];
 
-    const search: string = searchParams.get(`_${prefix}-search`) ?? ``;
+    const search: string = searchParams.get(`${prefix}-search`) ?? ``;
 
     const onChangePagination = (e: number) => {
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
-            newParams.set(`_${prefix}-table-page`, e.toString());
+            newParams.set(`${prefix}-table-page`, e.toString());
             return newParams;
         })
     }
 
     const isCheckedAll = (data: IUser[] | IDomainRow[]) => {
-        return searchParams.get(`_${prefix}-selected-ids`) ?
-            searchParams.get(`_${prefix}-selected-ids`)?.split(',').length === data.length
+        return searchParams.get(`${prefix}-selected-ids`) ?
+            searchParams.get(`${prefix}-selected-ids`)?.split(',').length === data.length
             : false
     }
 
     const isIndeterminate = (data: IUser[] | IDomainRow[]) => {
-        const selectedCount = searchParams.get(`_${prefix}-selected-ids`) ?
-            searchParams.get(`_${prefix}-selected-ids`)!.split(`,`).length
+        const selectedCount = searchParams.get(`${prefix}-selected-ids`) ?
+            searchParams.get(`${prefix}-selected-ids`)!.split(`,`).length
             : 0;
         return selectedCount > 0 && selectedCount < data.length;
     }
@@ -43,15 +43,15 @@ export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-m
             if (selectedIds.includes(entitiesId)) {
                 const newSelectedIds = selectedIds.filter(id => id !== entitiesId);
                 if (newSelectedIds.length > 0) {
-                    newParams.set(`_${prefix}-selected-ids`, newSelectedIds.join(','));
+                    newParams.set(`${prefix}-selected-ids`, newSelectedIds.join(',')); S
                     return newParams;
                 } else {
-                    newParams.delete(`_${prefix}-selected-ids`);
+                    newParams.delete(`${prefix}-selected-ids`);
                     return newParams;
                 }
             } else {
                 const newSelectedIds = [...selectedIds, entitiesId];
-                newParams.set(`_${prefix}-selected-ids`, newSelectedIds.join(','));
+                newParams.set(`${prefix}-selected-ids`, newSelectedIds.join(','));
                 return newParams;
             }
         })
@@ -61,13 +61,13 @@ export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-m
         if (e.target.checked) {
             setSearchParams(prev => {
                 const newParams = new URLSearchParams(prev);
-                newParams.set(`_${prefix}-selected-ids`, data.map(u => u.id).join(','));
+                newParams.set(`${prefix}-selected-ids`, data.map(u => u.id).join(','));
                 return newParams;
             })
         } else {
             setSearchParams(prev => {
                 const newParams = new URLSearchParams(prev);
-                newParams.delete(`_${prefix}-selected-ids`);
+                newParams.delete(`${prefix}-selected-ids`);
                 return newParams;
             })
         }

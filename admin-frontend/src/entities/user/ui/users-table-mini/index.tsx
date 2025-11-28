@@ -1,9 +1,9 @@
-import { Avatar, Badge, Box, Button, Group, Table, Text, Pagination, Skeleton } from "@mantine/core";
+import { Avatar, Badge, Box, Group, Table, Text, Pagination, Skeleton } from "@mantine/core";
 import './styles.scss';
 import { useQuery } from "@tanstack/react-query";
 import { useTable } from "@/shared/hooks";
 import { UsersService } from "@/shared";
-import { EditUserButton } from "@/features";
+import { BannedUserButton, EditUserButton, UnbannedUserButton } from "@/features";
 
 const tableHeading: string[] = ['Пользователь', 'Сайтов', 'Статус', 'Действия']
 
@@ -70,16 +70,18 @@ export function UsersTableMini() {
                             </Table.Td>
 
                             <Table.Td ta={'center'}>
-                                <Badge color="background">
-                                    {user.status ?? 'Активен/заблокирован'}
-                                </Badge>
+                                {user.banned ? <Badge color="red">Заблокирован</Badge> : <Badge color="blue">Активный</Badge>}
                             </Table.Td>
 
                             <Table.Td>
                                 <Group justify='center' >
                                     <EditUserButton user={user} />
 
-                                    <Button variant="outline" color={"button"} >Заблокировать</Button>
+                                    {user.banned ?
+                                        <UnbannedUserButton user={user} />
+                                        :
+                                        <BannedUserButton user={user} />
+                                    }
                                 </Group>
                             </Table.Td>
                         </Table.Tr>

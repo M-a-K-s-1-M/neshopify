@@ -63,7 +63,7 @@ export function UsersTable() {
             </Table.Td>
 
             <Table.Td w={150}>
-                <Badge color="background">Активный/Забанен</Badge>
+                {user.banned ? <Badge color="red">Заблокирован</Badge> : <Badge color="blue">Активный</Badge>}
             </Table.Td>
 
             <Table.Td>

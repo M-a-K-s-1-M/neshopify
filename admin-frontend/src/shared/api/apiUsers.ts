@@ -50,5 +50,21 @@ export class UsersService {
         }
     }
 
+    static async ban(userId: string) {
+        try {
+            const res = await $api.patch(`/users/ban/${userId}`);
+            return res.data;
+        } catch (error) {
+            throw error;
+        }
+    }
 
+    static async unban(userId: string) {
+        try {
+            const res = await $api.patch(`/users/unban/${userId}`);
+            return res.data;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
