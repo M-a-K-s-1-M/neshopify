@@ -85,6 +85,22 @@ export class UsersService {
         });
     }
 
+    async ban(id: string) {
+        return this.prisma.user.update({
+            where: { id },
+            data: { banned: true },
+            include: { userRoles: { include: { role: true } } },
+        });
+    }
+
+    async unban(id: string) {
+        return this.prisma.user.update({
+            where: { id },
+            data: { banned: false },
+            include: { userRoles: { include: { role: true } } },
+        });
+    }
+
     async deleteById(id: string) {
         return await this.prisma.user.delete({
             where: { id },
