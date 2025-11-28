@@ -59,7 +59,7 @@ export class UsersService {
             limit: take,
             total,
             pages: Math.ceil(total / take),
-            data: users,
+            users,
         }
     }
 
