@@ -23,11 +23,18 @@ export class UsersService {
         }
     }
 
-
-
     static async update(userId: string, data: IUpdateUserForm) {
         try {
             const res = await $api.patch(`/users`, { id: userId, ...data });
+            return res.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async delete(userId: string) {
+        try {
+            const res = await $api.delete(`/users/${userId}`)
             return res.data;
         } catch (error) {
             throw error;

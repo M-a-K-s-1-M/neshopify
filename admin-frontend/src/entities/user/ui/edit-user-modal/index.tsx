@@ -33,6 +33,8 @@ export function EditUserModal({ opened, close, user }: { opened: boolean; close:
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users-table'] });
+            queryClient.invalidateQueries({ queryKey: ['user-table-mini'] });
+
             notifications.show({
                 color: 'green',
                 title: 'Успех',
