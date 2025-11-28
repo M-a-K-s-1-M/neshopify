@@ -1,6 +1,6 @@
-import { AddUser } from "@/features/user";
-import { UsersAnalytics } from "@/widgets/site-analytics-block";
-import { UsersTableWithSearchAndEdit } from "@/widgets/users-table-with-search-and-edit";
+import { AddUser } from "@/features";
+import { UsersAnalytics } from "@/widgets";
+import { UsersTableWithSearchAndEdit } from "@/widgets";
 import { Box, Flex, Text } from "@mantine/core";
 
 export function UsersManagement() {

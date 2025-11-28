@@ -3,6 +3,7 @@ import './styles.scss';
 import { useQuery } from "@tanstack/react-query";
 import { useTable } from "@/shared/hooks";
 import { UsersService } from "@/shared";
+import { EditUserButton } from "@/features";
 
 const tableHeading: string[] = ['Пользователь', 'Сайтов', 'Статус', 'Действия']
 
@@ -76,7 +77,8 @@ export function UsersTableMini() {
 
                             <Table.Td>
                                 <Group justify='center' >
-                                    <Button variant="outline" color={'button'}>Редактировать</Button>
+                                    <EditUserButton user={user} />
+
                                     <Button variant="outline" color={"button"} >Заблокировать</Button>
                                 </Group>
                             </Table.Td>

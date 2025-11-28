@@ -1,5 +1,5 @@
-import { UsersTable } from '@/features/user'
-import { SearchUsersWithFilters } from '@/features/user'
+import { UsersTable } from '@/entities'
+import { SearchUsersWithFilters } from '@/features'
 import { Box } from '@mantine/core'
 
 export function UsersTableWithSearchAndEdit() {

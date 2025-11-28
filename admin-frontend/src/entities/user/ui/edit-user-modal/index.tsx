@@ -3,11 +3,14 @@ import type { IUser } from "../../models";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, type SubmitHandler } from "react-hook-form";
 import { Button, Checkbox, Group, Input, MultiSelect, PasswordInput, Skeleton } from "@mantine/core";
-import { useEffect, } from "react";
+import { useEffect, useRef, } from "react";
 import { useUserForm } from "../../hooks";
 import type { IUpdateUserForm } from "../../models/IUpdateUserForm";
+import { notifications } from "@mantine/notifications";
 
 export function EditUserModal({ opened, close, user }: { opened: boolean; close: () => void, user: IUser }) {
+    const initialUserRef = useRef<IUser>(user);
+
     const queryClient = useQueryClient();
     const {
         arrRoles,
@@ -21,6 +24,7 @@ export function EditUserModal({ opened, close, user }: { opened: boolean; close:
         passwordError,
         isPending,
         isError,
+        isChangend,
     } = useUserForm<IUpdateUserForm>();
 
     const updateUserMutation = useMutation({
@@ -29,21 +33,44 @@ export function EditUserModal({ opened, close, user }: { opened: boolean; close:
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users-table'] });
-
+            notifications.show({
+                color: 'green',
+                title: 'Успех',
+                message: 'Пользователь успешно обновлен',
+            })
             close();
+        },
+        onError: (error) => {
+            notifications.show({
+                color: 'red',
+                title: 'Ошибка',
+                message: error.response?.data?.message || 'Не удалось обновить пользователя',
+            })
         }
     })
 
     useEffect(() => {
         if (user) {
+            initialUserRef.current = user;
+
             reset({
                 email: user.email,
                 roles: user.userRoles.map(userRole => userRole.role?.value)
             });
         }
+
     }, [user])
 
     const onSubmit: SubmitHandler<IUpdateUserForm> = async (data) => {
+        if (!isChangend(data, initialUserRef.current)) {
+            notifications.show({
+                color: 'orange',
+                title: 'Внимание',
+                message: 'Данные не были изменены',
+            })
+            return;
+        }
+
         updateUserMutation.mutate(data);
     }
 
