@@ -1,15 +1,16 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { FiltersUsersDto } from './dto/filters-users.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
   @Get()
-  async getAll() {
-    return await this.usersService.getAll();
+  async getAll(@Query() query: FiltersUsersDto) {
+    return await this.usersService.getAll(query);
   }
 
   @Post()

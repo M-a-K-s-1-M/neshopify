@@ -1,18 +1,66 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, User } from 'generated/prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { TokenService } from '../tokens/token.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { FiltersUsersDto } from './dto/filters-users.dto';
 
 @Injectable()
 export class UsersService {
     constructor(private readonly prisma: PrismaService,
         private readonly tokenService: TokenService) { }
 
-    async getAll() {
-        return await this.prisma.user.findMany({ omit: { passwordHash: true }, include: { userRoles: { include: { role: true } } } });
+    async getAll(filters: FiltersUsersDto) {
+        const { search, roles, banned, page, limit, sortBy, order } = filters;
+
+        const pageNum = Number(page) || 1;
+        const take = Number(limit) || 20;
+
+        const skip = (pageNum - 1) * take;
+
+        const where: any = {};
+
+        if (search) {
+            where.OR = [
+                { email: { contains: search, mode: 'insensitive' } },
+            ]
+        }
+
+        if (banned !== undefined) {
+            where.banned = banned === 'true';
+        }
+
+        if (roles?.length) {
+            where.userRoles = {
+                some: {
+                    role: {
+                        value: { in: roles }
+                    }
+                }
+            }
+        }
+
+        const total = await this.prisma.user.count({ where });
+
+        const users = await this.prisma.user.findMany({
+            where,
+            skip,
+            take,
+            orderBy: {
+                [sortBy || 'createdAt']: order || 'desc'
+            },
+            include: { userRoles: { include: { role: true } } },
+        });
+
+
+        return {
+            page: pageNum,
+            limit: take,
+            total,
+            pages: Math.ceil(total / take),
+            data: users,
+        }
     }
 
     async create(dto: CreateUserDto) {
