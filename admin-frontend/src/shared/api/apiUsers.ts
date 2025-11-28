@@ -1,23 +1,20 @@
 /* eslint-disable no-useless-catch */
-import axios from "axios";
-import { env } from "../config/env";
-import type { IUserRow } from "../mocks/users";
+import type { IUpdateUserForm } from "@/entities/user/models/IUpdateUserForm";
 import { $api } from "../config";
+import type { IAuthResponse } from "../models";
+import type { ICreateUserForm, IUser } from "@/entities/user";
 
-interface IUserFilters {
-    page?: number;
-    limit?: number;
-    search?: string;
-}
+export class UsersService {
+    static async getAll(): Promise<IUser[]> {
+        try {
+            const res = await $api.get('/users');
+            return res.data;
+        } catch (error) {
+            throw error;
+        }
+    }
 
-export const getUsers = async (filters?: IUserFilters): Promise<IUserRow[]> => {
-
-    const res = await axios.get(`${env.apiUrl('/users')}?${filters?.page ? `_page=${filters.page}&` : ''}${filters?.limit ? `_limit=${filters.limit}&` : ''}${filters?.search ? `_name=${filters.search}&_email=${filters.search}` : ''}`);
-    return res.data;
-}
-
-export default class UsersService {
-    static async create(data: { email: string; password: string; roles: string[] }) {
+    static async create(data: ICreateUserForm): Promise<IAuthResponse> {
         try {
             const res = await $api.post(`/users`, data);
             return res.data;
@@ -25,4 +22,26 @@ export default class UsersService {
             throw error;
         }
     }
+
+
+
+    static async update(userId: string, data: IUpdateUserForm) {
+        try {
+            const res = await $api.patch(`/users`, { id: userId, ...data });
+            return res.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getById(userId: string): Promise<IUser> {
+        try {
+            const res = await $api.get(`/users/${userId}`);
+            return res.data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+
 }

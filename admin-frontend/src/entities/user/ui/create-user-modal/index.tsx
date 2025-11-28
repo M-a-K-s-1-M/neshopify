@@ -1,38 +1,25 @@
-import { CustomModal } from "@/shared";
-import UsersService from "@/shared/api/apiUsers";
+import { CustomModal, } from "@/shared";
+import { UsersService } from "@/shared";
 import { Button, Group, Input, MultiSelect, PasswordInput, Skeleton } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-import { Controller, useForm, type SubmitHandler } from "react-hook-form";
-
-interface ICreateUserForm {
-    email: string;
-    password: string;
-    roles: string[];
-}
+import { Controller, type SubmitHandler } from "react-hook-form";
+import type { ICreateUserForm } from '../../models';
+import { useUserForm } from "../../hooks";
 
 export function CreateUserModal({ opened, close }: { opened: boolean; close: () => void }) {
 
-    const { data, isPending, isError } = useQuery({
-        queryKey: ['roles'],
-        queryFn: async () => {
-            const response = await axios.get('http://localhost:5000/api/roles');
-            return response.data;
-        }
-    });
-
-    const arrRoles = data ? data.map((role: { id: string; value: string }) => role.value) : [];
-
-    const { register, handleSubmit, formState, control } = useForm<ICreateUserForm>({
-        mode: 'onSubmit',
-    })
-
-    const emailError = formState.errors.email?.message;
-    const passwordError = formState.errors.password?.message;
+    const {
+        arrRoles,
+        control,
+        register,
+        handleSubmit,
+        emailError,
+        passwordError,
+        isPending,
+        isError,
+    } = useUserForm<ICreateUserForm>();
 
     const onSubmit: SubmitHandler<ICreateUserForm> = async (data) => {
         const res = await UsersService.create(data)
-        // const res = await axios.post('http://localhost:5000/api/users', data);
         return res;
     }
 
