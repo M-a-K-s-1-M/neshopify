@@ -1,10 +1,10 @@
 import { Table, Checkbox, Pagination, Group, Avatar, Box, Text, Badge, ActionIcon, Skeleton, Stack } from '@mantine/core';
-import { IconEye, IconTrash } from '@tabler/icons-react';
+import { IconEye } from '@tabler/icons-react';
 import './sytels.scss';
 import { useQuery } from '@tanstack/react-query';
 import { useTable } from '@/shared/hooks';
 import { UsersService } from '@/shared';
-import { EditUserIcon } from '@/features';
+import { DeleteUserIcon, EditUserIcon } from '@/features';
 
 // Заголовки (кроме колонки чекбокса). Используем для вычисления colSpan футера.
 const tableHeadings = ['Пользователь', 'Email', 'Роль', 'Статус', 'Последний вход', 'Действия'];
@@ -78,9 +78,7 @@ export function UsersTable() {
 
                     <EditUserIcon user={user} />
 
-                    <ActionIcon>
-                        <IconTrash />
-                    </ActionIcon>
+                    <DeleteUserIcon user={user} />
                 </Group>
             </Table.Td>
         </Table.Tr>

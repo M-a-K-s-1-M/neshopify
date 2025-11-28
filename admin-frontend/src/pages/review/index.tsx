@@ -7,7 +7,7 @@ import { UsersTableMini } from "@/entities";
 
 export function Review() {
     return (
-        <Box component="div" p={'xl'} bg={'white'}>
+        <Box component="div" p={'xl'}>
             <Text fz={'2xl'} fw={700} mb={'md'}>Обзор</Text>
 
             <Box component="div" mb={'2xl'}>
