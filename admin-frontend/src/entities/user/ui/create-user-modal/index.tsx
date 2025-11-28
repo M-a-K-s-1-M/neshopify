@@ -4,8 +4,11 @@ import { Button, Group, Input, MultiSelect, PasswordInput, Skeleton } from "@man
 import { Controller, type SubmitHandler } from "react-hook-form";
 import type { ICreateUserForm } from '../../models';
 import { useUserForm } from "../../hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { notifications } from "@mantine/notifications";
 
 export function CreateUserModal({ opened, close }: { opened: boolean; close: () => void }) {
+    const queryClient = useQueryClient();
 
     const {
         arrRoles,
@@ -16,11 +19,34 @@ export function CreateUserModal({ opened, close }: { opened: boolean; close: () 
         passwordError,
         isPending,
         isError,
+        reset,
     } = useUserForm<ICreateUserForm>();
 
+    const createUserMutation = useMutation({
+        mutationFn: async (data: ICreateUserForm) => {
+            return await UsersService.create(data);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users-table'] });
+            notifications.show({
+                color: 'green',
+                title: 'Успех',
+                message: 'Пользователь успешно создан',
+            })
+            reset();
+            close();
+        },
+        onError: (error) => {
+            notifications.show({
+                color: 'red',
+                title: 'Ошибка',
+                message: error.response?.data?.message || 'Не удалось создать пользователя',
+            })
+        }
+    })
+
     const onSubmit: SubmitHandler<ICreateUserForm> = async (data) => {
-        const res = await UsersService.create(data)
-        return res;
+        createUserMutation.mutate(data);
     }
 
     return (

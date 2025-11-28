@@ -1,7 +1,8 @@
-import { AddDomain, DomainsTableMini } from "@/features/domain";
-import { AddUser, SearchUsers, UsersTableMini } from "@/features/user";
+import { AddDomain, DomainsTableMini } from "@/features";
+import { AddUser, SearchUsers } from "@/features";
 import { Box, Flex, Group, Text } from "@mantine/core";
-import { ReviewAnalytics } from "@/widgets/site-analytics-block";
+import { ReviewAnalytics } from "@/widgets";
+import { UsersTableMini } from "@/entities";
 
 
 export function Review() {
