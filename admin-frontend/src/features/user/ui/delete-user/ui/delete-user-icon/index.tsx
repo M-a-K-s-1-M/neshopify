@@ -24,7 +24,7 @@ export function DeleteUserIcon({ user }: { user: IUser }) {
         onError: (error) => {
             notifications.show({
                 title: 'Ошибка',
-                message: error.response?.data?.message || `Не удалось удалить пользователя ${user.email}.`,
+                message: error.response?.data?.message ?? `Не удалось удалить пользователя ${user.email}.`,
                 color: 'red',
             })
         },
