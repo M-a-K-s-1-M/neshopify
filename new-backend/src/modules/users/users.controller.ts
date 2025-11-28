@@ -37,6 +37,22 @@ export class UsersController {
     return await this.usersService.update(id, dto);
   }
 
+  @Patch('ban/:id')
+  async ban(@Param('id') id: string) {
+    const candidate = await this.usersService.getById(id);
+    if (!candidate) throw new HttpException('Такого пользователя не существует', HttpStatus.NOT_FOUND);
+
+    return await this.usersService.ban(id);
+  }
+
+  @Patch('unban/:id')
+  async unban(@Param('id') id: string) {
+    const candidate = await this.usersService.getById(id);
+    if (!candidate) throw new HttpException('Такого пользователя не существует', HttpStatus.NOT_FOUND);
+
+    return await this.usersService.unban(id);
+  }
+
   @Delete(':id')
   async deleteById(@Param('id') id: string) {
     const candidate = await this.getById(id);
