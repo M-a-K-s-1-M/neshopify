@@ -43,7 +43,7 @@ export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-m
             if (selectedIds.includes(entitiesId)) {
                 const newSelectedIds = selectedIds.filter(id => id !== entitiesId);
                 if (newSelectedIds.length > 0) {
-                    newParams.set(`${prefix}-selected-ids`, newSelectedIds.join(',')); S
+                    newParams.set(`${prefix}-selected-ids`, newSelectedIds.join(','));
                     return newParams;
                 } else {
                     newParams.delete(`${prefix}-selected-ids`);
