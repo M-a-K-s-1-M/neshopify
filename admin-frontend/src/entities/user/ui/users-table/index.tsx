@@ -16,7 +16,7 @@ export function UsersTable() {
         isCheckedAll, isIndeterminate
     } = useTable('users');
 
-    const { data: users, isPending, isError } = useQuery({
+    const { data, isPending, isError } = useQuery({
         queryKey: ['users-table', search],
         queryFn: async () => await UsersService.getAll(),
     });
@@ -29,7 +29,7 @@ export function UsersTable() {
         return <div>Ошибка загрузки пользователей</div>;
     }
 
-    const rows = users.slice(pageStart, pageEnd).map((user) => (
+    const rows = data.users.slice(pageStart, pageEnd).map((user) => (
         <Table.Tr
             key={user.id}
             bg={selectedIds.includes(user.id) ? 'var(--mantine-color-blue-light)' : undefined}
@@ -92,9 +92,9 @@ export function UsersTable() {
                         <Table.Th>
                             <Checkbox
                                 aria-label="Select all rows"
-                                checked={isCheckedAll(users)}
-                                indeterminate={isIndeterminate(users)}
-                                onChange={(e) => onChangeCeckboxAll(e, users)}
+                                checked={isCheckedAll(data.users)}
+                                indeterminate={isIndeterminate(data.users)}
+                                onChange={(e) => onChangeCeckboxAll(e, data.users)}
                             />
                         </Table.Th>
                         {tableHeadings.map(h => <Table.Th key={h}>{h}</Table.Th>)}
@@ -108,8 +108,8 @@ export function UsersTable() {
                         {/* +1 за колонку чекбокса */}
                         <Table.Td colSpan={tableHeadings.length + 1} >
                             <Group justify='space-between' p={'sm'}>
-                                <Text size='lg' fw={500}>{selectedIds.length ?? 0}/{users.length}</Text>
-                                <Pagination total={Math.ceil(users.length / limit)} value={page} onChange={e => onChangePagination(e)} />
+                                <Text size='lg' fw={500}>{selectedIds.length ?? 0}/{data.users.length}</Text>
+                                <Pagination total={Math.ceil(data.users.length / limit)} value={page} onChange={e => onChangePagination(e)} />
                             </Group>
                         </Table.Td>
                     </Table.Tr>

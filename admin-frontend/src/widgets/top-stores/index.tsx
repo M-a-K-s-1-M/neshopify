@@ -11,7 +11,7 @@ export function TopStores() {
                 </Accordion.Control>
                 <Accordion.Panel>
                     {topStoresMock.map(store => (
-                        <Flex wrap={'wrap'} gap='xs' justify={'space-between'} align={'center'} p={'xs'}>
+                        <Flex key={store.id} wrap={'wrap'} gap='xs' justify={'space-between'} align={'center'} p={'xs'}>
                             <Group gap={'xs'} wrap="nowrap">
                                 <Avatar />
                                 <Stack gap={0}>

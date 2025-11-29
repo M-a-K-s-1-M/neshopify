@@ -14,7 +14,7 @@ export function UsersTableMini() {
         onChangePagination,
     } = useTable('users-mini');
 
-    const { data: users, isPending, isError } = useQuery({
+    const { data, isPending, isError } = useQuery({
         queryKey: ['users-mini-table', search],
         queryFn: async () => await UsersService.getAll(),
     });
@@ -53,7 +53,7 @@ export function UsersTableMini() {
                 </Table.Thead>
 
                 <Table.Tbody>
-                    {users?.slice(pageStart, pageEnd).map(user =>
+                    {data.users?.slice(pageStart, pageEnd).map(user =>
                         <Table.Tr key={user.id}>
                             <Table.Td>
                                 <Group >
@@ -93,7 +93,7 @@ export function UsersTableMini() {
                         <Table.Td colSpan={tableHeading.length} >
                             <Group justify='center' p={'sm'}>
                                 <Pagination
-                                    total={Math.ceil((users?.length || 0) / limit)}
+                                    total={Math.ceil((data.users?.length || 0) / limit)}
                                     value={page}
                                     onChange={e => onChangePagination(e)}
                                 />

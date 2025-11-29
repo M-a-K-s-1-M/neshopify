@@ -11,7 +11,7 @@ export function LastTransactions() {
                 </Accordion.Control>
                 <Accordion.Panel>
                     {lastTransactionsMock.map(transaction => (
-                        <Flex wrap={'wrap'} gap='xs' justify={'space-between'} align={'center'} p={'xs'}>
+                        <Flex key={transaction.id} wrap={'wrap'} gap='xs' justify={'space-between'} align={'center'} p={'xs'}>
                             <Group gap={'xs'} wrap="nowrap">
                                 <Stack gap={0}>
                                     <Text fw={500}>{transaction.description}</Text>

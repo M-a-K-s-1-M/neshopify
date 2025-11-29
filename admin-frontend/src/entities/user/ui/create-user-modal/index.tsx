@@ -104,7 +104,10 @@ export function CreateUserModal({ opened, close }: { opened: boolean; close: () 
                 <Group justify="space-between" mt={50}>
                     <Button variant="transparent" mt="md" onClick={close}>Отмена</Button>
 
-                    <Button type="submit" mt="md">Создать пользователя</Button>
+                    <Group>
+                        <Button variant="default" mt="md" onClick={() => { reset({ email: '', password: '', roles: [] }) }}>Очистить</Button>
+                        <Button type="submit" mt="md">Создать пользователя</Button>
+                    </Group>
                 </Group>
             </form>
         </CustomModal>
