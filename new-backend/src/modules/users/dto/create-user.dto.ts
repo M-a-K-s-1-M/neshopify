@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Length } from 'class-validator';
+import { IsArray, IsEmail, IsString, Length } from 'class-validator';
 export class CreateUserDto {
 
     @IsString({ message: 'Email должен быть строкой' })
@@ -9,6 +9,6 @@ export class CreateUserDto {
     @Length(6, 20, { message: 'Пароль должен быть от 6 до 20 символов' })
     readonly password: string;
 
-    @IsString({ message: 'Роли должны быть строками' })
+    @IsArray({ message: 'Роли должны быть массивом строк' })
     readonly roles: string[];
 }
