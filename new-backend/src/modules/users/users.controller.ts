@@ -35,6 +35,8 @@ export class UsersController {
 
   @Patch()
   async update(@Body('id') id: string, @Body() dto: UpdateUserDto) {
+    const candidate = await this.usersService.getById(id);
+    if (!candidate) throw new HttpException('Такого пользователя не существует', HttpStatus.NOT_FOUND);
     return await this.usersService.update(id, dto);
   }
 
