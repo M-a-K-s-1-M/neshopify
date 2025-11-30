@@ -28,7 +28,7 @@ export class UsersService {
         }
 
         if (banned !== undefined) {
-            where.banned = banned === 'true';
+            where.banned = banned === 'true' ? true : false;
         }
 
         if (roles?.length) {
