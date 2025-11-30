@@ -36,6 +36,12 @@ export class UsersController {
   @Patch()
   async update(@Body('id') id: string, @Body() dto: UpdateUserDto) {
     const candidate = await this.usersService.getById(id);
+    const isUniqueEmail = await this.usersService.getByEmail(dto.email);
+
+    if (isUniqueEmail && isUniqueEmail.id !== id) {
+      throw new HttpException('Пользователь с таким email уже существует', HttpStatus.BAD_REQUEST);
+    }
+
     if (!candidate) throw new HttpException('Такого пользователя не существует', HttpStatus.NOT_FOUND);
     return await this.usersService.update(id, dto);
   }

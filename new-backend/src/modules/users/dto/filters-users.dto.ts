@@ -17,6 +17,7 @@ export class FiltersUsersDto {
     roles?: string[];
 
     @IsOptional()
+    @Transform(({ value }) => value === '' ? undefined : value)
     @IsBooleanString()
     banned?: string;
 
