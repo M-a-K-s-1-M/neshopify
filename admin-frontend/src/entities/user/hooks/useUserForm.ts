@@ -2,16 +2,21 @@ import { RolesService } from "@/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import type { ICreateUserForm, IUser } from "../models";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { IUpdateUserForm } from "../models/IUpdateUserForm";
 
 export const useUserForm = <T extends ICreateUserForm | IUpdateUserForm>() => {
     const { data, isPending, isError } = useQuery({
         queryKey: ['roles'],
         queryFn: async () => {
-            const response = await RolesService.getAll();
-            return response.data;
-        }
+            // const response = await RolesService.getAll();
+            // return response.data;
+            return await RolesService.getAll();
+        },
+        refetchOnWindowFocus: true,
+        refetchIntervalInBackground: false,
+        refetchOnReconnect: true,
+
     });
 
     const [isCurrentPassword, setIsCurrentPassword] = useState(true);

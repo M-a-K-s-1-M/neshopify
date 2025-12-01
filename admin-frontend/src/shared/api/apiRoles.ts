@@ -7,7 +7,7 @@ export class RolesService {
     static async getAll(): Promise<AxiosResponse<IRole[]>> {
         try {
             const res = await $api.get('/roles');
-            return res;
+            return res.data;
         } catch (error) {
             throw error;
         }
