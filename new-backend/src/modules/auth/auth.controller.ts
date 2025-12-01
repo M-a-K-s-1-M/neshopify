@@ -51,4 +51,16 @@ export class AuthController {
 
     return { accessToken, user };
   }
+
+  @Post('login-admin')
+  async loginAdmin(@Body() dto: RegistrationUserDto, @Res({ passthrough: true }) res: Response) {
+    const { accessToken, refreshToken, user } = await this.authService.loginAdmin(dto.email, dto.password);
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    return { accessToken, user };
+  }
 }

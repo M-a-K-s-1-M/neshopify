@@ -93,4 +93,26 @@ export class AuthService {
 
         return { ...tokens, user };
     }
+
+    async loginAdmin(email: string, password: string) {
+        const adminCandidate = await this.prisma.user.findUnique({
+            where: { email },
+            include: { userRoles: { include: { role: true } } },
+            omit: { passwordHash: false }
+        })
+
+        if (!adminCandidate) throw new UnauthorizedException('Администратора с таким email не существует');
+
+        if (!adminCandidate.userRoles.some(userRole => userRole.role.value === 'ADMIN')) throw new UnauthorizedException('Недостаточно прав, требуется роль ADMIN');
+
+        const comparePasswords = await bcrypt.compare(password, adminCandidate.passwordHash);
+
+        if (!comparePasswords) throw new UnauthorizedException('Неверный пароль');
+
+        const tokens = await this.tokenService.generateTokens({ ...adminCandidate })
+
+        await this.tokenService.saveToken(adminCandidate.id, tokens.refreshToken);
+
+        return { ...tokens, user: adminCandidate };
+    }
 }
