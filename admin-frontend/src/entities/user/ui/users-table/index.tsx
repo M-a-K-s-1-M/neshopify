@@ -1,44 +1,63 @@
-import { Table, Checkbox, Pagination, Group, Avatar, Box, Text, Badge, ActionIcon, Skeleton, Stack } from '@mantine/core';
-import { IconEye } from '@tabler/icons-react';
+import { DeleteUserIcon, EditUserIcon } from "@/features";
+import { BlockErrorTable, UsersService } from "@/shared";
+import { ActionIcon, Avatar, Badge, Box, Checkbox, Group, Pagination, Skeleton, Stack, Table, Text } from "@mantine/core";
+import { IconEye } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
+import { useUsersFilters } from "../../hooks";
 import './sytels.scss';
-import { useQuery } from '@tanstack/react-query';
-import { useTable } from '@/shared/hooks';
-import { UsersService } from '@/shared';
-import { DeleteUserIcon, EditUserIcon } from '@/features';
 
-// Заголовки (кроме колонки чекбокса). Используем для вычисления colSpan футера.
 const tableHeadings = ['Пользователь', 'Email', 'Роль', 'Статус', 'Последний вход', 'Действия'];
 
 export function UsersTable() {
-    const { page, limit, selectedIds,
-        search, pageStart, pageEnd,
-        onChangePagination, onChangeCeckbox, onChangeCeckboxAll,
-        isCheckedAll, isIndeterminate
-    } = useTable('users');
+
+    const { page,
+        limit,
+        search,
+        rolesInString,
+        banned,
+        bannedBoolean,
+        selectedIdsArray,
+        toggleAll,
+        isCheckedAll,
+        isIndeterminate,
+        update
+    } = useUsersFilters();
 
     const { data, isPending, isError } = useQuery({
-        queryKey: ['users-table', search],
-        queryFn: async () => await UsersService.getAll(),
+        queryKey: ["users-table", page, limit, search, rolesInString, banned],
+        queryFn: () => UsersService.getAll({
+            page,
+            limit,
+            search: search || undefined,
+            roles: rolesInString || undefined,
+            banned: bannedBoolean, // undefined | true | false
+        }),
+        // пока загружаются новые данные — показываем предыдущие (placeholder)
+        placeholderData: (prev) => prev,
+        refetchOnReconnect: true,
+        refetchOnWindowFocus: true,
     });
+
 
     if (isPending) {
         return <Skeleton height={400} radius="md" />;
     }
 
-    if (isError) {
-        return <div>Ошибка загрузки пользователей</div>;
+    if (isError || !data) {
+        return <BlockErrorTable message='Ошибка загрузки пользователей' />
     }
 
-    const rows = data.users.slice(pageStart, pageEnd).map((user) => (
+
+    const rows = data.users.map((user) => (
         <Table.Tr
             key={user.id}
-            bg={selectedIds.includes(user.id) ? 'var(--mantine-color-blue-light)' : undefined}
+            bg={selectedIdsArray.includes(user.id) ? 'var(--mantine-color-blue-light)' : undefined}
         >
             <Table.Td>
                 <Checkbox
                     aria-label="Select row"
-                    checked={selectedIds.includes(user.id)}
-                    onChange={() => onChangeCeckbox(user.id)}
+                    checked={selectedIdsArray.includes(user.id)}
+                    onChange={() => update('selectedIds', selectedIdsArray.includes(user.id) ? selectedIdsArray.filter(id => id !== user.id).join(',') : [...selectedIdsArray, user.id].join(','))}
                 />
             </Table.Td>
 
@@ -58,7 +77,7 @@ export function UsersTable() {
 
             <Table.Td w={150}>
                 <Stack>
-                    {user.userRoles.map((userRole, i) => <Badge key={i} color='background'>{userRole.role?.value}</Badge>)}
+                    {user.userRoles.map((userRole) => <Badge key={userRole.roleId} color='background'>{userRole.role?.value}</Badge>)}
                 </Stack>
             </Table.Td>
 
@@ -94,7 +113,7 @@ export function UsersTable() {
                                 aria-label="Select all rows"
                                 checked={isCheckedAll(data.users)}
                                 indeterminate={isIndeterminate(data.users)}
-                                onChange={(e) => onChangeCeckboxAll(e, data.users)}
+                                onChange={(e) => toggleAll(e.target.checked, data.users)}
                             />
                         </Table.Th>
                         {tableHeadings.map(h => <Table.Th key={h}>{h}</Table.Th>)}
@@ -108,8 +127,18 @@ export function UsersTable() {
                         {/* +1 за колонку чекбокса */}
                         <Table.Td colSpan={tableHeadings.length + 1} >
                             <Group justify='space-between' p={'sm'}>
-                                <Text size='lg' fw={500}>{selectedIds.length ?? 0}/{data.users.length}</Text>
-                                <Pagination total={Math.ceil(data.users.length / limit)} value={page} onChange={e => onChangePagination(e)} />
+                                <Text
+                                    size='lg'
+                                    fw={500}
+                                >
+                                    {selectedIdsArray.length ?? 0}/{data.total}
+                                </Text>
+
+                                <Pagination
+                                    total={data.pages}
+                                    value={page}
+                                    onChange={e => update('page', e)}
+                                />
                             </Group>
                         </Table.Td>
                     </Table.Tr>

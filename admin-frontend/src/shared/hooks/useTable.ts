@@ -1,20 +1,43 @@
 import { useSearchParams } from 'react-router-dom';
 import type { IDomainRow } from '../mocks/domains';
 import type { IUser } from '@/entities/user';
+import { useEffect, useRef } from 'react';
 
 export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-mini') => {
     const [searchParams, setSearchParams] = useSearchParams();
+
     const page: number = searchParams.get(`${prefix}-table-page`) ? Number(searchParams.get(`${prefix}-table-page`)) : 1;
     const limit: number = 5;
 
-    const pageStart: number = (page - 1) * limit;
-    const pageEnd: number = pageStart + limit;
+    const roles = searchParams.get(`users-roles`) ?? undefined;
+
+    const bannedParam = searchParams.get(`users-banned`);
+    const banned = bannedParam === 'true' ? true : bannedParam === "false" ? false : undefined;
 
     const selectedIds: string[] = searchParams.get(`${prefix}-selected-ids`) ?
         searchParams.get(`${prefix}-selected-ids`)!.split(`,`).filter(Boolean)
         : [];
 
-    const search: string = searchParams.get(`${prefix}-search`) ?? ``;
+    const search: string | undefined = searchParams.get(`${prefix}-search`) ?? undefined;
+
+    // const prevFilters = useRef({ search, roles, banned });
+
+    // useEffect(() => {
+    //     const prev = prevFilters.current;
+
+    //     const filtersChanged =
+    //         prev.search !== search ||
+    //         prev.roles !== roles ||
+    //         prev.banned !== banned;
+
+    //     if (filtersChanged) {
+    //         setSearchParams(searchParamsk => {
+    //             const params = new URLSearchParams(searchParamsk);
+    //             params.set(`${prefix}-table-page`, '1');
+    //             return params;
+    //         });
+    //     }
+    // })
 
     const onChangePagination = (e: number) => {
         setSearchParams(prev => {
@@ -74,10 +97,10 @@ export const useTable = (prefix: 'users' | 'domains' | 'users-mini' | 'domains-m
     }
 
     return {
+        roles,
+        banned,
         page,
         limit,
-        pageStart,
-        pageEnd,
         search,
         selectedIds,
         onChangePagination,

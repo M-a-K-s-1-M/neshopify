@@ -2,21 +2,27 @@ import { Avatar, Badge, Box, Group, Table, Text, Pagination, Skeleton } from "@m
 import './styles.scss';
 import { useQuery } from "@tanstack/react-query";
 import { useTable } from "@/shared/hooks";
-import { UsersService } from "@/shared";
+import { BlockErrorTable, UsersService } from "@/shared";
 import { BannedUserButton, EditUserButton, UnbannedUserButton } from "@/features";
 
 const tableHeading: string[] = ['Пользователь', 'Сайтов', 'Статус', 'Действия']
 
 
 export function UsersTableMini() {
-    const { page, limit,
-        search, pageStart, pageEnd,
+    const {
+        page,
+        limit,
+        search,
         onChangePagination,
     } = useTable('users-mini');
 
     const { data, isPending, isError } = useQuery({
-        queryKey: ['users-mini-table', search],
-        queryFn: async () => await UsersService.getAll(),
+        queryKey: ['users-mini-table', page, search],
+        queryFn: async () => await UsersService.getAll({ limit, page, search }),
+        placeholderData: (prev) => prev,
+        refetchOnReconnect: true,
+        refetchIntervalInBackground: false,
+        refetchOnWindowFocus: true,
     });
 
     if (isPending) {
@@ -24,7 +30,7 @@ export function UsersTableMini() {
     }
 
     if (isError) {
-        return <div>Ошибка загрузки пользователей</div>;
+        return <BlockErrorTable message='Ошибка загрузки пользователей' />
     }
 
     return (
@@ -53,7 +59,7 @@ export function UsersTableMini() {
                 </Table.Thead>
 
                 <Table.Tbody>
-                    {data.users?.slice(pageStart, pageEnd).map(user =>
+                    {data.users.map(user =>
                         <Table.Tr key={user.id}>
                             <Table.Td>
                                 <Group >
@@ -93,7 +99,7 @@ export function UsersTableMini() {
                         <Table.Td colSpan={tableHeading.length} >
                             <Group justify='center' p={'sm'}>
                                 <Pagination
-                                    total={Math.ceil((data.users?.length || 0) / limit)}
+                                    total={data.pages}
                                     value={page}
                                     onChange={e => onChangePagination(e)}
                                 />

@@ -9,6 +9,7 @@ export function DomainsTableWithSerachAndEdit() {
             </Box>
 
             <DomainsTable />
+
         </Box>
     )
 }

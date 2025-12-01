@@ -28,7 +28,7 @@ export function CreateUserModal({ opened, close }: { opened: boolean; close: () 
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users-table'] });
-            queryClient.invalidateQueries({ queryKey: ['user-table-mini'] });
+            queryClient.invalidateQueries({ queryKey: ['users-mini-table'] });
 
             notifications.show({
                 color: 'green',

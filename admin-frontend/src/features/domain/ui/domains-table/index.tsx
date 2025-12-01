@@ -1,5 +1,5 @@
 import { useTable } from "@/shared/hooks/useTable";
-import { getDomains } from "@/shared";
+import { BlockErrorTable, getDomains } from "@/shared";
 import { Table, Checkbox, Group, Avatar, Box, Text, Badge, Pagination, ActionIcon, Skeleton } from "@mantine/core";
 import { IconEdit, IconTrash, IconSettings } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ export function DomainsTable() {
     } = useTable('domains');
 
     const { data: domains, isPending, isError } = useQuery({
-        queryKey: ['users-table', search],
+        queryKey: ['domains-table', search],
         queryFn: () => getDomains({ search }),
     });
 
@@ -23,7 +23,7 @@ export function DomainsTable() {
     }
 
     if (isError) {
-        return <div>Ошибка загрузки доменов</div>;
+        return <BlockErrorTable message="Ошибка загрузки доменов" />
     }
 
     const rows = domains?.slice(pageStart, pageEnd).map((domain) => (

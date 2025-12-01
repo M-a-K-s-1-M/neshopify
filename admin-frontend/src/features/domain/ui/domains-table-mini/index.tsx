@@ -1,9 +1,9 @@
-import { Badge, Button, Group, Pagination, Skeleton, Table, Text } from "@mantine/core";
+import { Badge, Box, Button, Flex, Group, Pagination, Skeleton, Table, Text } from "@mantine/core";
 import { format } from 'date-fns';
 import './styles.scss';
 import { useTable } from "@/shared/hooks";
 import { useQuery } from "@tanstack/react-query";
-import { getDomains } from "@/shared";
+import { BlockErrorTable, getDomains } from "@/shared";
 
 const tableHeading: string[] = ['Домен', 'Владелец', 'Статус', 'Истекает', 'Действия']
 
@@ -11,7 +11,7 @@ export function DomainsTableMini() {
     const { page, limit, pageEnd, pageStart, onChangePagination } = useTable('domains-mini')
 
     const { data: domains, isPending, isError } = useQuery({
-        queryKey: ['domains-mini'],
+        queryKey: ['domains-mini-table'],
         queryFn: () => getDomains(),
     })
 
@@ -20,7 +20,7 @@ export function DomainsTableMini() {
     }
 
     if (isError) {
-        return <div>Ошибка загрузки доменов</div>;
+        return <BlockErrorTable message="Ошибка загрузки доменов" />;
     }
 
     return (

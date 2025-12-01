@@ -1,13 +1,12 @@
 /* eslint-disable no-useless-catch */
-import type { IUpdateUserForm } from "@/entities/user/models/IUpdateUserForm";
 import { $api } from "../config";
 import type { IAuthResponse, IGetUsersResponse } from "../models";
-import type { ICreateUserForm, IUser } from "@/entities/user";
+import type { ICreateUserForm, IFiltersUsersTable, IUser, IUpdateUserForm } from "@/entities";
 
 export class UsersService {
-    static async getAll(): Promise<IGetUsersResponse> {
+    static async getAll(params: IFiltersUsersTable): Promise<IGetUsersResponse> {
         try {
-            const res = await $api.get('/users');
+            const res = await $api.get('/users', { params });
             return res.data;
         } catch (error) {
             throw error;
