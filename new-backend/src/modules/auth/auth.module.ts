@@ -5,15 +5,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { TokenModule } from '../tokens/token.module';
-import { RolesModule } from '../roles/roles.module';
-import { UsersModule } from '../users/users.module';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
-    RolesModule,
+    PassportModule,
     JwtModule,
     TokenModule,
-    forwardRef(() => UsersModule)
   ],
   controllers: [AuthController],
   providers: [
