@@ -1,6 +1,10 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { RolesService } from './roles.service';
-
+import { Roles } from 'src/common/decorators/roles-auth.decorator';
+import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+@Roles('ADMIN')
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) { }
