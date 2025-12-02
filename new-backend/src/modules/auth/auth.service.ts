@@ -2,7 +2,6 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { TokenService } from '../tokens/token.service';
-import { Prisma } from 'generated/prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -114,5 +113,21 @@ export class AuthService {
         await this.tokenService.saveToken(adminCandidate.id, tokens.refreshToken);
 
         return { ...tokens, user: adminCandidate };
+    }
+
+    async validateUser(email: string, password: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+            omit: { passwordHash: false }
+        });
+        if (user) {
+            const passwordValid = await bcrypt.compare(password, user.passwordHash);
+
+            if (passwordValid) {
+                return user;
+            }
+        }
+
+        throw new UnauthorizedException('Пользователя с таким email не существует');
     }
 }
