@@ -5,8 +5,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { FiltersUsersDto } from './dto/filters-users.dto';
 import { Roles } from 'src/common/decorators/roles-auth.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
-
-// @UseGuards(JwtAuthGuard)
+import { RolesGuard } from 'src/common/guards/roles.guard';
+@Roles("ADMIN")
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
