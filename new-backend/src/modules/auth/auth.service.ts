@@ -1,161 +1,133 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { TokenService } from '../tokens/token.service';
-import { UsersService } from '../users/users.service';
+import {
+    Injectable,
+    UnauthorizedException,
+    BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "src/prisma/prisma.service";
+import bcrypt from "bcrypt";
+import { JwtService } from "@nestjs/jwt";
+import { RegisterDto } from "./dto/register.dto";
+import { LoginDto } from "./dto/login.dto";
+import { JwtPayload } from "./interfaces/jwt-payload";
 
 @Injectable()
 export class AuthService {
-
     constructor(
-        private tokenService: TokenService,
         private prisma: PrismaService,
-        private usersService: UsersService) { }
+        private jwt: JwtService
+    ) { }
 
-    async login(email: string, password: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { email },
-            include: {
-                userRoles: {
-                    include: { role: true }
-                }
-            },
-            omit: { passwordHash: false }
+    // Генерация двух токенов
+    generateTokens(payload: JwtPayload) {
+        const accessToken = this.jwt.sign(payload, {
+            secret: process.env.JWT_ACCESS_SECRET,
+            expiresIn: "15m",
         });
-        if (!user) throw new UnauthorizedException('Пользователя с таким email не существует');
 
-        const comparePasswords = await bcrypt.compare(password, user.passwordHash);
-        if (!comparePasswords) throw new UnauthorizedException('Неверный пароль');
+        const refreshToken = this.jwt.sign(payload, {
+            secret: process.env.JWT_REFRESH_SECRET,
+            expiresIn: "30d",
+        });
 
-        const tokens = await this.tokenService.generateTokens({ ...user })
-
-        await this.tokenService.saveToken(user.id, tokens.refreshToken);
-
-        return { ...tokens, user };
+        return { accessToken, refreshToken };
     }
 
-    // ADMIN, SITE_OWNER, CUSTOMER  
-    async ragistration(email: string, password: string) {
-        const candidate = await this.prisma.user.findUnique({ where: { email } });
-        if (candidate) throw new BadRequestException('Пользователь с таким email уже существует');
+    // -------------------------------------
+    // REGISTRATION OF SITE OWNER
+    // -------------------------------------
+    async register(dto: RegisterDto) {
+        const exists = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
 
-        const passwordHash = await bcrypt.hash(password, 10);
+        if (exists) throw new BadRequestException("Email уже используется");
+
+        const hash = await bcrypt.hash(dto.password, 10);
 
         const user = await this.prisma.user.create({
             data: {
-                email,
-                passwordHash,
+                email: dto.email,
+                passwordHash: hash,
                 userRoles: {
                     create: {
-                        role: {
-                            connect: { value: 'SITE_OWNER' }
-                        }
-                    }
-                }
+                        role: { connect: { value: "SITE_OWNER" } },
+                    },
+                },
             },
-            include: {
-                userRoles:
-                    { include: { role: true } }
+            include: { userRoles: { include: { role: true } } },
+        });
+
+        const payload: JwtPayload = {
+            sub: user.id,
+            email: user.email,
+            roles: user.userRoles.map((r) => r.role.value),
+        };
+
+        return this.generateTokens(payload);
+    }
+
+    // -------------------------------------
+    // REGISTRATION OF CUSTOMER
+    // -------------------------------------
+    async registerCustomer(dto: RegisterDto, siteId: string) {
+        const hash = await bcrypt.hash(dto.password, 10);
+
+        const user = await this.prisma.user.create({
+            data: {
+                email: dto.email,
+                passwordHash: hash,
+                siteId,
+                userRoles: {
+                    create: {
+                        role: { connect: { value: "CUSTOMER" } },
+                    },
+                },
             },
-        })
+            include: { userRoles: { include: { role: true } } },
+        });
 
-        const tokens = await this.tokenService.generateTokens({ ...user })
-        await this.tokenService.saveToken(user.id, tokens.refreshToken);
+        const payload: JwtPayload = {
+            sub: user.id,
+            email: user.email,
+            roles: ["CUSTOMER"],
+            siteId,
+        };
 
-        return { ...tokens, user };
+        return this.generateTokens(payload);
     }
 
-    async logout(refreshToken: string) {
-        const token = await this.tokenService.removeToken(refreshToken);
-        return token;
-    }
-
-    async refresh(oldRefreshToken: string) {
-
-        // const token = await this.tokenService.removeToken(oldRefreshToken);
-
-        // let userData;
-        // try {
-        //     userData = await this.tokenService.validateRefreshToken(oldRefreshToken);
-
-        // } catch (e) {
-        //     throw new UnauthorizedException('Пользователь не авторизован');
-        // }
-
-        // if (!token) {
-        //     throw new UnauthorizedException('Пользователь не авторизован');
-        // }
-
-        // const user = await this.usersService.getById(token.userId);
-
-        // const tokens = await this.tokenService.generateTokens(user)
-
-        // return { ...tokens, user };
-
-        let userData;
-        try {
-            userData = await this.tokenService.validateRefreshToken(oldRefreshToken);
-
-        } catch (e) {
-            throw new UnauthorizedException('Пользователь не авторизован');
-        }
-
-        const refreshTokenFromDb = await this.prisma.token.findUnique({ where: { refreshToken: oldRefreshToken } });
-
-        if (!userData || !refreshTokenFromDb) {
-            throw new UnauthorizedException('Пользователь не авторизован');
-        }
-
-        const user = await this.prisma.user.findUnique({ where: { id: userData.id }, include: { userRoles: { include: { role: true } } } });
-        if (!user) {
-            throw new UnauthorizedException('Пользователь не авторизован');
-        }
-        const tokens = await this.tokenService.generateTokens({ ...user })
-        await this.tokenService.saveToken(user.id, tokens.refreshToken);
-
-        return { ...tokens, user };
-    }
-
-    async loginAdmin(email: string, password: string) {
-        const adminCandidate = await this.prisma.user.findUnique({
-            where: { email },
+    // -------------------------------------
+    // LOGIN FOR ALL ROLES
+    // -------------------------------------
+    async login(dto: LoginDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: dto.email },
             include: { userRoles: { include: { role: true } } },
             omit: { passwordHash: false }
-        })
+        });
 
-        if (!adminCandidate) throw new UnauthorizedException('Администратора с таким email не существует');
+        if (!user) throw new UnauthorizedException("Пользователь не найден");
 
+        const ok = await bcrypt.compare(dto.password, user.passwordHash);
+        if (!ok) throw new UnauthorizedException("Неверный пароль");
 
-        if (!adminCandidate.userRoles.some(userRole => userRole.role.value === 'ADMIN')) throw new UnauthorizedException('Недостаточно прав, требуется роль ADMIN');
+        const payload: JwtPayload = {
+            sub: user.id,
+            email: user.email,
+            roles: user.userRoles.map((r) => r.role.value),
+            siteId: user.siteId || undefined,
+        };
 
-        const comparePasswords = await bcrypt.compare(password, adminCandidate.passwordHash);
-
-        if (!comparePasswords) throw new UnauthorizedException('Неверный пароль');
-
-        const user = await this.usersService.getByEmail(email);
-
-        if (!user) throw new UnauthorizedException()
-
-        const tokens = await this.tokenService.generateTokens({ ...user })
-
-        await this.tokenService.saveToken(user.id, tokens.refreshToken);
-
-        return { ...tokens, user };
+        return this.generateTokens(payload);
     }
 
-    async validateUser(email: string, password: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { email },
-            omit: { passwordHash: false }
-        });
-        if (user) {
-            const passwordValid = await bcrypt.compare(password, user.passwordHash);
+    // -------------------------------------
+    // REFRESH TOKENS (ROTATING)
+    // -------------------------------------
+    async refresh(payload: JwtPayload) {
+        delete payload.iat;
+        delete payload.exp;
 
-            if (passwordValid) {
-                return user;
-            }
-        }
-
-        throw new UnauthorizedException('Пользователя с таким email не существует');
+        return this.generateTokens(payload);
     }
 }

@@ -3,11 +3,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FiltersUsersDto } from './dto/filters-users.dto';
-import { Roles } from 'src/common/decorators/roles-auth.decorator';
-import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
-import { RolesGuard } from 'src/common/guards/roles.guard';
-// @Roles("ADMIN")
-// @UseGuards(JwtAuthGuard, RolesGuard)
+
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
@@ -24,8 +20,8 @@ export class UsersController {
       throw new HttpException('Пользователь с таким email уже существует', HttpStatus.BAD_REQUEST);
     }
 
-    const { accessToken, user } = await this.usersService.create(dto);
-    return { accessToken, user };
+    const user = await this.usersService.create(dto);
+    return user;
   }
 
   @Get(':id')

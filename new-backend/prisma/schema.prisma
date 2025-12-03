@@ -19,7 +19,12 @@ model User {
 
   banned Boolean @default(false)
 
-  tokens    Token[]
+  // Для CUSTOMER
+  siteId String? @unique
+
+  // Для SITE_OWNER
+  site Site[]
+
   userRoles UserRole[]
 
   @@map("users")
@@ -46,14 +51,18 @@ model UserRole {
   @@map("user_roles")
 }
 
-model Token {
-  id           String @id @default(uuid())
-  refreshToken String @unique @map("refresh_token")
+model Site {
+  id   String @id @default(uuid())
+  name String
 
-  userId String @unique @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain String? @unique
 
-  createdAt DateTime @default(now()) @map("created_at")
+  // Владелец сайта
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id])
 
-  @@map("tokens")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("sites")
 }

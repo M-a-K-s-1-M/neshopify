@@ -1,82 +1,123 @@
-import { Body, Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards, } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import type { Request, Response } from 'express';
-import { RegistrationUserDto } from './dto/registration-user.dto';
-import { LocalGuard } from 'src/common/guards/local.guard';
-import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
-import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Roles } from 'src/common/decorators/roles-auth.decorator';
-import { RefreshJwtGuard } from 'src/common/guards/refresh-jwt.guard';
-import { TokenService } from '../tokens/token.service';
-import { Cookies } from 'src/common/decorators/cookies.decorator';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  UseGuards,
+  Get,
+  Param,
+} from "@nestjs/common";
+import { AuthService } from "./auth.service";
+import { RegisterDto } from "./dto/register.dto";
+import { LoginDto } from "./dto/login.dto";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { RolesGuard } from "./guards/roles.guard";
+import { Roles } from "./decorators/roles.decorator";
+import type { Request, Response } from "express";
+import { JwtPayload } from "./interfaces/jwt-payload";
+import { AuthGuard } from "@nestjs/passport";
 
-@Controller('auth')
+@Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService,
-    private readonly tokenService: TokenService
-  ) { }
+  constructor(private auth: AuthService) { }
 
+  // SITE OWNER
+  @Post("register")
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    const tokens = await this.auth.register(dto);
 
-  @UseGuards(LocalGuard)
-  @Post('login')
-  async login(@Body() dto: RegistrationUserDto, @Res() res: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.login(dto.email, dto.password);
+    res.cookie("accessToken", tokens.accessToken);
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      // path: "/auth/refresh",
+    });
 
-
-    await this.tokenService.setRefreshTokenToCookie(refreshToken, res);
-
-    return res.json({ accessToken, user });
+    return { accessToken: tokens.accessToken };
   }
 
-  @Post('registration')
-  async registration(@Body() dto: RegistrationUserDto, @Res() res: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.ragistration(dto.email, dto.password);
+  // CUSTOMER
+  @Post("register-customer/:siteId")
+  async registerCustomer(
+    @Body() dto: RegisterDto,
+    @Param("siteId") siteId: string,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const tokens = await this.auth.registerCustomer(dto, siteId);
 
-    await this.tokenService.setRefreshTokenToCookie(refreshToken, res);
+    res.cookie("accessToken", tokens.accessToken, {
+      httpOnly: false,
+    });
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      // path: "/auth/refresh",
+    });
 
-    return res.json({ accessToken, user });
+    return { accessToken: tokens.accessToken };
   }
 
-  @Post('logout')
-  async logout(@Req() req: Request, @Res() res: Response) {
-    const refreshToken = req.cookies.refreshToken;
-    const token = await this.authService.logout(refreshToken);
+  // LOGIN
+  @Post("login")
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const tokens = await this.auth.login(dto);
 
-    res.clearCookie('refreshToken');
+    res.cookie("accessToken", tokens.accessToken);
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      // path: "/auth/refresh",
+    });
 
-    return res.json(token);
+    return { accessToken: tokens.accessToken };
   }
 
-  @Get('refresh')
-  async refresh(@Cookies() oldRefreshToken: string, @Res() res: Response) {
-    if (!oldRefreshToken) {
-      throw new UnauthorizedException();
-    }
+  // REFRESH TOKEN
+  @Post("refresh")
+  @UseGuards(AuthGuard('jwt-refresh'))
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const user = req.user;
+    if (!user) throw new Error("No user in request");
+    const tokens = await this.auth.refresh(user as JwtPayload);
 
-    const { accessToken, user, refreshToken } = await this.authService.refresh(oldRefreshToken);
+    res.cookie("accessToken", tokens.accessToken);
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      // path: "/auth/refresh",
+    });
 
-    if (!accessToken || !refreshToken) {
-      throw new UnauthorizedException();
-    }
-
-    await this.tokenService.setRefreshTokenToCookie(refreshToken, res);
-
-    return res.json({ accessToken, user });
+    return { accessToken: tokens.accessToken };
   }
 
-  @Post('login-admin')
-  async loginAdmin(@Body() dto: RegistrationUserDto, @Res() res: Response) {
-    const { accessToken, refreshToken, user } = await this.authService.loginAdmin(dto.email, dto.password);
-
-    await this.tokenService.setRefreshTokenToCookie(refreshToken, res);
-
-    return res.json({ accessToken, user });
+  @Post("logout")
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken", { path: "/auth/refresh" });
+    return { message: "ok" };
   }
 
-  @Roles('ADMIN')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('profile')
-  async getProfile(@Req() req: Request) {
+  @UseGuards(JwtAuthGuard)
+  @Get("me")
+  me(@Req() req: Request) {
     return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("ADMIN")
+  @Get("admin-check")
+  adminCheck() {
+    return { ok: true };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("SITE_OWNER")
+  @Get("owner-check")
+  ownerCheck() {
+    return { ok: true };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles("CUSTOMER")
+  @Get("customer-check")
+  customerCheck() {
+    return { ok: true };
   }
 }
