@@ -5,7 +5,7 @@ import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
 
 const options = {
-  origin: true, // process.env.CLIENT_URL,
+  origin: process.env.CLIENT_URL,
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   allowedHeaders: [
     'Content-Type',

@@ -2,14 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
-import { TokenService } from '../tokens/token.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FiltersUsersDto } from './dto/filters-users.dto';
 
 @Injectable()
 export class UsersService {
-    constructor(private readonly prisma: PrismaService,
-        private readonly tokenService: TokenService) { }
+    constructor(private readonly prisma: PrismaService) { }
 
     async getAll(filters: FiltersUsersDto) {
         const { search, roles, banned, page, limit, sortBy, order } = filters;
@@ -79,12 +77,9 @@ export class UsersService {
                 }
             },
             include: { userRoles: { include: { role: true } } }
-        });
+        })
 
-        const tokens = await this.tokenService.generateTokens({ ...user })
-        await this.tokenService.saveToken(user.id, tokens.refreshToken);
-
-        return { ...tokens, user };
+        return { user };
     }
 
     async getByEmail(email: string) {
