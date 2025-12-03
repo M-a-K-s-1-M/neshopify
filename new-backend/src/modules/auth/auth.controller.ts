@@ -70,6 +70,19 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
+  @Post("login-admin")
+  async loginAdmin(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const tokens = await this.auth.loginAdmin(dto);
+
+    res.cookie("accessToken", tokens.accessToken);
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      // path: "/auth/refresh",
+    });
+
+    return { accessToken: tokens.accessToken };
+  }
+
   // REFRESH TOKEN
   @Post("refresh")
   @UseGuards(AuthGuard('jwt-refresh'))

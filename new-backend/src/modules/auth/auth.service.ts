@@ -21,12 +21,12 @@ export class AuthService {
     generateTokens(payload: JwtPayload) {
         const accessToken = this.jwt.sign(payload, {
             secret: process.env.JWT_ACCESS_SECRET,
-            expiresIn: "15m",
+            expiresIn: "15s", // "15m"
         });
 
         const refreshToken = this.jwt.sign(payload, {
             secret: process.env.JWT_REFRESH_SECRET,
-            expiresIn: "30d",
+            expiresIn: "30d", // "30d"
         });
 
         return { accessToken, refreshToken };
@@ -109,7 +109,7 @@ export class AuthService {
         if (!user) throw new UnauthorizedException("Пользователь не найден");
 
         const ok = await bcrypt.compare(dto.password, user.passwordHash);
-        if (!ok) throw new UnauthorizedException("Неверный пароль");
+        if (!ok) throw new UnauthorizedException("Неверная почта или пароль");
 
         const payload: JwtPayload = {
             sub: user.id,
@@ -119,6 +119,34 @@ export class AuthService {
         };
 
         return this.generateTokens(payload);
+    }
+
+    async loginAdmin(dto: LoginDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+            include: { userRoles: { include: { role: true } } },
+            omit: { passwordHash: false }
+        });
+
+        if (!user) throw new UnauthorizedException("Пользователь не найден");
+
+        const ok = await bcrypt.compare(dto.password, user.passwordHash);
+
+        if (!ok) throw new UnauthorizedException("Неверная почта или пароль");
+
+        const isAdmin = user.userRoles.some(r => r.role.value === 'ADMIN');
+
+        if (!isAdmin) throw new UnauthorizedException("У вас нет доступа к админ панели");
+
+        const payload: JwtPayload = {
+            sub: user.id,
+            email: user.email,
+            roles: user.userRoles.map((r) => r.role.value),
+            siteId: user.siteId || undefined,
+        };
+
+        return this.generateTokens(payload);
+
     }
 
     // -------------------------------------
