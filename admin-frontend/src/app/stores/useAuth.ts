@@ -1,66 +1,83 @@
-/* eslint-disable no-useless-catch */
-import type { IUser } from '@/entities';
-import { $api, type IAuthResponse } from '@/shared';
-import { AuthService } from '@/shared/api/apiAuth';
-import { create } from 'zustand';
+import { AuthService } from "@/shared/api/apiAuth";
+import { create } from "zustand";
+import { jwtDecode } from "jwt-decode";
 
+interface JwtPayload {
+    sub: string;
+    email: string;
+    roles: string[];
+    siteId?: string;
+    exp: number;
+    iat: number;
+}
 interface IAuthStore {
-    user: IUser,
-    isAuth: boolean,
+    user: JwtPayload | null;
+    isAuth: boolean;
+    isLoading: boolean;
+    error: unknown | null;
 
-    setAuth: (isAuth: boolean) => void,
+    setUser: (user: JwtPayload) => void;
+    setAuth: (isAuth: boolean) => void;
 
-    setUser: (user: IUser) => void,
-
-    login: (email: string, password: string) => Promise<IUser>,
-
-    logout: () => Promise<void>,
-
-    checkAuth: () => Promise<IUser>,
-
+    login: (email: string, password: string) => Promise<JwtPayload>;
+    logout: () => Promise<void>;
+    refresh: () => Promise<JwtPayload | null>;
 }
 
 export const useAuth = create<IAuthStore>((set) => ({
-    user: {} as IUser,
+    user: null,
     isAuth: false,
+    isLoading: false,
+    error: null,
 
-    setAuth: (isAuth: boolean) => set({ isAuth }),
+    setUser: (user) => set({ user, isAuth: true }),
+    setAuth: (isAuth) => set({ isAuth }),
 
-    setUser: (user: IUser) => set({ user, isAuth: true }),
-
-    login: async (email: string, password: string) => {
+    login: async (email, password) => {
+        set({ isLoading: true, error: null });
         try {
             const res = await AuthService.login(email, password);
 
-            localStorage.setItem('accessToken', res.accessToken);
+            const payload: JwtPayload = jwtDecode(res.accessToken)
 
-            set({ user: res.user, isAuth: true });
+            set({ user: payload, isAuth: true });
 
-            return res.user;
-
+            return payload;
         } catch (error) {
+            set({ error });
             throw error;
+        } finally {
+            set({ isLoading: false });
         }
     },
 
     logout: async () => {
-        localStorage.removeItem("accessToken");
-        return await AuthService.logout();
+        set({ isLoading: true, error: null });
+        try {
+            await AuthService.logout();
+            set({ isAuth: false, user: null });
+        } catch (error) {
+            set({ error });
+        } finally {
+            set({ isLoading: false });
+        }
     },
 
-    checkAuth: async () => {
+    refresh: async () => {
+        set({ isLoading: true, error: null });
         try {
-            const res = await AuthService.checkAuth();
+            const res = await AuthService.refresh();
 
-            localStorage.setItem("accessToken", res.accessToken);
+            const payload: JwtPayload = jwtDecode(res.accessToken)
 
-            set({ user: res.user, isAuth: true });
+            set({ user: payload, isAuth: true });
 
-            return res.user;
-
+            return payload;
         } catch (error) {
-            throw error;
+            set({ user: null, isAuth: false, error });
+            return null;
+        } finally {
+            set({ isLoading: false });
         }
     }
-
-}))
+}));
