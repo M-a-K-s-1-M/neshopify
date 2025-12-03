@@ -32,7 +32,7 @@ export function CreateUserModal({ opened, close }: { opened: boolean; close: () 
 
             notifications.show({
                 color: 'green',
-                title: 'Успех',
+                title: 'Успeшно',
                 message: 'Пользователь успешно создан',
             })
             reset();

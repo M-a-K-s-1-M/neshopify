@@ -1,37 +1,39 @@
 /* eslint-disable no-useless-catch */
 import axios from "axios";
 import { env } from "../config/env";
-import { AuthService } from "../api/apiAuth";
 
 const $api = axios.create({
     baseURL: env.api.url,
+    params: {},
     withCredentials: true,
-
 })
 
-$api.interceptors.request.use((config) => {
-    const token = localStorage.getItem("accessToken");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-})
 
-$api.interceptors.response.use((config) => {
-    return config;
-}, async (error) => {
-    const originalRequest = error.config;
+$api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
 
-    if (originalRequest.status === 401 && error.config && !error.config_isRetry) {
-        originalRequest._isRetry = true;
-
-        try {
-            const res = await AuthService.checkAuth();
-            localStorage.setItem("accessToken", res.accessToken);
-
-        } catch (e) {
-            throw e;
+        if (
+            error.response?.status === 401 &&
+            !originalRequest._retry &&
+            !originalRequest.url?.includes("/auth/refresh")
+        ) {
+            originalRequest._retry = true;
+            try {
+                // refreshToken отправляется автоматически через HttpOnly cookie
+                await $api.post("/auth/refresh");
+                return $api.request(originalRequest); // повторяем исходный запрос
+            } catch {
+                // если refresh не удался — можно, например, редирект на логин
+                window.location.href = "/auth";
+                return Promise.reject(error);
+            }
         }
+
+        return Promise.reject(error);
     }
-    throw error;
-})
+);
+
 
 export { $api };

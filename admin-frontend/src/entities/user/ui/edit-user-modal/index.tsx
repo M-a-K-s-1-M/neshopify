@@ -37,7 +37,7 @@ export function EditUserModal({ opened, close, user }: { opened: boolean; close:
 
             notifications.show({
                 color: 'green',
-                title: 'Успех',
+                title: 'Успешно',
                 message: 'Пользователь успешно обновлен',
             })
             close();
