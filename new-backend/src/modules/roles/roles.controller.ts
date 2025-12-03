@@ -3,8 +3,8 @@ import { RolesService } from './roles.service';
 import { Roles } from 'src/common/decorators/roles-auth.decorator';
 import { JwtAuthGuard } from 'src/common/guards/jwt.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-@Roles('ADMIN')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles('ADMIN')
+// @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) { }

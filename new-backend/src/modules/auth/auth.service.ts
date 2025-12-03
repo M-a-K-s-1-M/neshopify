@@ -2,13 +2,15 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { TokenService } from '../tokens/token.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
 
     constructor(
         private tokenService: TokenService,
-        private prisma: PrismaService) { }
+        private prisma: PrismaService,
+        private usersService: UsersService) { }
 
     async login(email: string, password: string) {
         const user = await this.prisma.user.findUnique({
@@ -69,6 +71,27 @@ export class AuthService {
     }
 
     async refresh(oldRefreshToken: string) {
+
+        // const token = await this.tokenService.removeToken(oldRefreshToken);
+
+        // let userData;
+        // try {
+        //     userData = await this.tokenService.validateRefreshToken(oldRefreshToken);
+
+        // } catch (e) {
+        //     throw new UnauthorizedException('Пользователь не авторизован');
+        // }
+
+        // if (!token) {
+        //     throw new UnauthorizedException('Пользователь не авторизован');
+        // }
+
+        // const user = await this.usersService.getById(token.userId);
+
+        // const tokens = await this.tokenService.generateTokens(user)
+
+        // return { ...tokens, user };
+
         let userData;
         try {
             userData = await this.tokenService.validateRefreshToken(oldRefreshToken);
@@ -102,17 +125,22 @@ export class AuthService {
 
         if (!adminCandidate) throw new UnauthorizedException('Администратора с таким email не существует');
 
+
         if (!adminCandidate.userRoles.some(userRole => userRole.role.value === 'ADMIN')) throw new UnauthorizedException('Недостаточно прав, требуется роль ADMIN');
 
         const comparePasswords = await bcrypt.compare(password, adminCandidate.passwordHash);
 
         if (!comparePasswords) throw new UnauthorizedException('Неверный пароль');
 
-        const tokens = await this.tokenService.generateTokens({ ...adminCandidate })
+        const user = await this.usersService.getByEmail(email);
 
-        await this.tokenService.saveToken(adminCandidate.id, tokens.refreshToken);
+        if (!user) throw new UnauthorizedException()
 
-        return { ...tokens, user: adminCandidate };
+        const tokens = await this.tokenService.generateTokens({ ...user })
+
+        await this.tokenService.saveToken(user.id, tokens.refreshToken);
+
+        return { ...tokens, user };
     }
 
     async validateUser(email: string, password: string) {
