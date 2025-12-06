@@ -5,6 +5,7 @@ import { Moon, Sun } from "@aliimam/icons";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Toggle } from "@/components/ui/toggle";
+import { siteConfig } from "@/components/shared";
 
 export function ModeToggle() {
   const { theme, setTheme } = useTheme();
@@ -32,7 +33,7 @@ export function ModeToggle() {
           />
           <Sun
             size={16}
-            className="absolute shrink-0 scale-100 opacity-100 transition-all group-data-[state=on]:scale-0 group-data-[state=on]:opacity-0"
+            className={" absolute shrink-0 scale-100 opacity-100 transition-all group-data-[state=on]:scale-0 group-data-[state=on]:opacity-0 " + siteConfig.colorIcon}
             aria-hidden="true"
           />
         </Toggle>
@@ -40,4 +41,3 @@ export function ModeToggle() {
     </div>
   );
 }
- 
