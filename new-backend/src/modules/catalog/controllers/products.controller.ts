@@ -22,6 +22,9 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nest
 import { ProductResponseDto, RemovedResponseDto } from 'src/common/swagger/api-models';
 import { ApiPaginatedResponse } from 'src/common/swagger/api-paginated-response.decorator';
 
+/**
+ * Контроллер управления товарами, доступный членам команды сайта.
+ */
 @Controller('sites/:siteId/products')
 @ApiTags('Products')
 @ApiBearerAuth()
@@ -29,6 +32,7 @@ import { ApiPaginatedResponse } from 'src/common/swagger/api-paginated-response.
 export class ProductsController {
     constructor(private readonly productsService: ProductsService) { }
 
+    /** Возвращает страницу товаров с фильтрами и поиском. */
     @Get()
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -41,6 +45,7 @@ export class ProductsController {
         return this.productsService.list(siteId, filters, pagination);
     }
 
+    /** Загружает один товар по идентификатору. */
     @Get(':productId')
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -49,6 +54,7 @@ export class ProductsController {
         return this.productsService.get(siteId, productId);
     }
 
+    /** Создает новый товар. */
     @Post()
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -58,6 +64,7 @@ export class ProductsController {
         return this.productsService.create(siteId, dto);
     }
 
+    /** Обновляет поля существующего товара. */
     @Patch(':productId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -71,6 +78,7 @@ export class ProductsController {
         return this.productsService.update(siteId, productId, dto);
     }
 
+    /** Удаляет товар. */
     @Delete(':productId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)

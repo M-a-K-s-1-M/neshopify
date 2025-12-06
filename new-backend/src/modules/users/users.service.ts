@@ -6,10 +6,14 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { FiltersUsersDto } from './dto/filters-users.dto';
 import { PaginationQuery } from '../../common/pipes';
 
+/**
+ * Сервис пользователей: фильтрация, CRUD, бан и управление ролями.
+ */
 @Injectable()
 export class UsersService {
     constructor(private readonly prisma: PrismaService) { }
 
+    /** Возвращает пользователей с фильтрами, поиском и пагинацией. */
     async getAll(filters: FiltersUsersDto, pagination: PaginationQuery) {
         const { roles, banned, sortBy, order } = filters;
         const { page, limit, search } = pagination;
@@ -65,6 +69,7 @@ export class UsersService {
         }
     }
 
+    /** Создает пользователя, хэширует пароль и назначает роли. */
     async create(dto: CreateUserDto) {
         const { email, password, roles } = dto;
         const passwordHash = await bcrypt.hash(password, 10);
@@ -86,6 +91,7 @@ export class UsersService {
         return user;
     }
 
+    /** Ищет пользователя по email с ролями. */
     async getByEmail(email: string) {
         return await this.prisma.user.findUnique({
             where: { email },
@@ -97,6 +103,7 @@ export class UsersService {
         });
     }
 
+    /** Возвращает пользователя по id с ролями. */
     async getById(id: string) {
         return await this.prisma.user.findUnique({
             where: { id },
@@ -104,6 +111,7 @@ export class UsersService {
         });
     }
 
+    /** Обновляет данные пользователя и пересоздает связи ролей при необходимости. */
     async update(id: string, dto: UpdateUserDto) {
         const data: any = {
             email: dto.email,
@@ -132,6 +140,7 @@ export class UsersService {
         });
     }
 
+    /** Помечает пользователя заблокированным. */
     async ban(id: string) {
         return this.prisma.user.update({
             where: { id },
@@ -140,6 +149,7 @@ export class UsersService {
         });
     }
 
+    /** Снимает блокировку. */
     async unban(id: string) {
         return this.prisma.user.update({
             where: { id },
@@ -148,6 +158,7 @@ export class UsersService {
         });
     }
 
+    /** Удаляет пользователя и возвращает его данные. */
     async deleteById(id: string) {
         return await this.prisma.user.delete({
             where: { id },

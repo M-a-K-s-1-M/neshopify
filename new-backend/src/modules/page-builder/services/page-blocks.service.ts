@@ -4,6 +4,9 @@ import { CreateBlockDto } from '../dto/create-block.dto';
 import { UpdateBlockDto } from '../dto/update-block.dto';
 import { PagesService } from './pages.service';
 
+/**
+ * Сервис блоков страниц: управляет порядком, шаблонами и содержимым блоков.
+ */
 @Injectable()
 export class PageBlocksService {
     constructor(
@@ -11,6 +14,7 @@ export class PageBlocksService {
         private readonly pagesService: PagesService,
     ) { }
 
+    /** Возвращает блоки страницы после проверки ее существования. */
     async list(siteId: string, pageId: string) {
         await this.pagesService.ensurePage(siteId, pageId);
         return this.prisma.blockInstance.findMany({
@@ -20,6 +24,7 @@ export class PageBlocksService {
         });
     }
 
+    /** Создает блок, определяет шаблон и расставляет порядок. */
     async create(siteId: string, pageId: string, dto: CreateBlockDto) {
         await this.pagesService.ensurePage(siteId, pageId);
 
@@ -47,6 +52,7 @@ export class PageBlocksService {
         return block;
     }
 
+    /** Обновляет блок, включая смену шаблона и порядок. */
     async update(siteId: string, pageId: string, blockId: string, dto: UpdateBlockDto) {
         await this.pagesService.ensurePage(siteId, pageId);
 
@@ -80,6 +86,7 @@ export class PageBlocksService {
         return updated;
     }
 
+    /** Удаляет блок и нормализует порядок оставшихся. */
     async remove(siteId: string, pageId: string, blockId: string) {
         await this.pagesService.ensurePage(siteId, pageId);
         await this.prisma.blockInstance.delete({ where: { id: blockId } });
@@ -87,6 +94,7 @@ export class PageBlocksService {
         return { removed: true };
     }
 
+    /** Подбирает шаблон по id или ключу. */
     private async resolveTemplate(dto: { templateId?: string; templateKey?: string }) {
         if (dto.templateId) {
             return this.prisma.blockTemplate.findUnique({ where: { id: dto.templateId } });
@@ -99,6 +107,7 @@ export class PageBlocksService {
         return null;
     }
 
+    /** Рассчитывает порядковый номер нового блока. */
     private async calculateOrder(pageId: string, desired?: number) {
         const count = await this.prisma.blockInstance.count({ where: { pageId } });
         if (!desired || desired > count + 1) {
@@ -107,6 +116,7 @@ export class PageBlocksService {
         return desired;
     }
 
+    /** Перестраивает последовательность order для блоков страницы. */
     private async normalizeOrder(pageId: string) {
         const blocks = await this.prisma.blockInstance.findMany({
             where: { pageId },

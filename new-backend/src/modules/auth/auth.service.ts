@@ -12,6 +12,9 @@ import { JwtPayload } from "./interfaces/jwt-payload";
 import { ConfigService } from "@nestjs/config";
 import type { StringValue } from "ms";
 
+/**
+ * Сервис аутентификации: создает учетные записи, логинит пользователей и выдает JWT.
+ */
 @Injectable()
 export class AuthService {
     constructor(
@@ -20,7 +23,7 @@ export class AuthService {
         private readonly configService: ConfigService,
     ) { }
 
-    // Генерация двух токенов
+    /** Генерирует пару access/refresh токенов для заданного payload. */
     generateTokens(payload: JwtPayload) {
         const accessSecret = this.configService.getOrThrow<string>('jwt.accessSecret');
         const refreshSecret = this.configService.getOrThrow<string>('jwt.refreshSecret');
@@ -40,9 +43,7 @@ export class AuthService {
         return { accessToken, refreshToken };
     }
 
-    // -------------------------------------
-    // REGISTRATION OF SITE OWNER
-    // -------------------------------------
+    /** Регистрирует владельца сайта и назначает роль SITE_OWNER. */
     async register(dto: RegisterDto) {
         const exists = await this.prisma.user.findUnique({
             where: { email: dto.email },
@@ -74,9 +75,7 @@ export class AuthService {
         return this.generateTokens(payload);
     }
 
-    // -------------------------------------
-    // REGISTRATION OF CUSTOMER
-    // -------------------------------------
+    /** Регистрирует покупателя конкретного сайта и выдаёт роль CUSTOMER. */
     async registerCustomer(dto: RegisterDto, siteId: string) {
         if (!siteId) {
             // Для привязки клиента нам нужен конкретный сайт
@@ -123,9 +122,7 @@ export class AuthService {
         return this.generateTokens(payload);
     }
 
-    // -------------------------------------
-    // LOGIN FOR ALL ROLES
-    // -------------------------------------
+    /** Логин для любых ролей: проверка пароля, блокировок и выдача токенов. */
     async login(dto: LoginDto) {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
@@ -149,6 +146,7 @@ export class AuthService {
         return this.generateTokens(payload);
     }
 
+    /** Логин администратора с обязательной проверкой роли ADMIN. */
     async loginAdmin(dto: LoginDto) {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
@@ -179,9 +177,7 @@ export class AuthService {
 
     }
 
-    // -------------------------------------
-    // REFRESH TOKENS (ROTATING)
-    // -------------------------------------
+    /** Выпускает новую пару токенов по refresh-токену (rotating схема). */
     async refresh(payload: JwtPayload) {
         delete payload.iat;
         delete payload.exp;

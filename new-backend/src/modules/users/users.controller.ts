@@ -10,6 +10,9 @@ import type { PaginationQuery } from '../../common/pipes';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { UserResponseDto, UsersListResponseDto } from 'src/common/swagger/api-models';
 
+/**
+ * Административный контроллер управления пользователями платформы.
+ */
 @Roles('ADMIN')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
@@ -18,6 +21,7 @@ import { UserResponseDto, UsersListResponseDto } from 'src/common/swagger/api-mo
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
+  /** Возвращает список пользователей с фильтрами и пагинацией. */
   @Get()
   @ApiOkResponse({ type: UsersListResponseDto })
   async getAll(
@@ -27,6 +31,7 @@ export class UsersController {
     return await this.usersService.getAll(query, pagination);
   }
 
+  /** Создает пользователя и назначает роли. */
   @Post()
   @ApiCreatedResponse({ type: UserResponseDto })
   async create(@Body() dto: CreateUserDto) {
@@ -39,6 +44,7 @@ export class UsersController {
     return user;
   }
 
+  /** Возвращает пользователя по id. */
   @Get(':id')
   @ApiOkResponse({ type: UserResponseDto })
   async getById(@Param('id') id: string) {
@@ -49,6 +55,7 @@ export class UsersController {
     return user;
   }
 
+  /** Обновляет данные пользователя (email/пароль/роли). */
   @Patch()
   @ApiOkResponse({ type: UserResponseDto })
   async update(@Body('id') id: string, @Body() dto: UpdateUserDto) {
@@ -63,6 +70,7 @@ export class UsersController {
     return await this.usersService.update(id, dto);
   }
 
+  /** Помечает пользователя как заблокированного. */
   @Patch('ban/:id')
   @ApiOkResponse({ type: UserResponseDto })
   async ban(@Param('id') id: string) {
@@ -72,6 +80,7 @@ export class UsersController {
     return await this.usersService.ban(id);
   }
 
+  /** Снимает блокировку пользователя. */
   @Patch('unban/:id')
   @ApiOkResponse({ type: UserResponseDto })
   async unban(@Param('id') id: string) {
@@ -81,6 +90,7 @@ export class UsersController {
     return await this.usersService.unban(id);
   }
 
+  /** Удаляет пользователя. */
   @Delete(':id')
   @ApiOkResponse({ type: UserResponseDto })
   async deleteById(@Param('id') id: string) {

@@ -11,6 +11,9 @@ import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { OrderResponseDto } from 'src/common/swagger/api-models';
 import { ApiPaginatedResponse } from 'src/common/swagger/api-paginated-response.decorator';
 
+/**
+ * Закрытый контроллер управления заказами для владельцев сайтов.
+ */
 @Controller('sites/:siteId/orders')
 @ApiTags('Orders')
 @ApiBearerAuth()
@@ -18,6 +21,7 @@ import { ApiPaginatedResponse } from 'src/common/swagger/api-paginated-response.
 export class OrdersController {
     constructor(private readonly ordersService: OrdersService) { }
 
+    /** Возвращает страницу заказов по фильтрам и поиску. */
     @Get()
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -31,6 +35,7 @@ export class OrdersController {
         return this.ordersService.list(siteId, pagination, filters);
     }
 
+    /** Загружает один заказ по идентификатору. */
     @Get(':orderId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -40,6 +45,7 @@ export class OrdersController {
         return this.ordersService.get(siteId, orderId);
     }
 
+    /** Обновляет статусы заказа (доставка/оплата). */
     @Patch(':orderId/status')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)

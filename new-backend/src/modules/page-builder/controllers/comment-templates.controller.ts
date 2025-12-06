@@ -16,6 +16,9 @@ import { UpdateCommentTemplateDto } from '../dto/update-comment-template.dto';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { CommentTemplateResponseDto, RemovedResponseDto } from 'src/common/swagger/api-models';
 
+/**
+ * Контролирует административные шаблоны комментариев для быстрой вставки.
+ */
 @Controller('comment-templates')
 @ApiTags('Comment Templates')
 @ApiBearerAuth()
@@ -23,18 +26,21 @@ import { CommentTemplateResponseDto, RemovedResponseDto } from 'src/common/swagg
 export class CommentTemplatesController {
     constructor(private readonly commentTemplatesService: CommentTemplatesService) { }
 
+    /** Список всех шаблонов. */
     @Get()
     @ApiOkResponse({ type: CommentTemplateResponseDto, isArray: true })
     list() {
         return this.commentTemplatesService.list();
     }
 
+    /** Возвращает один шаблон. */
     @Get(':id')
     @ApiOkResponse({ type: CommentTemplateResponseDto })
     get(@Param('id') id: string) {
         return this.commentTemplatesService.get(id);
     }
 
+    /** Создает шаблон комментария (для админов). */
     @Post()
     @Roles('ADMIN')
     @UseGuards(RolesGuard)
@@ -43,6 +49,7 @@ export class CommentTemplatesController {
         return this.commentTemplatesService.create(dto);
     }
 
+    /** Обновляет шаблон. */
     @Patch(':id')
     @Roles('ADMIN')
     @UseGuards(RolesGuard)
@@ -51,6 +58,7 @@ export class CommentTemplatesController {
         return this.commentTemplatesService.update(id, dto);
     }
 
+    /** Удаляет шаблон. */
     @Delete(':id')
     @Roles('ADMIN')
     @UseGuards(RolesGuard)

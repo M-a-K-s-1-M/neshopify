@@ -8,6 +8,9 @@ import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { ProductCategoryResponseDto, RemovedResponseDto } from 'src/common/swagger/api-models';
 
+/**
+ * Контроллер управления категориями каталога.
+ */
 @Controller('sites/:siteId/categories')
 @ApiTags('Categories')
 @ApiBearerAuth()
@@ -15,6 +18,7 @@ import { ProductCategoryResponseDto, RemovedResponseDto } from 'src/common/swagg
 export class CategoriesController {
     constructor(private readonly categoriesService: CategoriesService) { }
 
+    /** Возвращает иерархию категорий сайта. */
     @Get()
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -23,6 +27,7 @@ export class CategoriesController {
         return this.categoriesService.list(siteId);
     }
 
+    /** Возвращает детали конкретной категории. */
     @Get(':categoryId')
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -31,6 +36,7 @@ export class CategoriesController {
         return this.categoriesService.get(siteId, categoryId);
     }
 
+    /** Создает новую категорию. */
     @Post()
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -40,6 +46,7 @@ export class CategoriesController {
         return this.categoriesService.create(siteId, dto);
     }
 
+    /** Обновляет название, slug или родителя категории. */
     @Patch(':categoryId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -53,6 +60,7 @@ export class CategoriesController {
         return this.categoriesService.update(siteId, categoryId, dto);
     }
 
+    /** Удаляет категорию после проверок зависимостей. */
     @Delete(':categoryId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
