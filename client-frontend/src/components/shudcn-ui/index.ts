@@ -1,4 +1,5 @@
 export { RotatingText } from './rotating-text/RotatingText'
-export { BlurText } from './BlurText'
-export { Magnet } from './Magnet';
+export { BlurText } from './blut-text/BlurText'
+export { Magnet } from './magneto-component/Magnet';
 export * from './platform-header';
+export { TextType } from './text-type/TextType';
