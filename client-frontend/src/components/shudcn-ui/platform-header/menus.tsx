@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { siteConfig } from "@/components";
 
-const menuItems = siteConfig.headerItems;
+const menuItems = siteConfig.headerLinks;
 
 export function Menus() {
   return (

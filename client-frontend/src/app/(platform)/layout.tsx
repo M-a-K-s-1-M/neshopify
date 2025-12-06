@@ -1,4 +1,4 @@
-import { PlatformHeader } from "@/components";
+import { PlatformFooter, PlatformHeader } from "@/components";
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -7,9 +7,7 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
 
             <main className="flex-1 w-full max-w-7xl mx-auto p-5">{children}</main>
 
-            <footer>
-                Platform Footer
-            </footer>
+            <PlatformFooter />
         </section>
     )
 }
