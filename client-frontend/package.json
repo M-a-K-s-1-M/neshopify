@@ -11,6 +11,7 @@
     "@aliimam/icons": "^0.1.9",
     "@base-ui-components/react": "^1.0.0-rc.0",
     "@radix-ui/react-navigation-menu": "^1.2.14",
+    "@radix-ui/react-separator": "^1.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-toggle": "^1.1.10",
     "class-variance-authority": "^0.7.1",
