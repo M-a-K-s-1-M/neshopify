@@ -1,6 +1,6 @@
-'use client'
+
 export default function Sites() {
     return (
-        <div>Sites</div>
+        <div className="flex-grow">Sites</div>
     )
 }

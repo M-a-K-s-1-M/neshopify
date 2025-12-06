@@ -18,18 +18,19 @@ export default function Welcome() {
       <div className="bg-neutral-800 display flex items-center p-5" >
         <div className="flex flex-col gap-5 text-center md:text-left">
           <h3
-            className="text-3xl md:text-4xl font-semibold"
+            className="text-3xl md:text-4xl font-semibold leading-tight"
           >
             Создайте свой <RotatingText
               texts={heroTags}
               mainClassName='bg-emerald-200 text-neutral-800 px-2 pb-1 rounded-lg transition-all'
-              staggerDuration={0.025}
-              transition={{ type: "spring", damping: 30, stiffness: 400 }}
               staggerFrom={"last"}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "-120%" }}
+              staggerDuration={0.025}
               rotationInterval={2000}
+              transition={{ type: "spring", damping: 30, stiffness: 400 }}
+              splitLevelClassName="overflow-hidden"
             /> интернет - магазин за минуту
           </h3>
 
@@ -38,8 +39,10 @@ export default function Welcome() {
             className="text-md md:text-lg justify-center md:justify-start"
             text="Мощная платформа для создания и управления вашим онлайн-бизнесом. Без технических знаний."
             direction="bottom"
+            animationFrom={undefined}
+            animationTo={undefined}
+            onAnimationComplete={undefined}
           />
-          {/* <p className="text-lg">Мощная платформа для создания и управления вашим онлайн-бизнесом. Без технических знаний.</p> */}
 
           <div>
 
