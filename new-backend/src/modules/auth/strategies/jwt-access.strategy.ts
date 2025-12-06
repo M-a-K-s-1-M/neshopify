@@ -2,20 +2,19 @@ import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { JwtPayload } from "../interfaces/jwt-payload";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(Strategy, "jwt") {
-    constructor() {
-        const secret = process.env.JWT_ACCESS_SECRET;
-        if (!secret) {
-            throw new Error("JWT_ACCESS_SECRET is not defined");
-        }
+    constructor(private readonly configService: ConfigService) {
+        const bearerExtractor = ExtractJwt.fromAuthHeaderAsBearerToken();
 
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (req) => req.cookies?.accessToken,
+                bearerExtractor,
             ]),
-            secretOrKey: secret, // Теперь гарантированно string
+            secretOrKey: configService.getOrThrow<string>('jwt.accessSecret'),
         });
     }
 

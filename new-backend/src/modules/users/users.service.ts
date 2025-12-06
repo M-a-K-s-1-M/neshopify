@@ -1,21 +1,20 @@
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FiltersUsersDto } from './dto/filters-users.dto';
+import { PaginationQuery } from '../../common/pipes';
 
 @Injectable()
 export class UsersService {
     constructor(private readonly prisma: PrismaService) { }
 
-    async getAll(filters: FiltersUsersDto) {
-        const { search, roles, banned, page, limit, sortBy, order } = filters;
+    async getAll(filters: FiltersUsersDto, pagination: PaginationQuery) {
+        const { roles, banned, sortBy, order } = filters;
+        const { page, limit, search } = pagination;
 
-        const pageNum = Number(page) || 1;
-        const take = Number(limit) || 20;
-
-        const skip = (pageNum - 1) * take;
+        const skip = (page - 1) * limit; // Offset для нормализованной пагинации
 
         const where: any = {};
 
@@ -41,22 +40,27 @@ export class UsersService {
 
         const total = await this.prisma.user.count({ where });
 
+        const orderByField = sortBy || 'createdAt';
+        const orderDirection = (order || 'desc') as 'asc' | 'desc'; // Значение приходит уже провалидированным DTO
+
+        const orderBy = {
+            [orderByField]: orderDirection,
+        } as Record<string, 'asc' | 'desc'>;
+
         const users = await this.prisma.user.findMany({
             where,
             skip,
-            take,
-            orderBy: {
-                [sortBy || 'createdAt']: order || 'desc'
-            },
+            take: limit,
+            orderBy,
             include: { userRoles: { include: { role: true } } },
         });
 
 
         return {
-            page: pageNum,
-            limit: take,
+            page,
+            limit,
             total,
-            pages: Math.ceil(total / take),
+            pages: Math.ceil(total / limit),
             users,
         }
     }
@@ -79,7 +83,7 @@ export class UsersService {
             include: { userRoles: { include: { role: true } } }
         })
 
-        return { user };
+        return user;
     }
 
     async getByEmail(email: string) {

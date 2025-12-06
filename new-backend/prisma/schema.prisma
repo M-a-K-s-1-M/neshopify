@@ -9,6 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Пользователь платформы: владелец, редактор или клиент магазина.
 model User {
   id           String @id @default(uuid())
   email        String @unique
@@ -20,16 +21,22 @@ model User {
   banned Boolean @default(false)
 
   // Для CUSTOMER
-  siteId String? @unique
+  siteId       String? @map("site_id")
+  customerSite Site?   @relation("SiteCustomers", fields: [siteId], references: [id])
 
   // Для SITE_OWNER
-  site Site[]
+  site Site[] @relation("SiteOwner")
+
+  carts       Cart[]
+  orders      Order[]
+  memberships SiteMember[] @relation("UserSiteMemberships")
 
   userRoles UserRole[]
 
   @@map("users")
 }
 
+/// Набор глобальных ролей (например, admin, customer) для авторизации.
 model Role {
   id          String  @id @default(uuid())
   value       String  @unique
@@ -40,6 +47,7 @@ model Role {
   @@map("roles")
 }
 
+/// Связь многие-ко-многим между пользователями и глобальными ролями.
 model UserRole {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String
@@ -51,18 +59,356 @@ model UserRole {
   @@map("user_roles")
 }
 
+/// Магазин, созданный конструктором: хранит тему, домен и связи с данными.
 model Site {
   id   String @id @default(uuid())
   name String
 
-  domain String? @unique
+  slug   String     @unique
+  domain String?    @unique
+  status SiteStatus @default(DRAFT)
 
   // Владелец сайта
-  ownerId String @unique
-  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId   String       @map("owner_id")
+  owner     User         @relation("SiteOwner", fields: [ownerId], references: [id])
+  customers User[]       @relation("SiteCustomers")
+  members   SiteMember[]
+
+  theme Json? @map("theme_config")
+  seo   Json? @map("seo_meta")
+
+  publishedAt DateTime? @map("published_at")
+  plan        String?   @map("billing_plan")
+
+  pages      Page[]
+  products   Product[]
+  categories ProductCategory[]
+  carts      Cart[]
+  orders     Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("sites")
+}
+
+/// Связь между сайтом и членами команды, отличными от владельца.
+model SiteMember {
+  id String @id @default(uuid())
+
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation("UserSiteMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  role SiteMemberRole @default(EDITOR)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([siteId, userId])
+  @@map("site_members")
+}
+
+/// CMS-страница магазина (главная, каталог, корзина и т.д.).
+model Page {
+  id     String @id @default(uuid())
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  type      PageType @default(CUSTOM)
+  title     String
+  slug      String
+  isVisible Boolean  @default(true) @map("is_visible")
+  seo       Json?    @map("seo_meta")
+
+  blocks BlockInstance[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([siteId, slug])
+  @@map("pages")
+}
+
+/// Описание доступного блока конструктора (schema используется редактором).
+model BlockTemplate {
+  id          String        @id @default(uuid())
+  key         String        @unique
+  title       String
+  description String?
+  category    BlockCategory @default(GENERAL)
+  schema      Json
+  previewUrl  String?       @map("preview_url")
+
+  blocks BlockInstance[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("block_templates")
+}
+
+/// Конкретный блок на странице со сформированными пользователем данными.
+model BlockInstance {
+  id         String        @id @default(uuid())
+  pageId     String        @map("page_id")
+  page       Page          @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  templateId String        @map("template_id")
+  template   BlockTemplate @relation(fields: [templateId], references: [id])
+
+  order  Int     @map("block_order")
+  data   Json
+  pinned Boolean @default(false)
+
+  comments CommentInstance[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([pageId, order])
+  @@map("page_blocks")
+}
+
+/// Заготовленные отзывы, которые можно быстро вставить и отредактировать.
+model CommentTemplate {
+  id         String      @id @default(uuid())
+  title      String
+  body       String
+  avatarUrl  String?     @map("avatar_url")
+  authorName String?     @map("author_name")
+  rating     Int         @default(5)
+  tone       CommentTone @default(POSITIVE)
+  locale     String      @default("ru")
+
+  comments CommentInstance[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("comment_templates")
+}
+
+/// Отзыв, размещенный в блоке "Отзывы" на конкретной странице.
+model CommentInstance {
+  id         String           @id @default(uuid())
+  blockId    String           @map("block_id")
+  block      BlockInstance    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  templateId String?          @map("template_id")
+  template   CommentTemplate? @relation(fields: [templateId], references: [id])
+  authorName String           @map("author_name")
+  avatarUrl  String?          @map("avatar_url")
+  body       String
+  rating     Int              @default(5)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("comment_instances")
+}
+
+/// Иерархическая категория товаров внутри магазина.
+model ProductCategory {
+  id     String @id @default(uuid())
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  name     String
+  slug     String
+  parentId String?           @map("parent_id")
+  parent   ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children ProductCategory[] @relation("CategoryHierarchy")
+
+  products Product[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([siteId, slug])
+  @@map("product_categories")
+}
+
+/// Товар магазина с ценой, остатками и связями с категориями.
+model Product {
+  id         String           @id @default(uuid())
+  siteId     String           @map("site_id")
+  site       Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  categoryId String?          @map("category_id")
+  category   ProductCategory? @relation(fields: [categoryId], references: [id])
+
+  title       String
+  description String?
+  price       Decimal     @db.Decimal(10, 2)
+  currency    String      @default("RUB")
+  sku         String?     @map("sku")
+  stock       Int         @default(0)
+  stockStatus StockStatus @default(IN_STOCK) @map("stock_status")
+
+  media      ProductMedia[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([siteId, sku])
+  @@map("products")
+}
+
+/// Медиаматериалы товара (фото, видео) с упорядочиванием.
+model ProductMedia {
+  id        String  @id @default(uuid())
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  url   String
+  alt   String?
+  order Int     @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([productId, order])
+  @@map("product_media")
+}
+
+/// Корзина пользователя или гостя в пределах конкретного магазина.
+model Cart {
+  id        String  @id @default(uuid())
+  siteId    String  @map("site_id")
+  site      Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  userId    String? @map("user_id")
+  user      User?   @relation(fields: [userId], references: [id])
+  sessionId String? @map("session_id")
+
+  items CartItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  orders    Order[]
+
+  @@unique([siteId, sessionId])
+  @@map("carts")
+}
+
+/// Позиция внутри корзины, фиксирует цену/количество товара.
+model CartItem {
+  id        String  @id @default(uuid())
+  cartId    String  @map("cart_id")
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity Int     @default(1)
+  price    Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([cartId, productId])
+  @@map("cart_items")
+}
+
+/// Заказ, созданный из корзины, с платежным и доставочным статусом.
+model Order {
+  id     String  @id @default(uuid())
+  siteId String  @map("site_id")
+  site   Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id])
+  cartId String? @map("cart_id")
+  cart   Cart?   @relation(fields: [cartId], references: [id])
+
+  total           Decimal       @db.Decimal(10, 2)
+  status          OrderStatus   @default(PENDING)
+  paymentStatus   PaymentStatus @default(NOT_PAID) @map("payment_status")
+  shippingAddress Json?         @map("shipping_address")
+  customerEmail   String        @map("customer_email")
+  customerPhone   String?       @map("customer_phone")
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("orders")
+}
+
+/// Товар в заказе с зафиксированной ценой и количеством.
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String  @map("order_id")
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  title    String
+  price    Decimal @db.Decimal(10, 2)
+  quantity Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("order_items")
+}
+
+/// Статусы жизненного цикла сайта.
+enum SiteStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// Типы системных страниц конструктора.
+enum PageType {
+  HOME
+  CATALOG
+  CART
+  PROFILE
+  CUSTOM
+}
+
+/// Категории блоков, упрощающие фильтрацию в редакторе.
+enum BlockCategory {
+  HERO
+  PRODUCT
+  REVIEWS
+  CTA
+  CONTENT
+  NAVIGATION
+  GENERAL
+}
+
+/// Тональность шаблонов отзывов.
+enum CommentTone {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+/// Роли участников команды сайта.
+enum SiteMemberRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+/// Состояние наличия товара.
+enum StockStatus {
+  IN_STOCK
+  OUT_OF_STOCK
+  PREORDER
+}
+
+/// Статусы обработки заказа.
+enum OrderStatus {
+  DRAFT
+  PENDING
+  CONFIRMED
+  FULFILLED
+  CANCELLED
+}
+
+/// Статусы оплаты заказа.
+enum PaymentStatus {
+  NOT_PAID
+  PENDING
+  PAID
+  REFUNDED
 }
