@@ -15,10 +15,10 @@ export default function Welcome() {
         Картинка
       </div>
 
-      <div className="bg-neutral-800 display flex items-center p-5" >
+      <div className="text-white bg-neutral-800 display flex items-center p-5" >
         <div className="flex flex-col gap-5 text-center md:text-left">
           <h3
-            className="text-3xl md:text-4xl font-semibold leading-tight"
+            className="text-3xl md:text-4xl font-semibold leading-snug"
           >
             Создайте свой <RotatingText
               texts={heroTags}
@@ -47,7 +47,7 @@ export default function Welcome() {
           <div>
 
             <Magnet padding={50} magnetStrength={3} >
-              <Button className="bg-emerald-200 font-mono px-6 hover:opacity-90 hover:bg-emerald-200 cursor-pointer">Создать свой сайт</Button>
+              <Button className="text-black bg-emerald-200 font-mono px-6 hover:opacity-90 hover:bg-emerald-200 cursor-pointer">Создать свой сайт</Button>
             </Magnet>
 
           </div>
