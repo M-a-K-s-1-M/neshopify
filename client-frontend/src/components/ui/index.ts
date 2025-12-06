@@ -4,3 +4,5 @@ export * from './toast';
 export { TextGif, gifUrls } from './text-gif';
 export * from './toggle';
 export * from './navigation-menu';
+export { ButtonGroup } from './button-group';
+export { Separator } from './separator';
