@@ -1,19 +1,33 @@
 import { Module } from "@nestjs/common";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
-import { PrismaService } from "src/prisma/prisma.service";
 import { JwtModule } from "@nestjs/jwt";
 import { JwtAccessStrategy } from "./strategies/jwt-access.strategy";
 import { JwtRefreshStrategy } from "./strategies/jwt-refresh.strategy";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import type { StringValue } from "ms";
 
 @Module({
   imports: [
-    JwtModule.register({}),
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const accessTtl: StringValue = config.get<StringValue>('jwt.accessTtl') ?? '15m';
+
+        return {
+          secret: config.getOrThrow<string>('jwt.accessSecret'),
+          signOptions: {
+            expiresIn: accessTtl,
+          },
+        };
+      },
+    }),
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
-    PrismaService,
     JwtAccessStrategy,
     JwtRefreshStrategy,
   ],

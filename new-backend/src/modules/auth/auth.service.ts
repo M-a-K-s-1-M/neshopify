@@ -9,24 +9,32 @@ import { JwtService } from "@nestjs/jwt";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { JwtPayload } from "./interfaces/jwt-payload";
+import { ConfigService } from "@nestjs/config";
+import type { StringValue } from "ms";
 
 @Injectable()
 export class AuthService {
     constructor(
         private prisma: PrismaService,
-        private jwt: JwtService
+        private jwt: JwtService,
+        private readonly configService: ConfigService,
     ) { }
 
     // Генерация двух токенов
     generateTokens(payload: JwtPayload) {
+        const accessSecret = this.configService.getOrThrow<string>('jwt.accessSecret');
+        const refreshSecret = this.configService.getOrThrow<string>('jwt.refreshSecret');
+        const accessTtl: StringValue = this.configService.get<StringValue>('jwt.accessTtl') ?? '15m';
+        const refreshTtl: StringValue = this.configService.get<StringValue>('jwt.refreshTtl') ?? '30d';
+
         const accessToken = this.jwt.sign(payload, {
-            secret: process.env.JWT_ACCESS_SECRET,
-            expiresIn: "15s", // "15m"
+            secret: accessSecret,
+            expiresIn: accessTtl,
         });
 
         const refreshToken = this.jwt.sign(payload, {
-            secret: process.env.JWT_REFRESH_SECRET,
-            expiresIn: "30d", // "30d"
+            secret: refreshSecret,
+            expiresIn: refreshTtl,
         });
 
         return { accessToken, refreshToken };
@@ -70,6 +78,25 @@ export class AuthService {
     // REGISTRATION OF CUSTOMER
     // -------------------------------------
     async registerCustomer(dto: RegisterDto, siteId: string) {
+        if (!siteId) {
+            // Для привязки клиента нам нужен конкретный сайт
+            throw new BadRequestException("siteId обязателен");
+        }
+
+        // Одним транзакционным запросом проверяем наличие сайта и дубликата email
+        const [site, existingUser] = await this.prisma.$transaction([
+            this.prisma.site.findUnique({ where: { id: siteId } }),
+            this.prisma.user.findUnique({ where: { email: dto.email } }),
+        ]);
+
+        if (!site) {
+            throw new BadRequestException("Сайт не найден");
+        }
+
+        if (existingUser) {
+            throw new BadRequestException("Email уже используется");
+        }
+
         const hash = await bcrypt.hash(dto.password, 10);
 
         const user = await this.prisma.user.create({
@@ -107,6 +134,7 @@ export class AuthService {
         });
 
         if (!user) throw new UnauthorizedException("Пользователь не найден");
+        if (user.banned) throw new UnauthorizedException("Пользователь заблокирован"); // Запрещаем логин забаненным
 
         const ok = await bcrypt.compare(dto.password, user.passwordHash);
         if (!ok) throw new UnauthorizedException("Неверная почта или пароль");
@@ -133,6 +161,8 @@ export class AuthService {
         const ok = await bcrypt.compare(dto.password, user.passwordHash);
 
         if (!ok) throw new UnauthorizedException("Неверная почта или пароль");
+
+        if (user.banned) throw new UnauthorizedException("Пользователь заблокирован"); // Админка также недоступна заблокированным
 
         const isAdmin = user.userRoles.some(r => r.role.value === 'ADMIN');
 

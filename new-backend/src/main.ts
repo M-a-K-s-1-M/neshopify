@@ -3,34 +3,49 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
-
-const options = {
-  origin: process.env.CLIENT_URL,
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  allowedHeaders: [
-    'Content-Type',
-    'X-Requested-With',
-    'Content-Type',
-    'Accept',
-    'Authorization',
-  ],
-  credentials: true,
-  optionSuccessStatus: 200
-};
+import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { TrimStringsPipe } from './common/pipes';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+
+  const clientUrl = configService.get<string>('app.clientUrl');
+  const port = configService.get<number>('app.port') ?? 5000;
+
+
   app.setGlobalPrefix('api');
 
-  app.useGlobalPipes(new ValidationPipe({
-    transform: true,
-    whitelist: true,
-  }))
+  app.useGlobalPipes(
+    new TrimStringsPipe(), // Обрезаем пробелы во всех строковых payload до валидации
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidUnknownValues: false,
+    }),
+  );
 
   app.use(cookieParser());
-  app.enableCors(options);
 
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Neshopify API')
+    .setDescription('REST API для конструктора, каталога и магазина')
+    .setVersion('1.0.0')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
+    .addCookieAuth('accessToken')
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument);
 
-  await app.listen(process.env.PORT ?? 5000, () => console.log(`Server started on port ${process.env.PORT ?? 5000}`));
+  app.enableCors({
+    origin: clientUrl,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: ['Content-Type', 'X-Requested-With', 'Accept', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 200,
+  });
+
+  await app.listen(port);
 }
 bootstrap();

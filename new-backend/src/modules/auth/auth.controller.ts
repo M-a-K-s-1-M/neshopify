@@ -11,19 +11,21 @@ import {
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
-import { JwtAuthGuard } from "./guards/jwt-auth.guard";
-import { RolesGuard } from "./guards/roles.guard";
+import { JwtAuthGuard, JwtRefreshGuard, RolesGuard } from "../../common/guards";
 import { Roles } from "./decorators/roles.decorator";
 import type { Request, Response } from "express";
 import { JwtPayload } from "./interfaces/jwt-payload";
-import { AuthGuard } from "@nestjs/passport";
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
+import { AccessTokenResponseDto, JwtPayloadResponseDto, MessageResponseDto, OkResponseDto } from "src/common/swagger/api-models";
 
 @Controller("auth")
+@ApiTags("Auth")
 export class AuthController {
   constructor(private auth: AuthService) { }
 
   // SITE OWNER
   @Post("register")
+  @ApiCreatedResponse({ type: AccessTokenResponseDto })
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.auth.register(dto);
 
@@ -38,6 +40,7 @@ export class AuthController {
 
   // CUSTOMER
   @Post("register-customer/:siteId")
+  @ApiCreatedResponse({ type: AccessTokenResponseDto })
   async registerCustomer(
     @Body() dto: RegisterDto,
     @Param("siteId") siteId: string,
@@ -58,6 +61,7 @@ export class AuthController {
 
   // LOGIN
   @Post("login")
+  @ApiOkResponse({ type: AccessTokenResponseDto })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.auth.login(dto);
 
@@ -71,6 +75,7 @@ export class AuthController {
   }
 
   @Post("login-admin")
+  @ApiOkResponse({ type: AccessTokenResponseDto })
   async loginAdmin(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.auth.loginAdmin(dto);
 
@@ -85,7 +90,8 @@ export class AuthController {
 
   // REFRESH TOKEN
   @Post("refresh")
-  @UseGuards(AuthGuard('jwt-refresh'))
+  @UseGuards(JwtRefreshGuard)
+  @ApiOkResponse({ type: AccessTokenResponseDto })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const user = req.user;
     if (!user) throw new Error("No user in request");
@@ -101,6 +107,7 @@ export class AuthController {
   }
 
   @Post("logout")
+  @ApiOkResponse({ type: MessageResponseDto })
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken", { path: "/auth/refresh" });
@@ -108,6 +115,8 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: JwtPayloadResponseDto })
   @Get("me")
   me(@Req() req: Request) {
     return req.user;
@@ -115,6 +124,8 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: OkResponseDto })
   @Get("admin-check")
   adminCheck() {
     return { ok: true };
@@ -122,6 +133,8 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("SITE_OWNER")
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: OkResponseDto })
   @Get("owner-check")
   ownerCheck() {
     return { ok: true };
@@ -129,6 +142,8 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("CUSTOMER")
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: OkResponseDto })
   @Get("customer-check")
   customerCheck() {
     return { ok: true };
