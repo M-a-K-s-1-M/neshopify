@@ -3,10 +3,14 @@ import { OrderStatus, PaymentStatus } from '../../../../generated/prisma/client'
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PaymentWebhookDto } from '../dto/payment-webhook.dto';
 
+/**
+ * Сервис платежей, принимающий уведомления от провайдеров и обновляющий заказы.
+ */
 @Injectable()
 export class PaymentsService {
     constructor(private readonly prisma: PrismaService) { }
 
+    /** Обрабатывает вебхук, синхронизирует статусы заказа и сохраняет детали транзакции. */
     async handleWebhook(provider: string, dto: PaymentWebhookDto) {
         const order = await this.prisma.order.findUnique({ where: { id: dto.orderId } });
 

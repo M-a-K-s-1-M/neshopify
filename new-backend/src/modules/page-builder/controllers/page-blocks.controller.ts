@@ -17,6 +17,9 @@ import { UpdateBlockDto } from '../dto/update-block.dto';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { BlockInstanceResponseDto, RemovedResponseDto } from 'src/common/swagger/api-models';
 
+/**
+ * Управляет блоками страницы в визуальном конструкторе.
+ */
 @Controller('sites/:siteId/pages/:pageId/blocks')
 @ApiTags('Page Blocks')
 @ApiBearerAuth()
@@ -24,6 +27,7 @@ import { BlockInstanceResponseDto, RemovedResponseDto } from 'src/common/swagger
 export class PageBlocksController {
     constructor(private readonly pageBlocksService: PageBlocksService) { }
 
+    /** Возвращает блоки страницы в порядке отображения. */
     @Get()
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -32,6 +36,7 @@ export class PageBlocksController {
         return this.pageBlocksService.list(siteId, pageId);
     }
 
+    /** Добавляет новый блок на страницу. */
     @Post()
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -45,6 +50,7 @@ export class PageBlocksController {
         return this.pageBlocksService.create(siteId, pageId, dto);
     }
 
+    /** Обновляет содержимое или позицию блока. */
     @Patch(':blockId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -59,6 +65,7 @@ export class PageBlocksController {
         return this.pageBlocksService.update(siteId, pageId, blockId, dto);
     }
 
+    /** Удаляет блок и пересчитывает порядок остальных. */
     @Delete(':blockId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)

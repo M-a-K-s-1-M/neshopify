@@ -17,6 +17,9 @@ import { UpdatePageDto } from '../dto/update-page.dto';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { PageResponseDto, RemovedResponseDto } from 'src/common/swagger/api-models';
 
+/**
+ * Контроллер страниц конструктора сайтов: CRUD операций по страницам.
+ */
 @Controller()
 @ApiTags('Pages')
 @ApiBearerAuth()
@@ -24,6 +27,7 @@ import { PageResponseDto, RemovedResponseDto } from 'src/common/swagger/api-mode
 export class PagesController {
     constructor(private readonly pagesService: PagesService) { }
 
+    /** Создает новую страницу сайта. */
     @Post('sites/:siteId/pages')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -33,6 +37,7 @@ export class PagesController {
         return this.pagesService.create(siteId, dto);
     }
 
+    /** Возвращает список страниц сайта. */
     @Get('sites/:siteId/pages')
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -41,6 +46,7 @@ export class PagesController {
         return this.pagesService.findAll(siteId);
     }
 
+    /** Загружает страницу вместе с блоками. */
     @Get('sites/:siteId/pages/:pageId')
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -49,6 +55,7 @@ export class PagesController {
         return this.pagesService.findOne(siteId, pageId);
     }
 
+    /** Обновляет метаданные и контент страницы. */
     @Patch('sites/:siteId/pages/:pageId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -62,6 +69,7 @@ export class PagesController {
         return this.pagesService.update(siteId, pageId, dto);
     }
 
+    /** Удаляет страницу с сайта. */
     @Delete('sites/:siteId/pages/:pageId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)

@@ -4,10 +4,14 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { AddCartItemDto } from '../dto/add-cart-item.dto';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
 
+/**
+ * Сервис управления корзиной: хранение позиций, подсчет содержимого и проверка товаров.
+ */
 @Injectable()
 export class CartService {
     constructor(private readonly prisma: PrismaService) { }
 
+    /** Возвращает корзину с продуктами либо выбрасывает 404. */
     async getCart(siteId: string, sessionId: string) {
         const cart = await this.resolveCart(siteId, sessionId, true);
         if (!cart) {
@@ -26,6 +30,7 @@ export class CartService {
         });
     }
 
+    /** Добавляет новый товар или обновляет количество существующего. */
     async addItem(siteId: string, dto: AddCartItemDto) {
         const cart = await this.resolveCart(siteId, dto.sessionId, true);
         if (!cart) {
@@ -58,6 +63,7 @@ export class CartService {
         return this.getCart(siteId, dto.sessionId);
     }
 
+    /** Обновляет количество для конкретной позиции корзины. */
     async updateItem(siteId: string, itemId: string, dto: UpdateCartItemDto) {
         const cart = await this.resolveCart(siteId, dto.sessionId, false);
         if (!cart) {
@@ -80,6 +86,7 @@ export class CartService {
         return this.getCart(siteId, dto.sessionId);
     }
 
+    /** Удаляет позицию и возвращает актуальное состояние корзины. */
     async removeItem(siteId: string, itemId: string, sessionId: string) {
         const cart = await this.resolveCart(siteId, sessionId, false);
         if (!cart) {
@@ -90,6 +97,7 @@ export class CartService {
         return this.getCart(siteId, sessionId);
     }
 
+    /** Очистка всех позиций корзины пользователя. */
     async clearCart(siteId: string, sessionId: string) {
         const cart = await this.resolveCart(siteId, sessionId, false);
         if (!cart) {
@@ -100,10 +108,12 @@ export class CartService {
         return this.getCart(siteId, sessionId);
     }
 
+    /** Вспомогательный метод для удаления всех позиций по cartId (используется заказами). */
     async internalClear(cartId: string) {
         await this.prisma.cartItem.deleteMany({ where: { cartId } });
     }
 
+    /** Ищет или создает корзину по siteId/sessionId. */
     private async resolveCart(siteId: string, sessionId: string, createIfMissing: boolean) {
         if (!sessionId) {
             throw new BadRequestException('Не указан sessionId');
@@ -123,6 +133,7 @@ export class CartService {
         return cart;
     }
 
+    /** Проверяет, что товар принадлежит сайту, и возвращает его. */
     private async ensureProduct(siteId: string, productId: string) {
         const product = await this.prisma.product.findFirst({ where: { id: productId, siteId } });
         if (!product) {
@@ -131,6 +142,7 @@ export class CartService {
         return product;
     }
 
+    /** Возвращает пустую корзину-заглушку, если реальная еще не создана. */
     private async emptyCart(siteId: string, sessionId: string) {
         return {
             siteId,

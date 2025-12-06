@@ -18,12 +18,15 @@ import { JwtPayload } from "./interfaces/jwt-payload";
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { AccessTokenResponseDto, JwtPayloadResponseDto, MessageResponseDto, OkResponseDto } from "src/common/swagger/api-models";
 
+/**
+ * Контроллер аутентификации: регистрация, логин, обновление токенов и проверки ролей.
+ */
 @Controller("auth")
 @ApiTags("Auth")
 export class AuthController {
   constructor(private auth: AuthService) { }
 
-  // SITE OWNER
+  /** Регистрация владельца сайта (создает пользователя и выдает токены). */
   @Post("register")
   @ApiCreatedResponse({ type: AccessTokenResponseDto })
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
@@ -38,7 +41,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
-  // CUSTOMER
+  /** Регистрация клиента конкретного сайта. */
   @Post("register-customer/:siteId")
   @ApiCreatedResponse({ type: AccessTokenResponseDto })
   async registerCustomer(
@@ -59,7 +62,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
-  // LOGIN
+  /** Универсальный логин (любой роли) по email/паролю. */
   @Post("login")
   @ApiOkResponse({ type: AccessTokenResponseDto })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
@@ -74,6 +77,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
+  /** Логин администратора с дополнительной проверкой роли. */
   @Post("login-admin")
   @ApiOkResponse({ type: AccessTokenResponseDto })
   async loginAdmin(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
@@ -88,7 +92,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
-  // REFRESH TOKEN
+  /** Обновление пары токенов по refresh-cookie. */
   @Post("refresh")
   @UseGuards(JwtRefreshGuard)
   @ApiOkResponse({ type: AccessTokenResponseDto })
@@ -106,6 +110,7 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
+  /** Выход — очищает cookies с токенами. */
   @Post("logout")
   @ApiOkResponse({ type: MessageResponseDto })
   async logout(@Res({ passthrough: true }) res: Response) {
@@ -114,6 +119,7 @@ export class AuthController {
     return { message: "ok" };
   }
 
+  /** Возвращает текущего пользователя из access-токена. */
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOkResponse({ type: JwtPayloadResponseDto })
@@ -122,6 +128,7 @@ export class AuthController {
     return req.user;
   }
 
+  /** Проверка доступа администратора (health-check для панели). */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("ADMIN")
   @ApiBearerAuth()
@@ -131,6 +138,7 @@ export class AuthController {
     return { ok: true };
   }
 
+  /** Проверка роли владельца сайта. */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("SITE_OWNER")
   @ApiBearerAuth()
@@ -140,6 +148,7 @@ export class AuthController {
     return { ok: true };
   }
 
+  /** Проверка роли покупателя. */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles("CUSTOMER")
   @ApiBearerAuth()

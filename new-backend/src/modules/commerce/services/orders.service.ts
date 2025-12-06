@@ -7,6 +7,9 @@ import { PaginationQuery } from '../../../common/pipes';
 import { OrderFiltersDto } from '../dto/order-filters.dto';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
 
+/**
+ * Сервис заказов: формирует заказ из корзины, выдает списки и обновляет статусы.
+ */
 @Injectable()
 export class OrdersService {
     constructor(
@@ -14,6 +17,9 @@ export class OrdersService {
         private readonly cartService: CartService,
     ) { }
 
+    /**
+     * Преобразует текущую корзину в заказ, копирует позиции и очищает корзину после сохранения.
+     */
     async checkout(siteId: string, dto: CheckoutDto) {
         const cart = await this.cartService.getCart(siteId, dto.sessionId);
 
@@ -54,6 +60,9 @@ export class OrdersService {
         return order;
     }
 
+    /**
+     * Возвращает страницу заказов с фильтрами по статусам и поиском по контактам/позициям.
+     */
     async list(siteId: string, pagination: PaginationQuery, filters: OrderFiltersDto) {
         const where: Prisma.OrderWhereInput = { siteId };
 
@@ -96,6 +105,9 @@ export class OrdersService {
         };
     }
 
+    /**
+     * Загружает конкретный заказ вместе с позициями для указанного сайта.
+     */
     async get(siteId: string, orderId: string) {
         const order = await this.prisma.order.findFirst({
             where: { id: orderId, siteId },
@@ -109,6 +121,9 @@ export class OrdersService {
         return order;
     }
 
+    /**
+     * Обновляет статусы заказа (бизнес и оплата) после проверки принадлежности сайту.
+     */
     async updateStatus(siteId: string, orderId: string, dto: UpdateOrderStatusDto) {
         await this.get(siteId, orderId);
 

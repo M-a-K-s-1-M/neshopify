@@ -4,10 +4,14 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreatePageDto } from '../dto/create-page.dto';
 import { UpdatePageDto } from '../dto/update-page.dto';
 
+/**
+ * Сервис страниц: управляет CRUD и проверками уникальности slug.
+ */
 @Injectable()
 export class PagesService {
     constructor(private readonly prisma: PrismaService) { }
 
+    /** Создает страницу и валидирует уникальность slug. */
     async create(siteId: string, dto: CreatePageDto) {
         try {
             return await this.prisma.page.create({
@@ -28,6 +32,7 @@ export class PagesService {
         }
     }
 
+    /** Возвращает все страницы сайта. */
     async findAll(siteId: string) {
         return this.prisma.page.findMany({
             where: { siteId },
@@ -35,6 +40,7 @@ export class PagesService {
         });
     }
 
+    /** Загружает страницу вместе с блоками. */
     async findOne(siteId: string, pageId: string) {
         const page = await this.prisma.page.findFirst({
             where: { id: pageId, siteId },
@@ -53,6 +59,7 @@ export class PagesService {
         return page;
     }
 
+    /** Обновляет страницу и следит за уникальностью slug. */
     async update(siteId: string, pageId: string, dto: UpdatePageDto) {
         await this.ensurePage(siteId, pageId);
 
@@ -71,12 +78,14 @@ export class PagesService {
         }
     }
 
+    /** Удаляет страницу. */
     async remove(siteId: string, pageId: string) {
         await this.ensurePage(siteId, pageId);
         await this.prisma.page.delete({ where: { id: pageId } });
         return { removed: true };
     }
 
+    /** Убеждается, что страница принадлежит сайту, и возвращает ее. */
     async ensurePage(siteId: string, pageId: string) {
         const page = await this.prisma.page.findFirst({ where: { id: pageId, siteId } });
         if (!page) {

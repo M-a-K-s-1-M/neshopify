@@ -4,6 +4,9 @@ import { PagesService } from './pages.service';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 import { UpdateCommentDto } from '../dto/update-comment.dto';
 
+/**
+ * Сервис комментариев блоков: CRUD и проверки принадлежности страницам.
+ */
 @Injectable()
 export class BlockCommentsService {
     constructor(
@@ -11,6 +14,7 @@ export class BlockCommentsService {
         private readonly pagesService: PagesService,
     ) { }
 
+    /** Возвращает комментарии блока, убедившись что блок существует. */
     async list(siteId: string, pageId: string, blockId: string) {
         await this.ensureBlock(siteId, pageId, blockId);
         return this.prisma.commentInstance.findMany({
@@ -19,6 +23,7 @@ export class BlockCommentsService {
         });
     }
 
+    /** Создает комментарий с опциональным шаблоном. */
     async create(siteId: string, pageId: string, blockId: string, dto: CreateCommentDto) {
         await this.ensureBlock(siteId, pageId, blockId);
 
@@ -41,6 +46,7 @@ export class BlockCommentsService {
         });
     }
 
+    /** Обновляет комментарий после проверки блока и самого комментария. */
     async update(siteId: string, pageId: string, blockId: string, commentId: string, dto: UpdateCommentDto) {
         await this.ensureBlock(siteId, pageId, blockId);
 
@@ -52,12 +58,14 @@ export class BlockCommentsService {
         return this.prisma.commentInstance.update({ where: { id: commentId }, data: dto });
     }
 
+    /** Удаляет комментарий. */
     async remove(siteId: string, pageId: string, blockId: string, commentId: string) {
         await this.ensureBlock(siteId, pageId, blockId);
         await this.prisma.commentInstance.delete({ where: { id: commentId } });
         return { removed: true };
     }
 
+    /** Проверяет существование страницы и блока на ней. */
     private async ensureBlock(siteId: string, pageId: string, blockId: string) {
         await this.pagesService.ensurePage(siteId, pageId);
         const block = await this.prisma.blockInstance.findFirst({ where: { id: blockId, pageId } });

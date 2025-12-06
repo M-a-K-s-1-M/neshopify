@@ -11,18 +11,24 @@ import { UpdateSiteDto } from './dto/update-site.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 
+/**
+ * Сервис сайтов: управление карточками сайта и их участниками.
+ */
 @Injectable()
 export class SitesService {
     constructor(private readonly prisma: PrismaService) { }
 
+    /** Короткий алиас до prisma.site. */
     private get siteDelegate() {
         return (this.prisma as any).site;
     }
 
+    /** Короткий алиас до prisma.siteMember. */
     private get siteMemberDelegate() {
         return (this.prisma as any).siteMember;
     }
 
+    /** Создает сайт и нормализует slug/domain. */
     async create(ownerId: string, dto: CreateSiteDto) {
         try {
             return await this.siteDelegate.create({
@@ -44,6 +50,7 @@ export class SitesService {
         }
     }
 
+    /** Возвращает сайты, доступные пользователю (или все для админа). */
     async findAllForUser(userId: string, roles: string[]) {
         const isAdmin = roles.includes('ADMIN');
         const where = isAdmin
@@ -72,6 +79,7 @@ export class SitesService {
         return sites;
     }
 
+    /** Находит сайт по id вместе с участниками. */
     async findById(siteId: string) {
         const site = (await this.siteDelegate.findUnique({
             where: { id: siteId },
@@ -91,6 +99,7 @@ export class SitesService {
         return site;
     }
 
+    /** Обновляет свойства сайта. */
     async update(siteId: string, dto: UpdateSiteDto) {
         try {
             return await this.siteDelegate.update({
@@ -109,10 +118,12 @@ export class SitesService {
         }
     }
 
+    /** Удаляет сайт. */
     async remove(siteId: string) {
         return this.siteDelegate.delete({ where: { id: siteId } });
     }
 
+    /** Возвращает участников сайта. */
     async listMembers(siteId: string) {
         const members = await this.siteMemberDelegate.findMany({
             where: { siteId },
@@ -123,6 +134,7 @@ export class SitesService {
         return members;
     }
 
+    /** Добавляет участника по email и задает роль. */
     async addMember(siteId: string, dto: AddMemberDto, currentUserId: string) {
         const targetUser = await this.prisma.user.findUnique({
             where: { email: dto.email },
@@ -166,6 +178,7 @@ export class SitesService {
         return member;
     }
 
+    /** Обновляет роль участника, проверяя принадлежность сайту. */
     async updateMemberRole(siteId: string, memberId: string, dto: UpdateMemberRoleDto) {
         const member = await this.siteMemberDelegate.update({
             where: { id: memberId },
@@ -180,6 +193,7 @@ export class SitesService {
         return member;
     }
 
+    /** Удаляет участника из сайта. */
     async removeMember(siteId: string, memberId: string) {
         const member = await this.siteMemberDelegate.findUnique({ where: { id: memberId } });
 

@@ -17,6 +17,9 @@ import { UpdateCommentDto } from '../dto/update-comment.dto';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { CommentResponseDto, RemovedResponseDto } from 'src/common/swagger/api-models';
 
+/**
+ * Позволяет управлять комментариями внутри блоков страницы.
+ */
 @Controller('sites/:siteId/pages/:pageId/blocks/:blockId/comments')
 @ApiTags('Block Comments')
 @ApiBearerAuth()
@@ -24,6 +27,7 @@ import { CommentResponseDto, RemovedResponseDto } from 'src/common/swagger/api-m
 export class BlockCommentsController {
     constructor(private readonly blockCommentsService: BlockCommentsService) { }
 
+    /** Возвращает список комментариев блока. */
     @Get()
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -36,6 +40,7 @@ export class BlockCommentsController {
         return this.blockCommentsService.list(siteId, pageId, blockId);
     }
 
+    /** Создает новый комментарий (шаблонный или произвольный). */
     @Post()
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.MEMBER)
@@ -50,6 +55,7 @@ export class BlockCommentsController {
         return this.blockCommentsService.create(siteId, pageId, blockId, dto);
     }
 
+    /** Обновляет содержимое комментария. */
     @Patch(':commentId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.MEMBER)
@@ -65,6 +71,7 @@ export class BlockCommentsController {
         return this.blockCommentsService.update(siteId, pageId, blockId, commentId, dto);
     }
 
+    /** Удаляет комментарий. */
     @Delete(':commentId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.MEMBER)

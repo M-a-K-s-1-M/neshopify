@@ -5,6 +5,9 @@ import { BlockSchemaRegistry } from '../schemas/block-schema.registry';
 import { CreateBlockTemplateDto } from '../dto/create-block-template.dto';
 import { UpdateBlockTemplateDto } from '../dto/update-block-template.dto';
 
+/**
+ * Управляет шаблонами блоков и регистром схем данных.
+ */
 @Injectable()
 export class BlockTemplatesService {
     constructor(
@@ -12,18 +15,21 @@ export class BlockTemplatesService {
         private readonly registry: BlockSchemaRegistry,
     ) { }
 
+    /** Возвращает все шаблоны блоков. */
     async list() {
         return this.prisma.blockTemplate.findMany({
             orderBy: { createdAt: 'desc' },
         });
     }
 
+    /** Загружает шаблон по id. */
     async get(id: string) {
         const template = await this.prisma.blockTemplate.findUnique({ where: { id } });
         if (!template) throw new NotFoundException('Шаблон не найден');
         return template;
     }
 
+    /** Создает шаблон, подставляя схему из регистра и проверяя уникальность ключа. */
     async create(dto: CreateBlockTemplateDto) {
         try {
             const schema = dto.schema ?? this.registry.get(dto.key)?.schema;
@@ -49,6 +55,7 @@ export class BlockTemplatesService {
         }
     }
 
+    /** Обновляет шаблон и проверяет уникальность ключа. */
     async update(id: string, dto: UpdateBlockTemplateDto) {
         await this.get(id);
 
@@ -67,12 +74,14 @@ export class BlockTemplatesService {
         }
     }
 
+    /** Удаляет шаблон после проверки его существования. */
     async remove(id: string) {
         await this.get(id);
         await this.prisma.blockTemplate.delete({ where: { id } });
         return { removed: true };
     }
 
+    /** Возвращает список доступных схем из регистра. */
     listRegisteredSchemas() {
         return this.registry.list();
     }

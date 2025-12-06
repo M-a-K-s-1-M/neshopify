@@ -7,10 +7,14 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 import { ProductFiltersDto } from '../dto/product-filters.dto';
 import { PaginationQuery } from '../../../common/pipes';
 
+/**
+ * Сервис каталога товаров: фильтрация, CRUD и проверки SKU/категорий.
+ */
 @Injectable()
 export class ProductsService {
     constructor(private readonly prisma: PrismaService) { }
 
+    /** Формирует страницу товаров с фильтрами и сортировкой. */
     async list(siteId: string, filters: ProductFiltersDto, pagination: PaginationQuery) {
         const where: Prisma.ProductWhereInput = {
             siteId,
@@ -69,10 +73,12 @@ export class ProductsService {
         };
     }
 
+    /** Возвращает товар, гарантируя, что он принадлежит сайту. */
     async get(siteId: string, productId: string) {
         return this.ensureProduct(siteId, productId);
     }
 
+    /** Создает товар с валидацией категории и обработкой дубликатов SKU. */
     async create(siteId: string, dto: CreateProductDto) {
         if (dto.categoryId) {
             await this.ensureCategory(siteId, dto.categoryId);
@@ -104,6 +110,7 @@ export class ProductsService {
         }
     }
 
+    /** Обновляет товар, повторно проверяя категорию и SKU. */
     async update(siteId: string, productId: string, dto: UpdateProductDto) {
         await this.ensureProduct(siteId, productId);
 
@@ -131,12 +138,14 @@ export class ProductsService {
         }
     }
 
+    /** Удаляет товар после проверки его существования. */
     async remove(siteId: string, productId: string) {
         await this.ensureProduct(siteId, productId);
         await this.prisma.product.delete({ where: { id: productId } });
         return { removed: true };
     }
 
+    /** Проверяет существование товара и возвращает его с медиаданными. */
     private async ensureProduct(siteId: string, productId: string) {
         const product = await this.prisma.product.findFirst({
             where: { id: productId, siteId },
@@ -151,6 +160,7 @@ export class ProductsService {
         return product;
     }
 
+    /** Проверяет наличие категории на сайте. */
     private async ensureCategory(siteId: string, categoryId: string) {
         const category = await this.prisma.productCategory.findFirst({ where: { id: categoryId, siteId } });
         if (!category) {

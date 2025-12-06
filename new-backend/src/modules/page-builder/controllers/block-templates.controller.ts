@@ -20,6 +20,9 @@ import {
     SchemaEntryDto,
 } from 'src/common/swagger/api-models';
 
+/**
+ * Контроллер административных шаблонов блоков, используемых на страницах.
+ */
 @Controller('block-templates')
 @ApiTags('Block Templates')
 @ApiBearerAuth()
@@ -27,24 +30,28 @@ import {
 export class BlockTemplatesController {
     constructor(private readonly blockTemplatesService: BlockTemplatesService) { }
 
+    /** Возвращает перечень существующих шаблонов блоков. */
     @Get()
     @ApiOkResponse({ type: BlockTemplateResponseDto, isArray: true })
     list() {
         return this.blockTemplatesService.list();
     }
 
+    /** Выдает список зарегистрированных схем данных. */
     @Get('schemas')
     @ApiOkResponse({ type: SchemaEntryDto, isArray: true })
     listSchemas() {
         return this.blockTemplatesService.listRegisteredSchemas();
     }
 
+    /** Возвращает конкретный шаблон по идентификатору. */
     @Get(':id')
     @ApiOkResponse({ type: BlockTemplateResponseDto })
     get(@Param('id') id: string) {
         return this.blockTemplatesService.get(id);
     }
 
+    /** Создает шаблон блока (только администратор). */
     @Post()
     @Roles('ADMIN')
     @UseGuards(RolesGuard)
@@ -53,6 +60,7 @@ export class BlockTemplatesController {
         return this.blockTemplatesService.create(dto);
     }
 
+    /** Обновляет существующий шаблон. */
     @Patch(':id')
     @Roles('ADMIN')
     @UseGuards(RolesGuard)
@@ -61,6 +69,7 @@ export class BlockTemplatesController {
         return this.blockTemplatesService.update(id, dto);
     }
 
+    /** Удаляет шаблон. */
     @Delete(':id')
     @Roles('ADMIN')
     @UseGuards(RolesGuard)

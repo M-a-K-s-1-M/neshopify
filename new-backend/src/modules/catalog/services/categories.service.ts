@@ -4,10 +4,14 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 
+/**
+ * Сервис категорий: хранение иерархии, проверки зависимостей и CRUD.
+ */
 @Injectable()
 export class CategoriesService {
     constructor(private readonly prisma: PrismaService) { }
 
+    /** Возвращает список категорий с упорядочиванием по родителю и названию. */
     list(siteId: string) {
         return this.prisma.productCategory.findMany({
             where: { siteId },
@@ -18,10 +22,12 @@ export class CategoriesService {
         });
     }
 
+    /** Загружает категорию, убеждаясь что она принадлежит сайту. */
     async get(siteId: string, categoryId: string) {
         return this.ensureCategory(siteId, categoryId);
     }
 
+    /** Создает категорию и валидирует родителя/уникальность slug. */
     async create(siteId: string, dto: CreateCategoryDto) {
         if (dto.parentId) {
             await this.ensureCategory(siteId, dto.parentId);
@@ -44,6 +50,7 @@ export class CategoriesService {
         }
     }
 
+    /** Обновляет категорию, предотвращая циклы и коллизии slug. */
     async update(siteId: string, categoryId: string, dto: UpdateCategoryDto) {
         const category = await this.ensureCategory(siteId, categoryId);
 
@@ -69,6 +76,7 @@ export class CategoriesService {
         }
     }
 
+    /** Удаляет категорию после проверки дочерних элементов и товаров. */
     async remove(siteId: string, categoryId: string) {
         await this.ensureCategory(siteId, categoryId);
 
@@ -86,6 +94,7 @@ export class CategoriesService {
         return { removed: true };
     }
 
+    /** Проверяет, что категория существует на сайте. */
     private async ensureCategory(siteId: string, categoryId: string) {
         const category = await this.prisma.productCategory.findFirst({ where: { id: categoryId, siteId } });
         if (!category) {

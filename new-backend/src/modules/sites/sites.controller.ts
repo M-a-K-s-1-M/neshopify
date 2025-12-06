@@ -26,6 +26,9 @@ import {
     SiteResponseDto,
 } from 'src/common/swagger/api-models';
 
+/**
+ * Контроллер управления сайтами и их участниками.
+ */
 @Controller('sites')
 @ApiTags('Sites')
 @ApiBearerAuth()
@@ -33,6 +36,7 @@ import {
 export class SitesController {
     constructor(private readonly sitesService: SitesService) { }
 
+    /** Достает пользователя из запроса и выбрасывает 401, если его нет. */
     private getUser(req: Request) {
         const user = req.user as { sub: string; roles?: string[] } | undefined;
         if (!user) {
@@ -41,6 +45,7 @@ export class SitesController {
         return user;
     }
 
+    /** Создает новый сайт для владельца. */
     @Post()
     @Roles('SITE_OWNER', 'ADMIN')
     @UseGuards(RolesGuard)
@@ -50,6 +55,7 @@ export class SitesController {
         return this.sitesService.create(user.sub, dto);
     }
 
+    /** Возвращает сайты, к которым имеет доступ пользователь. */
     @Get()
     @ApiOkResponse({ type: SiteResponseDto, isArray: true })
     async findAll(@Req() req: Request) {
@@ -57,6 +63,7 @@ export class SitesController {
         return this.sitesService.findAllForUser(user.sub, user.roles ?? []);
     }
 
+    /** Возвращает один сайт с участниками. */
     @Get(':id')
     @SiteAccess(SiteAccessRequirement.MEMBER)
     @UseGuards(SiteAccessGuard)
@@ -65,6 +72,7 @@ export class SitesController {
         return this.sitesService.findById(id);
     }
 
+    /** Обновляет настройки сайта. */
     @Patch(':id')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -74,6 +82,7 @@ export class SitesController {
         return this.sitesService.update(id, dto);
     }
 
+    /** Удаляет сайт. */
     @Delete(':id')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -83,6 +92,7 @@ export class SitesController {
         return this.sitesService.remove(id);
     }
 
+    /** Возвращает список участников сайта. */
     @Get(':id/members')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -92,6 +102,7 @@ export class SitesController {
         return this.sitesService.listMembers(id);
     }
 
+    /** Добавляет участника по email. */
     @Post(':id/members')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -102,6 +113,7 @@ export class SitesController {
         return this.sitesService.addMember(id, dto, user.sub);
     }
 
+    /** Обновляет роль участника. */
     @Patch(':id/members/:memberId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
@@ -115,6 +127,7 @@ export class SitesController {
         return this.sitesService.updateMemberRole(id, memberId, dto);
     }
 
+    /** Удаляет участника сайта. */
     @Delete(':id/members/:memberId')
     @Roles('SITE_OWNER', 'ADMIN')
     @SiteAccess(SiteAccessRequirement.OWNER)
