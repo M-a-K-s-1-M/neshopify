@@ -32,7 +32,7 @@ export function SiteCard() {
                         </Button>
 
                         <Button variant={'ghost'} size={'sm'} className="pl-0 cursor-pointer" asChild>
-                            <Link href='/'>
+                            <Link href='/sites/1'>
                                 Редактировать
                             </Link>
                         </Button>
