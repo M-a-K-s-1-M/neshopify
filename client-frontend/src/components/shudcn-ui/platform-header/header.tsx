@@ -29,11 +29,11 @@ const PlatformHeader = () => {
   }, []);
   return (
     <>
-      <header className={`${siteConfig.bgNeutral}`}>
+      <header>
         <nav
           data-state={menuState && "active"}
           className={cn(
-            `max-w-${siteConfig.maxWidthContent} mx-auto w-full ${siteConfig.colorNeutral} px-3 md:px-4 transition-colors duration-300`,
+            `max-w-${siteConfig.maxWidthContent} mx-auto w-full px-3 md:px-4 transition-colors duration-300`,
             isScrolled && "border-transparent"
           )}
         >
@@ -105,7 +105,7 @@ const PlatformHeader = () => {
           </div>
         </nav>
       </header>
-      {/* <Separator className={cn(isScrolled && 'hidden')} /> */}
+      <Separator className={cn(isScrolled && 'hidden')} />
     </>
   );
 };
