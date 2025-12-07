@@ -11,12 +11,11 @@ const footerLinks = [
 export function PlatformFooter() {
     return (
         <>
-            {/* <Separator /> */}
-            <footer className={`${siteConfig.bgNeutral}`}
-            >
+            <Separator />
+            <footer>
                 <div className={`max-w-${siteConfig.maxWidthContent}
                 w-full mx-auto flex justify-between gap-5 flex-wrap-reverse
-                px-6 py-5 items-center ${siteConfig.colorNeutral}`}
+                px-6 py-5 items-center`}
                 >
                     <h3 className="font-medium">
                         &copy; 2025 {siteConfig.name}
