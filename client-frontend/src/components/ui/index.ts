@@ -7,3 +7,4 @@ export * from './navigation-menu';
 export { ButtonGroup } from './button-group';
 export { Separator } from './separator';
 export * from './breadcrumb';
+export * from './item';

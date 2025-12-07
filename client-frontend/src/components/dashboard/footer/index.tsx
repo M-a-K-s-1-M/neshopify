@@ -24,7 +24,7 @@ export function PlatformFooter() {
                     <ul className="flex flex-wrap gap-4">
                         {siteConfig.footerLinks.map(link => (
                             <li key={link.label} >
-                                <Button asChild variant={'link'} size={'sm'} className={`p-0 ${siteConfig.colorNeutral}`} >
+                                <Button asChild variant={'link'} size={'sm'} className={`p-0`} >
                                     <Link href={link.href}>
                                         {link.label}
                                     </Link>
