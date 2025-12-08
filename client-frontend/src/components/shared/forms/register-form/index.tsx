@@ -1,18 +1,29 @@
 'use client'
-import { Controller, SubmitHandler, useForm, UseFormReturn } from "react-hook-form"
-import { Checkbox, Field, FieldError, FieldGroup, FieldLabel, FieldSet, Input } from "@/components";
-import { IEditInfoUserForm } from "@/lib";
 
-export function EditInfoUserForm({ form }: { form: UseFormReturn<IEditInfoUserForm> }) {
+import { Button, Field, FieldError, FieldGroup, FieldLabel, FieldSet, Input } from "@/components"
+import { IRegisterForm } from "@/lib"
+import { Controller, SubmitHandler, useForm } from "react-hook-form"
 
-    const isCurrentPassword = form.watch('isCurrentPassword');
+export function RegisterForm() {
+    const form = useForm<IRegisterForm>({
+        mode: 'onChange',
+        defaultValues: {
+            email: '',
+            password: '',
+            confirmPassword: '',
+        }
+    })
 
-    const onSubmit: SubmitHandler<IEditInfoUserForm> = async (data) => {
+    const onSubmit: SubmitHandler<IRegisterForm> = async (data) => {
+        if (data.confirmPassword !== data.password) {
+            form.setError('confirmPassword', { type: 'manual', message: 'Пароли не совпадают' });
+            return;
+        }
         console.log(data);
     }
 
     return (
-        <form id='edit-info-user-form' onSubmit={form.handleSubmit(onSubmit)}>
+        <form id='register-form' onSubmit={form.handleSubmit(onSubmit)}>
             <FieldSet>
                 <FieldGroup>
                     <Controller
@@ -26,7 +37,7 @@ export function EditInfoUserForm({ form }: { form: UseFormReturn<IEditInfoUserFo
                             }
                         }}
                         render={({ field, fieldState }) => (
-                            <Field data-invalid={fieldState.invalid}>
+                            <Field data-invalid={fieldState.invalid} className="gap-1">
                                 <FieldLabel htmlFor="email">
                                     Электронная почта
                                 </FieldLabel>
@@ -50,73 +61,49 @@ export function EditInfoUserForm({ form }: { form: UseFormReturn<IEditInfoUserFo
                             minLength: { value: 6, message: "Пароль должен содержать не менее 6 символов" },
                             maxLength: { value: 20, message: "Пароль должен содержать не более 20 символов" },
                         }}
-                        disabled={isCurrentPassword}
                         render={({ field, fieldState }) => (
-                            <Field data-invalid={fieldState.invalid}>
-                                <FieldLabel htmlFor="password">Старый пароль</FieldLabel>
+                            <Field data-invalid={fieldState.invalid} className="gap-1">
+                                <FieldLabel htmlFor="password">Пароль</FieldLabel>
                                 <Input
                                     {...field}
                                     id="password"
                                     aria-invalid={fieldState.invalid}
-                                    placeholder="Введите старый пароль"
+                                    placeholder="Введите пароль"
                                     type="password"
                                     autoComplete='off'
-                                    disabled={isCurrentPassword}
                                 />
                                 {fieldState.invalid && <FieldError>{fieldState.error?.message}</FieldError>}
                             </Field>
                         )}
                     />
+
                     <Controller
-                        name='newPassword'
+                        name='confirmPassword'
                         control={form.control}
                         rules={{
-                            required: "Пароль обязателен",
+                            required: "Подтверждение пароля обязательно",
                             minLength: { value: 6, message: "Пароль должен содержать не менее 6 символов" },
                             maxLength: { value: 20, message: "Пароль должен содержать не более 20 символов" },
                         }}
-                        disabled={isCurrentPassword}
                         render={({ field, fieldState }) => (
-                            <Field data-invalid={fieldState.invalid}>
-                                <FieldLabel htmlFor="newPassword">Новый пароль</FieldLabel>
+                            <Field data-invalid={fieldState.invalid} className="gap-1">
+                                <FieldLabel htmlFor="confirmPassword">Подтверждение пароля</FieldLabel>
                                 <Input
                                     {...field}
-                                    id="newPassword"
+                                    id="confirmPassword"
                                     aria-invalid={fieldState.invalid}
-                                    placeholder="Введите новый пароль"
+                                    placeholder="Подтвердите пароль"
                                     type="password"
                                     autoComplete='off'
-                                    disabled={isCurrentPassword}
                                 />
                                 {fieldState.invalid && <FieldError>{fieldState.error?.message}</FieldError>}
                             </Field>
                         )}
                     />
-
-                    <Controller
-                        name="isCurrentPassword"
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                            <Field
-                                data-invalid={fieldState.invalid}
-                                orientation={'horizontal'}
-                                className="items-center [&>[data-slot=field-label]]:flex-initial"
-                            >
-                                <FieldLabel htmlFor="isCurrentPassword" className="w-auto flex-none" >Оставить старый пароль</FieldLabel>
-                                <Checkbox
-                                    id="isCurrentPassword"
-                                    name={field.name}
-                                    onBlur={field.onBlur}
-                                    aria-invalid={fieldState.invalid}
-                                    checked={!!field.value}
-                                    onCheckedChange={(checked) => field.onChange(Boolean(checked))}
-                                    ref={field.ref}
-                                />
-                            </Field>
-                        )}
-                    />
-
                 </FieldGroup>
+            </FieldSet>
+            <FieldSet className="mt-6">
+                <Button type="submit" form="register-form">Войти</Button>
             </FieldSet>
         </form>
     )

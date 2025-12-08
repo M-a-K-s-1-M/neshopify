@@ -1,0 +1,82 @@
+'use client'
+
+import { Button, Field, FieldError, FieldGroup, FieldLabel, FieldSet, Input } from "@/components"
+import { IAuthForm, IRegisterForm } from "@/lib"
+import { Controller, SubmitHandler, useForm } from "react-hook-form"
+
+export function LoginForm() {
+    const form = useForm<IAuthForm>({
+        mode: 'onChange',
+        defaultValues: {
+            email: '',
+            password: '',
+        }
+    })
+
+    const onSubmit: SubmitHandler<IAuthForm> = async (data) => {
+        console.log(data);
+    }
+
+    return (
+        <form id='login-form' onSubmit={form.handleSubmit(onSubmit)}>
+            <FieldSet>
+                <FieldGroup>
+                    <Controller
+                        name="email"
+                        control={form.control}
+                        rules={{
+                            required: "Электронная почта обязательна",
+                            pattern: {
+                                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                message: "Неверный формат электронной почты",
+                            }
+                        }}
+                        render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid} className="gap-1">
+                                <FieldLabel htmlFor="email">
+                                    Электронная почта
+                                </FieldLabel>
+                                <Input
+                                    {...field}
+                                    id="email"
+                                    aria-invalid={fieldState.invalid}
+                                    placeholder="user@example.com"
+                                    autoComplete='off'
+                                />
+                                {fieldState.invalid && <FieldError>{fieldState.error?.message}</FieldError>}
+                            </Field>
+                        )}
+                    />
+
+                    <Controller
+                        name='password'
+                        control={form.control}
+                        rules={{
+                            required: "Пароль обязателен",
+                            minLength: { value: 6, message: "Пароль должен содержать не менее 6 символов" },
+                            maxLength: { value: 20, message: "Пароль должен содержать не более 20 символов" },
+                        }}
+                        render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid} className="gap-1">
+                                <FieldLabel htmlFor="password">Пароль</FieldLabel>
+                                <Input
+                                    {...field}
+                                    id="password"
+                                    aria-invalid={fieldState.invalid}
+                                    placeholder="Введите пароль"
+                                    type="password"
+                                    autoComplete='off'
+                                />
+                                {fieldState.invalid && <FieldError>{fieldState.error?.message}</FieldError>}
+                            </Field>
+                        )}
+                    />
+
+                </FieldGroup>
+            </FieldSet>
+            <FieldSet className="mt-6">
+                <Button type="submit" form="login-form">Войти</Button>
+            </FieldSet>
+        </form>
+    )
+}

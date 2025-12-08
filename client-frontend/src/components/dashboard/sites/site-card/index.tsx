@@ -20,13 +20,13 @@ export function SiteCard() {
                 <div className="flex flex-wrap justify-between w-full gap-3">
                     <ButtonGroup >
                         <Button variant={'ghost'} size={'sm'} className=" cursor-pointer" asChild>
-                            <Link href="/">
+                            <Link href="/sites/siteId">
                                 <Edit />
                             </Link>
                         </Button>
 
                         <Button variant={'ghost'} size={'sm'} className="pl-0 cursor-pointer" asChild>
-                            <Link href='/sites/1'>
+                            <Link href='/sites/siteId'>
                                 Редактировать
                             </Link>
                         </Button>

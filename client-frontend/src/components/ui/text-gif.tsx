@@ -14,7 +14,7 @@ const textBaseVariants = cva("", {
       xxs: "text-base sm:text-lg lg:text-lg",
       xs: "text-lg sm:text-xl lg:text-2xl",
       sm: "text-xl sm:text-2xl lg:text-3xl",
-      md: "text-2xl sm:text-3xl lg:text-4xl",
+      md: "text-4xl",
       lg: "text-3xl sm:text-4xl lg:text-5xl",
       xl: "text-4xl sm:text-5xl lg:text-6xl",
       xxl: "text-[2.5rem] sm:text-6xl lg:text-[6rem]",
@@ -57,7 +57,7 @@ const TextGif = React.memo(function TextGifComponent({
   weight,
   font,
   className,
-  fallbackColor = "black",
+  fallbackColor = "primary-foreground",
   transitionDuration = 300,
 }: TextGifProps) {
   const [loaded, setLoaded] = useState(false)
@@ -134,7 +134,7 @@ const TextGif = React.memo(function TextGifComponent({
 })
 
 // Export common GIF URLs
-export const gifUrls = [
+const gifUrls = [
   "https://media.giphy.com/media/3zvbrvbRe7wxBofOBI/giphy.gif",
   "https://media.giphy.com/media/fnglNFjBGiyAFtm6ke/giphy.gif",
   "https://media.giphy.com/media/9Pmfazv34l7aNIKK05/giphy.gif",
@@ -160,5 +160,5 @@ function PreloadGifs() {
   )
 }
 
-export { TextGif }
+export { TextGif, gifUrls }
 export default TextGif

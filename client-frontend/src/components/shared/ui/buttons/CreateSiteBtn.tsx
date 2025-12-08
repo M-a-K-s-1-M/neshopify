@@ -1,11 +1,16 @@
-import { Button } from "@/components";
-import { Plus } from "lucide-react";
+'use client';
+import { useState } from "react";
+import dynamic from "next/dynamic";
+
+const CreateSiteModal = dynamic(
+    () => import("@/components/dashboard/modals/create-site-modal/index"),
+    { ssr: false }
+);
 
 export function CreateSiteBtn() {
+    const [open, setOpen] = useState(false)
+
     return (
-        <Button variant={'default'} className="cursor-pointer shadow-md" >
-            <Plus />
-            Создать сайт
-        </Button>
+        <CreateSiteModal open={open} setOpen={setOpen} />
     )
 }
