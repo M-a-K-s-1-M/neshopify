@@ -1,6 +1,5 @@
 'use client'
-import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Input, Separator, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
-import { DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu';
+import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Input, Separator, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components';
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
@@ -203,7 +202,7 @@ export function OrdersTable() {
         },
         initialState: {
             pagination: {
-                pageSize: 3,
+                pageSize: 5,
             },
         },
     })
@@ -303,7 +302,7 @@ export function OrdersTable() {
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
                     >
-                        Previous
+                        Назад
                     </Button>
                     <span className="text-sm text-muted-foreground">
                         {table.getState().pagination.pageIndex + 1} / {table.getPageCount() || 1}
@@ -314,7 +313,7 @@ export function OrdersTable() {
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
                     >
-                        Next
+                        Вперед
                     </Button>
                 </div>
             </div>

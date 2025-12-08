@@ -1,3 +1,5 @@
+'use client'
+
 import { DeleteUserIcon, EditUserIcon } from "@/features";
 import { BlockErrorTable, UsersService } from "@/shared";
 import { ActionIcon, Avatar, Badge, Box, Checkbox, Group, Pagination, Skeleton, Stack, Table, Text } from "@mantine/core";

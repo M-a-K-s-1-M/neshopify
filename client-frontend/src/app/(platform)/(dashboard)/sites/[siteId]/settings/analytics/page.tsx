@@ -1,6 +1,9 @@
+import { AnalyticsSite } from "@/components";
 
 export default function Analytics() {
     return (
-        <div>Analytics</div>
+        <div>
+            <AnalyticsSite />
+        </div>
     )
 }
