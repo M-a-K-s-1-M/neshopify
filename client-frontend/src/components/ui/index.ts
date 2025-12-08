@@ -15,3 +15,5 @@ export * from './checkbox';
 export * from './sidebar';
 export * from './popover';
 export * from './dropdown-menu';
+export * from './drawer';
+export * from './dialog';
