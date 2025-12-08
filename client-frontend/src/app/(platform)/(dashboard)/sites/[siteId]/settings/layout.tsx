@@ -9,14 +9,16 @@ export default function LayoutSettingsSite({ children }: { children: React.React
         <section >
             <SidebarSettingsSiteModile />
 
-            <div className="grid grid-cols-1 md:grid-cols-10 gap-6">
-                <div className="col-span-3 lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-14 lg:gap-6">
+
+                <div className=" lg:col-span-3">
                     <SidebarSettingsSite />
                 </div>
 
-                <main className="col-span-7 lg:col-span-8">
+                <main className="lg:col-span-11">
                     {children}
                 </main>
+
             </div>
         </section>
     )

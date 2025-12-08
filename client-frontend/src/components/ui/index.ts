@@ -13,3 +13,5 @@ export * from './label';
 export * from './input';
 export * from './checkbox';
 export * from './sidebar';
+export * from './popover';
+export * from './dropdown-menu';

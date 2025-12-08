@@ -12,7 +12,7 @@ export const siteConfig = {
         { label: 'Блог', href: '/' },
     ],
     siteSettinsgsLinks: [
-        { label: 'Обзор', href: 'review' },
+        { label: 'Обзор', href: '' },
         { label: 'Заказы', href: 'orders' },
         { label: 'Товары', href: 'products' },
         { label: 'Пользователи', href: 'users' },

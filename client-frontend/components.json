@@ -22,6 +22,7 @@
     "@kokonutui": "https://kokonutui.com/r/{name}.json",
     "@react-bits": "https://reactbits.dev/r/{name}.json",
     "@coss": "https://coss.com/ui/r/{name}.json",
-    "@blocks": "https://blocks.so/r/{name}.json"
+    "@blocks": "https://blocks.so/r/{name}.json",
+    "@uitripled": "https://ui.tripled.work/r/{name}.json"
   }
 }
