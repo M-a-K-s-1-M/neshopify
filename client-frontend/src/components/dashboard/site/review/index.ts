@@ -1,2 +1,2 @@
 export { AnalyticsSite } from './analytics-site';
-export { LastOrdersTable } from './last-orders-table';
+export { OrdersTable } from './orders-table';
