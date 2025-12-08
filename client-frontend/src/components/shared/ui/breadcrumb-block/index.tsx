@@ -10,15 +10,22 @@ export function BreadcrumbBlock() {
     return (
         <Breadcrumb>
             <BreadcrumbList>
-                {breadcrumbList.map((link, index) => (
-                    <Fragment key={link}>
-                        <BreadcrumbItem>
-                            <BreadcrumbLink className=" capitalize font-semibold text-lg md:text-xl hover:opacity-30 transition duration-300" href={`/${link}`}>{link}</BreadcrumbLink>
-                        </BreadcrumbItem>
-                        {breadcrumbList?.length - 1 !== index && <BreadcrumbSeparator />}
-                    </Fragment>
-                ))}
-
+                {breadcrumbList.map((link, index) => {
+                    const href = `/${breadcrumbList.slice(0, index + 1).join("/")}`;
+                    return (
+                        <Fragment key={`${href}-${link}`}>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink
+                                    className="capitalize font-semibold text-lg md:text-xl hover:opacity-80 transition duration-300"
+                                    href={href}
+                                >
+                                    {link}
+                                </BreadcrumbLink>
+                            </BreadcrumbItem>
+                            {breadcrumbList.length - 1 !== index && <BreadcrumbSeparator />}
+                        </Fragment>
+                    );
+                })}
             </BreadcrumbList>
         </Breadcrumb>
     )

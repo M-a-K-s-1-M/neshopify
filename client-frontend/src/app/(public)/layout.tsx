@@ -8,7 +8,7 @@ export default function WelcomeLayout({ children }: { children: React.ReactNode 
         <section className="min-h-screen">
             <header className="absolute flex justify-between p-3 w-full">
                 <div>
-                    <h2 className="text-black font-bold text-2xl ">
+                    <h2 className="text-foreground font-bold text-2xl ">
                         <TextType
                             text={siteConfig.name}
                             showCursor={false}
@@ -22,9 +22,9 @@ export default function WelcomeLayout({ children }: { children: React.ReactNode 
                 </div>
 
                 <div className="flex flex-wrap-reverse justify-end">
-                    <Button variant={'ghost'} className="cursor-pointer text-black md:text-white">Войти</Button>
+                    <Button variant={'ghost'} className="cursor-pointer text-foreground">Войти</Button>
 
-                    <Button variant={'ghost'} className="cursor-pointer text-black md:text-white">Регистрация</Button>
+                    <Button variant={'ghost'} className="cursor-pointer text-foreground">Регистрация</Button>
                 </div>
 
             </header>

@@ -3,3 +3,5 @@ export { CreateSiteBtn } from "./CreateSiteBtn";
 export { EditPageBtn } from "./EditPageBtn";
 export { DeletePageBtn } from "./DeletePageBtn";
 export { AddPageBtn } from "./AddPageBtn";
+export { ActionsSiteBtn } from "./ActionsSiteBtn";
+export { DeleteSiteBtn } from "./DeleteSiteBtn";

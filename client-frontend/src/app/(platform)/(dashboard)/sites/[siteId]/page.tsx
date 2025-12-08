@@ -6,7 +6,7 @@ export default function Site() {
         <div>
             <HeaderPage>
                 <div className="flex gap-2">
-                    <SettingsSiteBtn href='1/settings/review' />
+                    <SettingsSiteBtn href='1/settings' />
                     <AddPageBtn />
                 </div>
             </HeaderPage>

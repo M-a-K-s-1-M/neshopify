@@ -12,12 +12,12 @@ export function SidebarSettingsSite() {
     console.log(pathname);
 
     return (
-        <Card className="bg-sidebar text-sidebar-foreground rounded-sm py-4 hidden md:block transition-width duration-150">
+        <Card className="bg-sidebar text-sidebar-foreground rounded-sm py-4 hidden lg:block transition-width duration-150">
             <CardContent className="px-3">
                 <ul className="flex flex-col gap-2">
                     {siteConfig.siteSettinsgsLinks.map(link => (
                         <li key={link.label}>
-                            <Button className="w-full rounded" variant={pathname === link.href ? 'secondary' : 'ghost'} asChild>
+                            <Button className="w-full rounded" variant={pathname === 'settings' && link.href === '' ? 'secondary' : pathname === link.href ? 'secondary' : 'ghost'} asChild>
                                 <Link className="justify-start" href={`/sites/${siteId}/settings/${link.href}`}>{link.label}</Link>
                             </Button>
                         </li>

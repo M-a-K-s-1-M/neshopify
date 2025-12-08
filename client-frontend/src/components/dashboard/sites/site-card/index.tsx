@@ -1,5 +1,5 @@
 'use client';
-import { Button, ButtonGroup, Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from "@/components";
+import { ActionsSiteBtn, Button, ButtonGroup, Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from "@/components";
 import { Edit, Link as LinkIcon, MoreVerticalIcon } from "lucide-react";
 import Link from "next/link";
 
@@ -10,13 +10,7 @@ export function SiteCard() {
                 <CardTitle className="mb-1">Тестовый сайт</CardTitle>
                 <CardDescription>Описание</CardDescription>
                 <CardAction>
-                    <Button
-                        variant={'outline'}
-                        size={'icon'}
-                        className="cursor-pointer "
-                    >
-                        <MoreVerticalIcon />
-                    </Button>
+                    <ActionsSiteBtn />
                 </CardAction>
             </CardHeader>
 
