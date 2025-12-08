@@ -1,9 +1,15 @@
-import { AnalyticsSite } from "@/components";
+import { AnalyticsSite, ChartRegisterUsers } from "@/components";
 
 export default function Analytics() {
     return (
         <div>
-            <AnalyticsSite />
+            <div className="mb-5">
+                <AnalyticsSite />
+            </div>
+
+            <div>
+                <ChartRegisterUsers />
+            </div>
         </div>
     )
 }
