@@ -12,7 +12,7 @@ export function SidebarSettingsSite() {
     console.log(pathname);
 
     return (
-        <Card className="bg-sidebar text-sidebar-foreground rounded-sm py-4 hidden lg:block transition-width duration-150">
+        <Card className="bg-sidebar text-sidebar-foreground rounded-sm py-4 shadow-md hidden lg:block transition-width duration-150">
             <CardContent className="px-3">
                 <ul className="flex flex-col gap-2">
                     {siteConfig.siteSettinsgsLinks.map(link => (

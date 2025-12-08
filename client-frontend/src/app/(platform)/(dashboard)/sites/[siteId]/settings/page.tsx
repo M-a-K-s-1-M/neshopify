@@ -1,6 +1,9 @@
+import { AnalyticsSite } from "@/components";
 
 export default function Review() {
     return (
-        <div>Review</div>
+        <div>
+            <AnalyticsSite />
+        </div>
     )
 }
