@@ -11,8 +11,13 @@ export const siteConfig = {
         { label: 'Контакты', href: '/' },
         { label: 'Блог', href: '/' },
     ],
+    siteSettinsgsLinks: [
+        { label: 'Обзор', href: 'review' },
+        { label: 'Заказы', href: 'orders' },
+        { label: 'Товары', href: 'products' },
+        { label: 'Пользователи', href: 'users' },
+        { label: 'Аналитика', href: 'analytics' },
+    ],
+
     maxWidthContent: '7xl',
-    bgNeutral: 'bg-neutral-900',
-    colorNeutral: 'text-white',
-    colorIcon: 'text-black',
 };

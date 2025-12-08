@@ -13,7 +13,7 @@ export function SiteCard() {
                     <Button
                         variant={'outline'}
                         size={'icon'}
-                        className="cursor-pointer"
+                        className="cursor-pointer "
                     >
                         <MoreVerticalIcon />
                     </Button>

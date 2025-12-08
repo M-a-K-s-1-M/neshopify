@@ -8,3 +8,8 @@ export { ButtonGroup } from './button-group';
 export { Separator } from './separator';
 export * from './breadcrumb';
 export * from './item';
+export * from './field';
+export * from './label';
+export * from './input';
+export * from './checkbox';
+export * from './sidebar';

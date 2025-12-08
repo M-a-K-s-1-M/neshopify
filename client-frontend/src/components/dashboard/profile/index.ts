@@ -1,0 +1,1 @@
+export { EditInfoUserCard } from './edit-info-user-card';

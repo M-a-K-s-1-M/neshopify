@@ -4,8 +4,8 @@ import * as React from "react";
 import { Moon, Sun } from "@aliimam/icons";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { Toggle } from "@/components/ui/toggle";
-import { siteConfig } from "@/components/shared";
+import { Toggle } from "@/components";
+import { siteConfig } from "@/lib";
 
 export function ModeToggle() {
   const { theme, setTheme } = useTheme();
@@ -28,7 +28,7 @@ export function ModeToggle() {
         >
           <Moon
             size={16}
-            className="shrink-0 scale-0 opacity-0 transition-all group-data-[state=on]:scale-100 group-data-[state=on]:opacity-100"
+            className=" shrink-0 scale-0 opacity-0 transition-all group-data-[state=on]:scale-100 group-data-[state=on]:opacity-100"
             aria-hidden="true"
           />
           <Sun

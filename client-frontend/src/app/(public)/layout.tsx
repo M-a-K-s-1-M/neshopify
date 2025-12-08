@@ -1,6 +1,7 @@
 'use client'
-import { siteConfig, TextType } from "@/components";
+import { siteConfig } from "@/lib";
 import { Button } from "@/components/ui/button";
+import { TextType } from "@/components";
 
 export default function WelcomeLayout({ children }: { children: React.ReactNode }) {
     return (

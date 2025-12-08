@@ -3,7 +3,7 @@ import { BreadcrumbBlock, CreateSiteBtn, HeaderPage, Separator, SiteCard } from 
 
 export default function Sites() {
     return (
-        <div className="max-w-5xl mx-auto">
+        <section className="max-w-5xl mx-auto">
             <HeaderPage>
                 <CreateSiteBtn />
             </HeaderPage>
@@ -14,6 +14,6 @@ export default function Sites() {
                 <SiteCard />
                 <SiteCard />
             </div>
-        </div>
+        </section>
     )
 }

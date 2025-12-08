@@ -1,0 +1,1 @@
+export type { IEditInfoUserForm } from './IEditInfoUserForm';

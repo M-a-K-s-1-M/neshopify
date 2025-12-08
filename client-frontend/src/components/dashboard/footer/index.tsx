@@ -1,4 +1,4 @@
-import { siteConfig } from "@/components/shared";
+import { siteConfig } from "@/lib";
 import { Button, Separator } from "@/components";
 import Link from "next/link";
 
