@@ -3,11 +3,11 @@ import { Equal, X } from "@aliimam/icons";
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Menus } from "@/components/shudcn-ui/platform-header/menus";
-import { ModeToggle } from "@/components/shudcn-ui/platform-header/theme-switch";
+import { Menus } from "./menus";
+import { ModeToggle } from "./theme-switch";
 import Link from "next/link";
 import { Separator, TextGif, gifUrls } from "@/components";
-import { siteConfig } from "@/components/shared";
+import { siteConfig } from "@/lib";
 
 const menuItems = [
   { name: "Мои сайты", href: "/sites" },
@@ -90,6 +90,7 @@ const PlatformHeader = () => {
                     ))}
                   </ul>
                 </div>
+
                 <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-2 sm:space-y-0">
                   <ModeToggle />
                   <Button

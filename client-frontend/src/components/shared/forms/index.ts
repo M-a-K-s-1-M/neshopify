@@ -1,0 +1,1 @@
+export { EditInfoUserForm } from './edit-info-user-form';

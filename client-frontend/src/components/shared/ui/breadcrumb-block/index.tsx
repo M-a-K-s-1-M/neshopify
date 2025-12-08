@@ -13,7 +13,7 @@ export function BreadcrumbBlock() {
                 {breadcrumbList.map((link, index) => (
                     <Fragment key={link}>
                         <BreadcrumbItem>
-                            <BreadcrumbLink className="text-primary capitalize font-semibold text-xl hover:text-muted-foreground transition duration-300" href={`/${link}`}>{link}</BreadcrumbLink>
+                            <BreadcrumbLink className=" capitalize font-semibold text-lg md:text-xl hover:opacity-30 transition duration-300" href={`/${link}`}>{link}</BreadcrumbLink>
                         </BreadcrumbItem>
                         {breadcrumbList?.length - 1 !== index && <BreadcrumbSeparator />}
                     </Fragment>

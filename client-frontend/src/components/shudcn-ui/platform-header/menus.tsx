@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { siteConfig } from "@/components";
+import { siteConfig } from "@/lib";
 
 const menuItems = siteConfig.headerLinks;
 
