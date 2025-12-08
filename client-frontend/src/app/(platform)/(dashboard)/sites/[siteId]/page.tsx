@@ -1,5 +1,5 @@
 import { AddPageBtn, EditPageBtn, HeaderPage, SettingsSiteBtn } from "@/components";
-import { PageCard } from "@/components/dashboard/sites/page-card";
+import { PageCard } from "@/components/dashboard/site/page-card";
 
 export default function Site() {
     return (
