@@ -1,5 +1,6 @@
 'use client'
-import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
+import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Input, Separator, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
+import { DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu';
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
@@ -14,6 +15,54 @@ export type LastOrder = {
 };
 
 export const data: LastOrder[] = [
+    {
+        id: "#ORD-2547asdf",
+        customer: "Мария Петрова",
+        avatar: "/images/avatars/maria.svg",
+        date: "2025-01-15",
+        status: "Доставлен",
+        amount: "8,450",
+    },
+    {
+        id: "#ORD-2546fff",
+        customer: "Дмитрий Козлов",
+        avatar: "/images/avatars/dmitry.svg",
+        date: "2025-01-15",
+        status: "В пути",
+        amount: "12,890",
+    },
+    {
+        id: "#ORD-254523423",
+        customer: "Елена Смирнова",
+        avatar: "/images/avatars/elena.svg",
+        date: "2025-01-14",
+        status: "Обработка",
+        amount: "5,670",
+    },
+    {
+        id: "#ORD-2547asdf",
+        customer: "Мария Петрова",
+        avatar: "/images/avatars/maria.svg",
+        date: "2025-01-15",
+        status: "Доставлен",
+        amount: "8,450",
+    },
+    {
+        id: "#ORD-2546gghwe22",
+        customer: "Дмитрий Козлов",
+        avatar: "/images/avatars/dmitry.svg",
+        date: "2025-01-15",
+        status: "В пути",
+        amount: "12,890",
+    },
+    {
+        id: "#ORD-2545",
+        customer: "Елена Смирнова",
+        avatar: "/images/avatars/elena.svg",
+        date: "2025-01-14",
+        status: "Обработка",
+        amount: "5,670",
+    },
     {
         id: "#ORD-2547",
         customer: "Мария Петрова",
@@ -112,8 +161,11 @@ const columns: ColumnDef<LastOrder>[] = [
                         </Button>
                     </DropdownMenuTrigger>
 
-                    <DropdownMenuContent align='end'>
+                    <DropdownMenuContent align='end' className='p-2'>
                         <DropdownMenuLabel>Действия</DropdownMenuLabel>
+
+                        <Separator />
+
                         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(orders.id)}>
                             Копировать ID заказа
                         </DropdownMenuItem>
@@ -128,7 +180,7 @@ const columns: ColumnDef<LastOrder>[] = [
 ]
 
 
-export function LastOrdersTable() {
+export function OrdersTable() {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -149,6 +201,11 @@ export function LastOrdersTable() {
             columnFilters,
             columnVisibility,
         },
+        initialState: {
+            pagination: {
+                pageSize: 3,
+            },
+        },
     })
 
     return (
@@ -163,7 +220,7 @@ export function LastOrdersTable() {
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant='outline' className='ml-auto'>
+                        <Button variant='secondary' className='ml-auto'>
                             Колонки <ChevronDown />
                         </Button>
                     </DropdownMenuTrigger>
@@ -248,6 +305,9 @@ export function LastOrdersTable() {
                     >
                         Previous
                     </Button>
+                    <span className="text-sm text-muted-foreground">
+                        {table.getState().pagination.pageIndex + 1} / {table.getPageCount() || 1}
+                    </span>
                     <Button
                         variant="outline"
                         size="sm"
