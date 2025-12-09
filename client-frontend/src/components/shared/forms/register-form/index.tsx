@@ -2,9 +2,16 @@
 
 import { Button, Field, FieldError, FieldGroup, FieldLabel, FieldSet, Input } from "@/components"
 import { IRegisterForm } from "@/lib"
+import { getRequestErrorMessage } from "@/lib/utils/error"
+import { useAuthStore } from "@/stores/useAuthStore"
+import { useRouter } from "next/navigation"
 import { Controller, SubmitHandler, useForm } from "react-hook-form"
 
 export function RegisterForm() {
+    const router = useRouter()
+    const registerUser = useAuthStore((state) => state.register)
+    const isLoading = useAuthStore((state) => state.isLoading)
+
     const form = useForm<IRegisterForm>({
         mode: 'onChange',
         defaultValues: {
@@ -15,11 +22,20 @@ export function RegisterForm() {
     })
 
     const onSubmit: SubmitHandler<IRegisterForm> = async (data) => {
+        form.clearErrors('root')
+
         if (data.confirmPassword !== data.password) {
-            form.setError('confirmPassword', { type: 'manual', message: 'Пароли не совпадают' });
-            return;
+            form.setError('confirmPassword', { type: 'manual', message: 'Пароли не совпадают' })
+            return
         }
-        console.log(data);
+
+        try {
+            await registerUser(data.email, data.password)
+            router.replace('/sites')
+        } catch (error) {
+            const message = getRequestErrorMessage(error, 'Не удалось завершить регистрацию. Попробуйте ещё раз.')
+            form.setError('root', { type: 'server', message })
+        }
     }
 
     return (
@@ -102,8 +118,17 @@ export function RegisterForm() {
                     />
                 </FieldGroup>
             </FieldSet>
+            {form.formState.errors.root && (
+                <FieldError className="mt-2">{form.formState.errors.root.message}</FieldError>
+            )}
             <FieldSet className="mt-6">
-                <Button type="submit" form="register-form">Войти</Button>
+                <Button
+                    type="submit"
+                    form="register-form"
+                    disabled={isLoading || !form.formState.isValid}
+                >
+                    {isLoading ? 'Создаём...' : 'Создать аккаунт'}
+                </Button>
             </FieldSet>
         </form>
     )

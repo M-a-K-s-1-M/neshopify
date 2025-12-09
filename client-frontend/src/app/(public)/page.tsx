@@ -16,10 +16,10 @@ export default function Welcome() {
           Картинка
         </div>
 
-        <div className="display flex items-center p-5" >
-          <div className="flex flex-col gap-5 text-center md:text-left">
+        <div className="display flex items-center justify-center p-5" >
+          <div className="flex flex-col gap-5 justify-center md:text-left max-w-lg ">
             <h3
-              className="text-3xl md:text-4xl font-semibold leading-snug"
+              className="text-3xl md:text-4xl text-center font-semibold leading-snug"
             >
               Создайте свой <RotatingText
                 texts={heroTags}
@@ -37,7 +37,7 @@ export default function Welcome() {
 
             <BlurText
               delay={100}
-              className="text-md md:text-lg justify-center md:justify-start"
+              className="text-md md:text-lg flex justify-center md:text-left"
               text="Мощная платформа для создания и управления вашим онлайн-бизнесом. Без технических знаний."
               direction="bottom"
               animationFrom={undefined}
@@ -45,13 +45,12 @@ export default function Welcome() {
               onAnimationComplete={undefined}
             />
 
-            <div>
-
+            <div className="text-center">
               <Magnet padding={50} magnetStrength={3} >
                 <Button className="text-secondary-foreground bg-secondary font-mono px-6 hover:opacity-90 hover:bg-secondary cursor-pointer">Создать свой сайт</Button>
               </Magnet>
-
             </div>
+
           </div>
         </div>
 

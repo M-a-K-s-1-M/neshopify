@@ -11,7 +11,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  const clientUrl = configService.get<string>('app.clientUrl');
+
+  const clientUrl = configService.get<string>('app.clientUrl') ?? '';
+  const origins = clientUrl.split(',').map((url) => url.trim()).filter(Boolean);
+
+
   const port = configService.get<number>('app.port') ?? 5000;
 
 
@@ -39,7 +43,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, swaggerDocument);
 
   app.enableCors({
-    origin: clientUrl,
+    origin: origins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: ['Content-Type', 'X-Requested-With', 'Accept', 'Authorization'],
     credentials: true,
