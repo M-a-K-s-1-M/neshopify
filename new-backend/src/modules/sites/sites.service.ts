@@ -10,13 +10,17 @@ import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { SiteStructureService } from '../page-builder/services/site-structure.service';
 
 /**
  * Сервис сайтов: управление карточками сайта и их участниками.
  */
 @Injectable()
 export class SitesService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly siteStructure: SiteStructureService,
+    ) { }
 
     /** Короткий алиас до prisma.site. */
     private get siteDelegate() {
@@ -31,16 +35,22 @@ export class SitesService {
     /** Создает сайт и нормализует slug/domain. */
     async create(ownerId: string, dto: CreateSiteDto) {
         try {
-            return await this.siteDelegate.create({
-                data: {
-                    ownerId,
-                    name: dto.name,
-                    slug: dto.slug.toLowerCase(),
-                    domain: dto.domain?.toLowerCase(),
-                    theme: dto.theme,
-                    seo: dto.seo,
-                    plan: dto.plan,
-                },
+            return await this.prisma.$transaction(async (tx) => {
+                const site = await tx.site.create({
+                    data: {
+                        ownerId,
+                        name: dto.name,
+                        slug: dto.slug.toLowerCase(),
+                        domain: dto.domain?.toLowerCase(),
+                        theme: dto.theme,
+                        seo: dto.seo,
+                        plan: dto.plan,
+                    },
+                });
+
+                await this.siteStructure.provisionDefaultStructure(site.id, tx);
+
+                return site;
             });
         } catch (error) {
             if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {

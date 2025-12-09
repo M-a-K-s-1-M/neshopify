@@ -1,0 +1,212 @@
+import { BlockCategory } from "../../../../generated/prisma/client";
+
+export interface DefaultBlockTemplate {
+    key: string;
+    title: string;
+    description?: string;
+    category: BlockCategory;
+    schema?: Record<string, any>;
+    previewUrl?: string;
+}
+
+export const DEFAULT_BLOCK_TEMPLATES: DefaultBlockTemplate[] = [
+    {
+        key: "header-nav-basic",
+        title: "Хедер с навигацией",
+        description: "Фиксированное меню с логотипом и четырьмя ссылками",
+        category: BlockCategory.NAVIGATION,
+        schema: {
+            type: "object",
+            required: ["logo", "links"],
+            properties: {
+                logo: { type: "string", maxLength: 60 },
+                sticky: { type: "boolean", default: true },
+                links: {
+                    type: "array",
+                    minItems: 1,
+                    maxItems: 6,
+                    items: {
+                        type: "object",
+                        required: ["label", "href"],
+                        properties: {
+                            label: { type: "string", maxLength: 40 },
+                            href: { type: "string" },
+                            active: { type: "boolean" },
+                        },
+                    },
+                },
+                actions: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["label", "href"],
+                        properties: {
+                            label: { type: "string", maxLength: 32 },
+                            href: { type: "string" },
+                        },
+                    },
+                },
+            },
+        },
+    },
+    {
+        key: "hero-brand-highlight",
+        title: "Hero с описанием бренда",
+        description: "Большой заголовок с подзаголовком, CTA и иллюстрацией",
+        category: BlockCategory.HERO,
+        schema: {
+            type: "object",
+            required: ["heading", "subheading"],
+            properties: {
+                heading: { type: "string", maxLength: 120 },
+                subheading: { type: "string", maxLength: 260 },
+                badge: { type: "string", maxLength: 32 },
+                mediaUrl: { type: ["string", "null"] },
+                stats: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["label", "value"],
+                        properties: {
+                            label: { type: "string" },
+                            value: { type: "string" },
+                        },
+                    },
+                },
+                ctaPrimary: {
+                    type: "object",
+                    required: ["label", "href"],
+                    properties: {
+                        label: { type: "string" },
+                        href: { type: "string" },
+                    },
+                },
+                ctaSecondary: {
+                    type: ["object", "null"],
+                    properties: {
+                        label: { type: "string" },
+                        href: { type: "string" },
+                    },
+                },
+            },
+        },
+    },
+    {
+        key: "products-featured",
+        title: "Популярные товары",
+        description: "Сетка до 4 избранных товаров",
+        category: BlockCategory.PRODUCT,
+        schema: {
+            type: "object",
+            required: ["title", "maxItems"],
+            properties: {
+                title: { type: "string" },
+                subtitle: { type: "string" },
+                maxItems: { type: "number", minimum: 1, maximum: 8 },
+                layout: {
+                    type: "object",
+                    properties: {
+                        columns: { type: "number", minimum: 1, maximum: 4 },
+                        variant: { type: "string" },
+                    },
+                },
+                productIds: {
+                    type: "array",
+                    items: { type: "string", format: "uuid" },
+                    maxItems: 8,
+                },
+            },
+        },
+    },
+    {
+        key: "catalog-search-filter",
+        title: "Поиск и фильтры каталога",
+        description: "Строка поиска и быстрые фильтры по цене и категориям",
+        category: BlockCategory.CONTENT,
+        schema: {
+            type: "object",
+            properties: {
+                placeholder: { type: "string" },
+                allowCategoryFilter: { type: "boolean", default: true },
+                allowPriceFilter: { type: "boolean", default: true },
+                featuredCategories: {
+                    type: "array",
+                    items: { type: "string" },
+                },
+                priceRange: {
+                    type: "object",
+                    properties: {
+                        min: { type: "number", minimum: 0 },
+                        max: { type: "number" },
+                    },
+                },
+            },
+        },
+    },
+    {
+        key: "catalog-product-grid",
+        title: "Каталог товаров",
+        description: "Сетка товаров с пагинацией",
+        category: BlockCategory.PRODUCT,
+        schema: {
+            type: "object",
+            required: ["title", "pageSize"],
+            properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                pageSize: { type: "number", minimum: 6, maximum: 24 },
+                layout: {
+                    type: "object",
+                    properties: {
+                        columns: { type: "number", minimum: 2, maximum: 4 },
+                    },
+                },
+                emptyState: {
+                    type: "object",
+                    properties: {
+                        title: { type: "string" },
+                        description: { type: "string" },
+                        actionLabel: { type: "string" },
+                    },
+                },
+            },
+        },
+    },
+    {
+        key: "footer-contacts-basic",
+        title: "Футер с контактами",
+        description: "Название бренда, быстрые ссылки и контакты",
+        category: BlockCategory.CONTENT,
+        schema: {
+            type: "object",
+            required: ["brand", "links"],
+            properties: {
+                brand: { type: "string" },
+                description: { type: "string" },
+                links: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["label", "href"],
+                        properties: {
+                            label: { type: "string" },
+                            href: { type: "string" },
+                        },
+                    },
+                },
+                contacts: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["type", "value"],
+                        properties: {
+                            type: { type: "string" },
+                            value: { type: "string" },
+                        },
+                    },
+                },
+                legal: { type: "string" },
+            },
+        },
+    },
+];
