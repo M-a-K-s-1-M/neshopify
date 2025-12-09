@@ -11,6 +11,7 @@ import { CommentTemplatesService } from './services/comment-templates.service';
 import { BlockCommentsService } from './services/block-comments.service';
 import { BlockSchemaRegistry } from './schemas/block-schema.registry';
 import { SiteAccessGuard } from '../../common/guards';
+import { SiteStructureService } from './services/site-structure.service';
 
 @Module({
     controllers: [
@@ -27,6 +28,7 @@ import { SiteAccessGuard } from '../../common/guards';
         CommentTemplatesService,
         BlockCommentsService,
         BlockSchemaRegistry,
+        SiteStructureService,
         SiteAccessGuard,
     ],
     exports: [
@@ -35,6 +37,7 @@ import { SiteAccessGuard } from '../../common/guards';
         BlockTemplatesService,
         CommentTemplatesService,
         BlockCommentsService,
+        SiteStructureService,
     ],
 })
 export class PageBuilderModule { }
