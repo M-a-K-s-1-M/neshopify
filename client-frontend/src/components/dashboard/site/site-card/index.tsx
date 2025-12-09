@@ -1,52 +1,102 @@
 'use client';
-import { ActionsSiteBtn, Button, ButtonGroup, Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle, Separator } from "@/components";
-import { Edit, Link as LinkIcon, MoreVerticalIcon } from "lucide-react";
-import Link from "next/link";
 
-export function SiteCard() {
+import Link from "next/link";
+import { Edit, Link as LinkIcon } from "lucide-react";
+
+import {
+    ActionsSiteBtn,
+    Button,
+    ButtonGroup,
+    Card,
+    CardAction,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+    Separator,
+} from "@/components";
+import type { SiteDto, SiteStatus } from "@/lib/types";
+
+interface SiteCardProps {
+    site: SiteDto;
+}
+
+const STATUS_LABELS: Record<SiteStatus, string> = {
+    DRAFT: "Черновик",
+    PUBLISHED: "Опубликован",
+    ARCHIVED: "Архив",
+};
+
+const STATUS_STYLES: Record<SiteStatus, string> = {
+    DRAFT: "bg-amber-100 text-amber-900",
+    PUBLISHED: "bg-emerald-100 text-emerald-900",
+    ARCHIVED: "bg-slate-200 text-slate-600",
+};
+
+export function SiteCard({ site }: SiteCardProps) {
+    const dashboardHref = `/sites/${site.id}`;
+    const builderHref = `/sites/${site.id}/builder/home`;
+    const publicHref = site.domain ? `https://${site.domain}` : null;
+    const domainLabel = site.domain ?? `${site.slug}.cosmiq.store`;
+
     return (
-        <Card className="w-full md:max-w-lg shadow-md">
-            <CardHeader className="mb-3">
-                <CardTitle className="mb-1">Тестовый сайт</CardTitle>
-                <CardDescription>Описание</CardDescription>
+        <Card className="w-full shadow-md">
+            <CardHeader className="relative space-y-3">
+                <CardTitle className="flex items-center justify-between gap-3 text-xl">
+                    <span>{site.name}</span>
+                    <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${STATUS_STYLES[site.status]}`}
+                    >
+                        {STATUS_LABELS[site.status]}
+                    </span>
+                </CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                    {domainLabel}
+                </CardDescription>
                 <CardAction>
-                    <ActionsSiteBtn />
+                    <ActionsSiteBtn siteId={site.id} />
                 </CardAction>
             </CardHeader>
 
             <Separator />
 
-            <CardFooter >
-                <div className="flex flex-wrap justify-between w-full gap-3">
-                    <ButtonGroup >
-                        <Button variant={'ghost'} size={'sm'} className=" cursor-pointer" asChild>
-                            <Link href="/sites/siteId">
-                                <Edit />
+            <CardFooter>
+                <div className="flex flex-wrap items-center justify-between w-full gap-3">
+                    <ButtonGroup>
+                        <Button variant={'secondary'} size={'sm'} asChild>
+                            <Link href={dashboardHref}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Управление
                             </Link>
                         </Button>
-
-                        <Button variant={'ghost'} size={'sm'} className="pl-0 cursor-pointer" asChild>
-                            <Link href='/sites/siteId'>
-                                Редактировать
-                            </Link>
+                        <Button variant={'ghost'} size={'sm'} asChild>
+                            <Link href={builderHref}>Конструктор</Link>
                         </Button>
                     </ButtonGroup>
 
-                    <ButtonGroup >
-                        <Button variant={'ghost'} size={'sm'} className=" cursor-pointer" asChild>
-                            <Link href="/">
-                                <LinkIcon />
-                            </Link>
-                        </Button>
-
-                        <Button variant={'ghost'} size={'sm'} className="pl-0 cursor-pointer" asChild>
-                            <Link href='/'>
-                                https://wwww.123
-                            </Link>
+                    <ButtonGroup>
+                        <Button
+                            variant={'ghost'}
+                            size={'sm'}
+                            className="cursor-pointer"
+                            disabled={!publicHref}
+                            asChild={Boolean(publicHref)}
+                        >
+                            {publicHref ? (
+                                <Link href={publicHref} target="_blank" rel="noreferrer">
+                                    <LinkIcon className="mr-2 h-4 w-4" />
+                                    {domainLabel}
+                                </Link>
+                            ) : (
+                                <span className="inline-flex items-center text-muted-foreground">
+                                    <LinkIcon className="mr-2 h-4 w-4" />
+                                    {domainLabel}
+                                </span>
+                            )}
                         </Button>
                     </ButtonGroup>
                 </div>
             </CardFooter>
         </Card>
-    )
+    );
 }

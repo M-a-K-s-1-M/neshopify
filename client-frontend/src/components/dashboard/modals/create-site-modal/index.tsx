@@ -47,7 +47,7 @@ export default function CreateSiteModal({ open, setOpen }: { open: boolean, setO
                         <DialogTitle>{modalInfo.title}</DialogTitle>
                     </DialogHeader>
 
-                    <CreateSiteForm />
+                    <CreateSiteForm onCreated={() => setOpen(false)} />
 
                     <DialogFooter>
                         <Button form="create-site-form" type="submit">Создать</Button>
@@ -72,7 +72,7 @@ export default function CreateSiteModal({ open, setOpen }: { open: boolean, setO
                 </DialogHeader>
 
                 <div className="p-5">
-                    <CreateSiteForm />
+                    <CreateSiteForm onCreated={() => setOpen(false)} />
                 </div>
 
                 <DrawerFooter className="pt-2">

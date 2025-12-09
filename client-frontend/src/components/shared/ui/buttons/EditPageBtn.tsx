@@ -1,16 +1,21 @@
 'use client'
 
-import { Button } from "@/components"
-import { Edit } from "lucide-react"
-import Link from "next/link"
+import { Button } from "@/components";
+import { Edit } from "lucide-react";
+import Link from "next/link";
 
-export function EditPageBtn() {
+interface EditPageBtnProps {
+    href: string;
+    label?: string;
+}
+
+export function EditPageBtn({ href, label = "Редактировать страницу" }: EditPageBtnProps) {
     return (
         <Button variant={'ghost'} asChild>
-            <Link href={'/sites/1/builder/home'}>
+            <Link href={href}>
                 <Edit />
-                Редактировать страницу
+                {label}
             </Link>
         </Button>
-    )
+    );
 }

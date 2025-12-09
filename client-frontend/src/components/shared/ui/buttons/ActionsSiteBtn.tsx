@@ -3,11 +3,12 @@
 import { Button, DeleteSiteBtn, DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuTrigger, SettingsSiteBtn } from "@/components";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 import { MoreVerticalIcon } from "lucide-react";
-import { useParams } from "next/navigation";
 
-export function ActionsSiteBtn() {
-    const params = useParams();
-    const siteId = params?.siteId as string ?? 'siteId';
+interface ActionsSiteBtnProps {
+    siteId: string;
+}
+
+export function ActionsSiteBtn({ siteId }: ActionsSiteBtnProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
