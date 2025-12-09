@@ -1,10 +1,17 @@
 'use client'
 
 import { Button, Field, FieldError, FieldGroup, FieldLabel, FieldSet, Input } from "@/components"
-import { IAuthForm, IRegisterForm } from "@/lib"
+import { IAuthForm } from "@/lib"
+import { getRequestErrorMessage } from "@/lib/utils/error"
+import { useAuthStore } from "@/stores/useAuthStore"
+import { useRouter } from "next/navigation"
 import { Controller, SubmitHandler, useForm } from "react-hook-form"
 
 export function LoginForm() {
+    const router = useRouter()
+    const login = useAuthStore((state) => state.login)
+    const isLoading = useAuthStore((state) => state.isLoading)
+
     const form = useForm<IAuthForm>({
         mode: 'onChange',
         defaultValues: {
@@ -14,7 +21,14 @@ export function LoginForm() {
     })
 
     const onSubmit: SubmitHandler<IAuthForm> = async (data) => {
-        console.log(data);
+        form.clearErrors('root')
+        try {
+            await login(data.email, data.password)
+            router.replace('/sites')
+        } catch (error) {
+            const message = getRequestErrorMessage(error, 'Не удалось войти. Попробуйте ещё раз.')
+            form.setError('root', { type: 'server', message })
+        }
     }
 
     return (
@@ -74,8 +88,17 @@ export function LoginForm() {
 
                 </FieldGroup>
             </FieldSet>
+            {form.formState.errors.root && (
+                <FieldError className="mt-2">{form.formState.errors.root.message}</FieldError>
+            )}
             <FieldSet className="mt-6">
-                <Button type="submit" form="login-form">Войти</Button>
+                <Button
+                    type="submit"
+                    form="login-form"
+                    disabled={isLoading || !form.formState.isValid}
+                >
+                    {isLoading ? 'Входим...' : 'Войти'}
+                </Button>
             </FieldSet>
         </form>
     )

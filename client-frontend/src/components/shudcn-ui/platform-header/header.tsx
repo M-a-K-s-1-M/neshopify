@@ -8,6 +8,8 @@ import { ModeToggle } from "./theme-switch";
 import Link from "next/link";
 import { Separator, TextGif, gifUrls } from "@/components";
 import { siteConfig } from "@/lib";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useRouter } from "next/navigation";
 
 const menuItems = [
   { name: "Мои сайты", href: "/sites" },
@@ -19,6 +21,19 @@ const menuItems = [
 const PlatformHeader = () => {
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
+  const router = useRouter();
+  const logout = useAuthStore((state) => state.logout);
+  const isLoading = useAuthStore((state) => state.isLoading);
+
+  const handleLogout = React.useCallback(async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      router.replace("/auth");
+    }
+  }, [logout, router]);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -95,10 +110,11 @@ const PlatformHeader = () => {
                   <ModeToggle />
                   <Button
                     variant={"secondary"}
-                    asChild
-                    className={`${cn(isScrolled && "lg:hidden")} cursor-pointer`}
+                    onClick={handleLogout}
+                    disabled={isLoading}
+                    className={cn(isScrolled && "lg:hidden", "cursor-pointer")}
                   >
-                    <span>Выйти</span>
+                    {isLoading ? "Выходим..." : "Выйти"}
                   </Button>
                 </div>
               </div>
