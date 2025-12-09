@@ -1,3 +1,5 @@
 export interface ICreateSiteForm {
-    title: string;
+    name: string;
+    slug: string;
+    domain?: string;
 }
