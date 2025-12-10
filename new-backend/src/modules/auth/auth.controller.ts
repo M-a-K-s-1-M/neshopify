@@ -7,6 +7,7 @@ import {
   UseGuards,
   Get,
   Param,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
@@ -26,16 +27,27 @@ import { AccessTokenResponseDto, JwtPayloadResponseDto, MessageResponseDto, OkRe
 export class AuthController {
   constructor(private auth: AuthService) { }
 
+  private readonly isProd = process.env.NODE_ENV === "production";
+
   /** Регистрация владельца сайта (создает пользователя и выдает токены). */
   @Post("register")
   @ApiCreatedResponse({ type: AccessTokenResponseDto })
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.auth.register(dto);
 
-    res.cookie("accessToken", tokens.accessToken);
+    res.cookie("accessToken", tokens.accessToken, {
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax", // или 'none' + secure только в проде
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 15,
+    });
     res.cookie("refreshToken", tokens.refreshToken, {
       httpOnly: true,
-      // path: "/auth/refresh",
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 
     return { accessToken: tokens.accessToken };
@@ -52,12 +64,20 @@ export class AuthController {
     const tokens = await this.auth.registerCustomer(dto, siteId);
 
     res.cookie("accessToken", tokens.accessToken, {
-      httpOnly: false,
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax", // или 'none' + secure только в проде
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 15,
     });
     res.cookie("refreshToken", tokens.refreshToken, {
       httpOnly: true,
-      // path: "/auth/refresh",
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
+
 
     return { accessToken: tokens.accessToken };
   }
@@ -68,10 +88,19 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.auth.login(dto);
 
-    res.cookie("accessToken", tokens.accessToken);
+    res.cookie("accessToken", tokens.accessToken, {
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax", // или 'none' + secure только в проде
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 15,
+    });
     res.cookie("refreshToken", tokens.refreshToken, {
       httpOnly: true,
-      // path: "/auth/refresh",
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 
     return { accessToken: tokens.accessToken };
@@ -83,10 +112,19 @@ export class AuthController {
   async loginAdmin(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.auth.loginAdmin(dto);
 
-    res.cookie("accessToken", tokens.accessToken);
+    res.cookie("accessToken", tokens.accessToken, {
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax", // или 'none' + secure только в проде
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 15,
+    });
     res.cookie("refreshToken", tokens.refreshToken, {
       httpOnly: true,
-      // path: "/auth/refresh",
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
 
     return { accessToken: tokens.accessToken };
@@ -101,11 +139,21 @@ export class AuthController {
     if (!user) throw new Error("No user in request");
     const tokens = await this.auth.refresh(user as JwtPayload);
 
-    res.cookie("accessToken", tokens.accessToken);
+    res.cookie("accessToken", tokens.accessToken, {
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax", // или 'none' + secure только в проде
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 15,
+    });
     res.cookie("refreshToken", tokens.refreshToken, {
       httpOnly: true,
-      // path: "/auth/refresh",
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     });
+
 
     return { accessToken: tokens.accessToken };
   }
@@ -115,7 +163,7 @@ export class AuthController {
   @ApiOkResponse({ type: MessageResponseDto })
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie("accessToken");
-    res.clearCookie("refreshToken", { path: "/auth/refresh" });
+    res.clearCookie("refreshToken");
     return { message: "ok" };
   }
 
@@ -124,8 +172,14 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOkResponse({ type: JwtPayloadResponseDto })
   @Get("me")
-  me(@Req() req: Request) {
-    return req.user;
+  async me(@Req() req: Request) {
+    const user = req.user as JwtPayload | undefined;
+
+    if (!user) {
+      throw new UnauthorizedException("Пользователь не найден");
+    }
+
+    return this.auth.getCurrentUser(user.sub);
   }
 
   /** Проверка доступа администратора (health-check для панели). */

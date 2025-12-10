@@ -253,7 +253,7 @@ export function UsersTable() {
 
             <div className='bg-sidebar overflow-hidden rounded-sm border shadow-md'>
                 <Table >
-                    <TableHeader>
+                    <TableHeader >
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (

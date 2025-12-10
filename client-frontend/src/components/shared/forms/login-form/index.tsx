@@ -13,7 +13,7 @@ export function LoginForm() {
     const isLoading = useAuthStore((state) => state.isLoading)
 
     const form = useForm<IAuthForm>({
-        mode: 'onChange',
+        mode: 'onSubmit',
         defaultValues: {
             email: '',
             password: '',

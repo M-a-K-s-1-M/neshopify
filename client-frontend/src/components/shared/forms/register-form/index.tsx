@@ -13,7 +13,7 @@ export function RegisterForm() {
     const isLoading = useAuthStore((state) => state.isLoading)
 
     const form = useForm<IRegisterForm>({
-        mode: 'onChange',
+        mode: 'onSubmit',
         defaultValues: {
             email: '',
             password: '',

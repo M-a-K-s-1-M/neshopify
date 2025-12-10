@@ -184,4 +184,25 @@ export class AuthService {
 
         return this.generateTokens(payload);
     }
+
+    /** Возвращает информацию о текущем пользователе по идентификатору. */
+    async getCurrentUser(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            include: { userRoles: { include: { role: true } } },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException("Пользователь не найден");
+        }
+
+        const roles = user.userRoles.map((r) => r.role.value);
+
+        return {
+            sub: user.id,
+            email: user.email,
+            roles,
+            siteId: user.siteId ?? undefined,
+        } satisfies JwtPayload;
+    }
 }
