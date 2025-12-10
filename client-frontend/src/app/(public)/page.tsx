@@ -1,5 +1,6 @@
 import { BlurText, Magnet, RotatingText } from "@/components/index";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 const heroTags = [
   "быстрый",
@@ -47,7 +48,11 @@ export default function Welcome() {
 
             <div className="text-center">
               <Magnet padding={50} magnetStrength={3} >
-                <Button className="text-secondary-foreground bg-secondary font-mono px-6 hover:opacity-90 hover:bg-secondary cursor-pointer">Создать свой сайт</Button>
+                <Button className="text-secondary-foreground bg-secondary font-mono px-6 hover:opacity-90 hover:bg-secondary cursor-pointer" asChild>
+                  <Link href={'sites'}>
+                    Создать свой сайт
+                  </Link>
+                </Button>
               </Magnet>
             </div>
 

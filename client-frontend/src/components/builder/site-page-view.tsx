@@ -1,11 +1,12 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 
 import { BlockRenderer } from "./block-registry";
-import { useSiteStore } from "@/stores/useSiteStore";
+import { useSiteQuery, useSitePagesQuery, usePageDetailQuery } from "@/lib/query/hooks";
+import { getRequestErrorMessage } from "@/lib/utils/error";
 
 interface SitePageViewProps {
     slug: string;
@@ -13,64 +14,10 @@ interface SitePageViewProps {
     description?: string;
 }
 
-const buildPageDetailKey = (siteId: string, pageId: string) => `${siteId}:${pageId}`;
-
 export function SitePageView({ slug, title, description }: SitePageViewProps) {
     const params = useParams<{ siteId?: string }>();
     const rawSiteId = params?.siteId;
     const siteId = Array.isArray(rawSiteId) ? rawSiteId[0] : rawSiteId;
-
-    const setActiveSite = useSiteStore((state) => state.setActiveSite);
-    const fetchSite = useSiteStore((state) => state.fetchSite);
-    const fetchPages = useSiteStore((state) => state.fetchPages);
-    const fetchPageDetail = useSiteStore((state) => state.fetchPageDetail);
-    const sitesById = useSiteStore((state) => state.sitesById);
-    const pagesBySite = useSiteStore((state) => state.pagesBySite);
-    const pageDetails = useSiteStore((state) => state.pageDetails);
-    const activeSiteId = useSiteStore((state) => state.activeSiteId);
-    const isLoadingSites = useSiteStore((state) => state.isLoadingSites);
-    const pagesLoading = useSiteStore((state) => state.pagesLoading);
-    const pageDetailsLoading = useSiteStore((state) => state.pageDetailsLoading);
-    const error = useSiteStore((state) => state.error);
-
-    useEffect(() => {
-        if (!siteId) {
-            return;
-        }
-        if (activeSiteId !== siteId) {
-            setActiveSite(siteId);
-        }
-        fetchSite(siteId).catch(() => undefined);
-        fetchPages(siteId).catch(() => undefined);
-    }, [siteId, activeSiteId, setActiveSite, fetchSite, fetchPages]);
-
-    const pages = siteId ? pagesBySite[siteId] : undefined;
-    const currentPage = useMemo(() => pages?.find((page) => page.slug === slug), [pages, slug]);
-
-    useEffect(() => {
-        if (!siteId || !currentPage?.id) {
-            return;
-        }
-        fetchPageDetail(siteId, currentPage.id).catch(() => undefined);
-    }, [siteId, currentPage?.id, fetchPageDetail]);
-
-    const pageKey = siteId && currentPage ? buildPageDetailKey(siteId, currentPage.id) : undefined;
-    const detailedPage = pageKey ? pageDetails[pageKey] : undefined;
-    const resolvedPage = detailedPage ?? currentPage;
-
-    const blocks = useMemo(() => {
-        if (!resolvedPage?.blocks) {
-            return [];
-        }
-        return [...resolvedPage.blocks]
-            .filter((block) => Boolean(block?.template?.key))
-            .sort((a, b) => a.order - b.order);
-    }, [resolvedPage?.blocks]);
-
-    const site = siteId ? sitesById[siteId] : undefined;
-    const loadingPages = siteId ? pagesLoading[siteId] : false;
-    const loadingPageDetail = pageKey ? pageDetailsLoading[pageKey] : false;
-    const isLoading = isLoadingSites || loadingPages || loadingPageDetail;
 
     if (!siteId) {
         return (
@@ -82,10 +29,50 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
         );
     }
 
+    const {
+        data: site,
+        isLoading: siteLoading,
+        error: siteError,
+    } = useSiteQuery(siteId);
+
+    const {
+        data: pages,
+        isLoading: pagesLoading,
+        error: pagesError,
+    } = useSitePagesQuery(siteId);
+
+    const currentPage = useMemo(() => pages?.find((page) => page.slug === slug), [pages, slug]);
+    const pageId = currentPage?.id;
+
+    const {
+        data: pageDetail,
+        isLoading: pageLoading,
+        error: pageError,
+    } = usePageDetailQuery(siteId, pageId);
+
+    const resolvedPage = pageDetail ?? currentPage;
+
+    const blocks = useMemo(() => {
+        if (!resolvedPage?.blocks) {
+            return [];
+        }
+        return [...resolvedPage.blocks]
+            .filter((block) => Boolean(block?.template?.key))
+            .sort((a, b) => a.order - b.order);
+    }, [resolvedPage?.blocks]);
+
+    const isLoading = siteLoading || pagesLoading || pageLoading;
     const pageHeading = title ?? resolvedPage?.title ?? "Страница";
     const seoDescription = resolvedPage?.seo?.description;
-    const pageDescription =
-        description ?? (typeof seoDescription === "string" ? seoDescription : "");
+    const pageDescription = description ?? (typeof seoDescription === "string" ? seoDescription : "");
+
+    const errorMessage = siteError
+        ? getRequestErrorMessage(siteError, "Не удалось загрузить сайт")
+        : pagesError
+            ? getRequestErrorMessage(pagesError, "Не удалось загрузить страницы")
+            : pageError
+                ? getRequestErrorMessage(pageError, "Не удалось загрузить страницу")
+                : undefined;
 
     return (
         <div className="space-y-6">
@@ -97,7 +84,9 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
                 {pageDescription ? <p className="text-sm text-muted-foreground">{pageDescription}</p> : null}
             </header>
 
-            {error ? <StateMessage variant="error" title="Ошибка" description={error} /> : null}
+            {errorMessage ? (
+                <StateMessage variant="error" title="Ошибка" description={errorMessage} />
+            ) : null}
 
             {isLoading ? (
                 <div className="flex items-center justify-center rounded-xl border border-border bg-card py-12 text-sm text-muted-foreground">

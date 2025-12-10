@@ -1,4 +1,4 @@
-import type { IAuthResponse } from "@/lib";
+import type { IAuthResponse, JwtPayloadDto } from "@/lib";
 import { $api } from "@/lib/config/httpConfig";
 
 export class AuthService {
@@ -18,6 +18,15 @@ export class AuthService {
 
     static async refresh(): Promise<IAuthResponse> {
         const res = await $api.post<IAuthResponse>("/auth/refresh");
+        return res.data;
+    }
+
+    static async me(): Promise<JwtPayloadDto> {
+        const res = await $api.get<JwtPayloadDto>("/auth/me", {
+            headers: {
+                "x-skip-auth-redirect": "true",
+            },
+        });
         return res.data;
     }
 }
