@@ -18,6 +18,7 @@ interface PageCardProps {
 
 export function PageCard({ page, siteId }: PageCardProps) {
     const builderHref = `/sites/${siteId}/builder/${page.slug}`;
+    const isViewOnly = page.type === "PROFILE" || page.type === "CART";
     const updatedLabel = new Intl.DateTimeFormat('ru-RU', {
         day: 'numeric',
         month: 'short',
@@ -40,8 +41,8 @@ export function PageCard({ page, siteId }: PageCardProps) {
             </ItemContent>
 
             <ItemActions className="md:border-l">
-                <EditPageBtn href={builderHref} />
-                <DeletePageBtn siteId={siteId} pageId={page.id} />
+                <EditPageBtn href={builderHref} label={isViewOnly ? "Просмотреть" : undefined} />
+                {!isViewOnly ? <DeletePageBtn siteId={siteId} pageId={page.id} /> : null}
             </ItemActions>
         </Item>
     );

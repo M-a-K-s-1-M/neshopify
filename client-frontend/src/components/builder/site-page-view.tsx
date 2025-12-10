@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 
 import { BlockRenderer } from "./block-registry";
 import { useSiteQuery, useSitePagesQuery, usePageDetailQuery } from "@/lib/query/hooks";
+import { getDefaultBlocksForPageType } from "./default-page-blocks";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 
 interface SitePageViewProps {
@@ -52,7 +53,7 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
 
     const resolvedPage = pageDetail ?? currentPage;
 
-    const blocks = useMemo(() => {
+    const actualBlocks = useMemo(() => {
         if (!resolvedPage?.blocks) {
             return [];
         }
@@ -60,6 +61,15 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
             .filter((block) => Boolean(block?.template?.key))
             .sort((a, b) => a.order - b.order);
     }, [resolvedPage?.blocks]);
+
+    const fallbackBlocks = useMemo(() => {
+        if (!resolvedPage || actualBlocks.length > 0) {
+            return [];
+        }
+        return getDefaultBlocksForPageType(resolvedPage.type);
+    }, [resolvedPage, actualBlocks.length]);
+
+    const blocks = actualBlocks.length > 0 ? actualBlocks : fallbackBlocks;
 
     const isLoading = siteLoading || pagesLoading || pageLoading;
     const pageHeading = title ?? resolvedPage?.title ?? "Страница";

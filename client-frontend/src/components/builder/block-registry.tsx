@@ -7,6 +7,9 @@ import { FooterContactsBlock } from "./blocks/footer-contacts-basic";
 import { HeaderNavBasicBlock } from "./blocks/header-nav-basic";
 import { HeroBrandHighlightBlock } from "./blocks/hero-brand-highlight";
 import { ProductsFeaturedBlock } from "./blocks/products-featured";
+import { ProfileAccountFormBlock } from "./blocks/profile-account-form";
+import { ProfileFavoritesShowcaseBlock } from "./blocks/profile-favorites-showcase";
+import { CartItemsListBlock } from "./blocks/cart-items-list";
 import { FallbackBlock } from "./blocks/fallback-block";
 
 export interface BlockRendererProps {
@@ -27,6 +30,9 @@ const registry: Record<string, BlockComponent> = {
         <CatalogProductGridBlock block={block} siteId={siteId} />
     ),
     "footer-contacts-basic": ({ block }) => <FooterContactsBlock block={block} />,
+    "profile-account-form": ({ block }) => <ProfileAccountFormBlock block={block} />,
+    "profile-favorites-showcase": ({ block }) => <ProfileFavoritesShowcaseBlock block={block} />,
+    "cart-items-list": ({ block }) => <CartItemsListBlock block={block} />,
 };
 
 const FallbackComponent: BlockComponent = ({ block }) => <FallbackBlock block={block} />;

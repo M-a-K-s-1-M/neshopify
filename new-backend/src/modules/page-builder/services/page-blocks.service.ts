@@ -26,7 +26,7 @@ export class PageBlocksService {
 
     /** Создает блок, определяет шаблон и расставляет порядок. */
     async create(siteId: string, pageId: string, dto: CreateBlockDto) {
-        await this.pagesService.ensurePage(siteId, pageId);
+        await this.pagesService.ensureEditablePage(siteId, pageId);
 
         const template = await this.resolveTemplate(dto);
 
@@ -54,7 +54,7 @@ export class PageBlocksService {
 
     /** Обновляет блок, включая смену шаблона и порядок. */
     async update(siteId: string, pageId: string, blockId: string, dto: UpdateBlockDto) {
-        await this.pagesService.ensurePage(siteId, pageId);
+        await this.pagesService.ensureEditablePage(siteId, pageId);
 
         const block = await this.prisma.blockInstance.findFirst({ where: { id: blockId, pageId } });
         if (!block) {
@@ -88,7 +88,7 @@ export class PageBlocksService {
 
     /** Удаляет блок и нормализует порядок оставшихся. */
     async remove(siteId: string, pageId: string, blockId: string) {
-        await this.pagesService.ensurePage(siteId, pageId);
+        await this.pagesService.ensureEditablePage(siteId, pageId);
         await this.prisma.blockInstance.delete({ where: { id: blockId } });
         await this.normalizeOrder(pageId);
         return { removed: true };

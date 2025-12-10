@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSiteQuery, useSitePagesQuery, usePageDetailQuery, useBlockTemplatesQuery } from "@/lib/query/hooks";
 import { SitePageView } from "./site-page-view";
-import type { BlockInstanceDto, BlockTemplateDto, CreateBlockPayload, UpdateBlockPayload } from "@/lib/types";
+import type { BlockInstanceDto, BlockTemplateDto, CreateBlockPayload, PageDto, UpdateBlockPayload } from "@/lib/types";
 import { getPresetsByTemplate } from "./block-presets";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { PageBlocksApi } from "@/lib/api/page-blocks";
@@ -29,6 +29,9 @@ interface BuilderWorkspaceProps {
     siteId: string;
     pageSlug: string;
 }
+
+const VIEW_ONLY_PAGE_TYPES: Array<PageDto["type"]> = ["PROFILE", "CART"];
+const VIEW_ONLY_MESSAGE = "Страницы профиля и корзины доступны только для просмотра.";
 
 export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
     const queryClient = useQueryClient();
@@ -40,6 +43,7 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
     const { data: pages, isLoading: pagesLoading, error: pagesError } = useSitePagesQuery(siteId);
 
     const currentPage = useMemo(() => pages?.find((page) => page.slug === pageSlug), [pages, pageSlug]);
+    const isReadOnlyPage = currentPage ? VIEW_ONLY_PAGE_TYPES.includes(currentPage.type) : false;
     const pageId = currentPage?.id;
 
     const {
@@ -55,6 +59,12 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
             setActiveTemplateKey(templates[0].key);
         }
     }, [templates, activeTemplateKey]);
+
+    useEffect(() => {
+        if (isReadOnlyPage) {
+            setIsLibraryOpen(false);
+        }
+    }, [isReadOnlyPage]);
 
     const blocks = useMemo(() => {
         if (!pageDetail?.blocks) {
@@ -128,8 +138,16 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
         },
     });
 
+    const guardReadOnly = () => {
+        if (!isReadOnlyPage) {
+            return false;
+        }
+        window.alert(VIEW_ONLY_MESSAGE);
+        return true;
+    };
+
     const handleAddPreset = (template: BlockTemplateDto, presetData: Record<string, unknown>) => {
-        if (!pageId) return;
+        if (!pageId || guardReadOnly()) return;
         const nextOrder = blocks.length > 0 ? blocks[blocks.length - 1].order + 1 : 1;
         createBlockMutation.mutate({
             templateKey: template.key,
@@ -139,10 +157,12 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
     };
 
     const handleSaveBlock = (blockId: string, payload: UpdateBlockPayload) => {
+        if (guardReadOnly()) return;
         updateBlockMutation.mutate({ blockId, payload });
     };
 
     const handleDeleteBlock = (blockId: string) => {
+        if (guardReadOnly()) return;
         if (!window.confirm("Удалить блок?")) {
             return;
         }
@@ -175,6 +195,12 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                     <span>{blocks.length} блок(ов)</span>
                 </div>
             </div>
+
+            {isReadOnlyPage ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {VIEW_ONLY_MESSAGE}
+                </div>
+            ) : null}
 
             {errorMessage ? (
                 <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -220,7 +246,11 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
 
                     <Drawer open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
                         <DrawerTrigger asChild>
-                            <Button className="w-full" variant={'secondary'} disabled={templatesLoading || !templates}>
+                            <Button
+                                className="w-full"
+                                variant={'secondary'}
+                                disabled={templatesLoading || !templates || isReadOnlyPage}
+                            >
                                 <Plus className="mr-2 h-4 w-4" /> Добавить блок
                             </Button>
                         </DrawerTrigger>
@@ -291,6 +321,8 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                         onDelete={handleDeleteBlock}
                         isSaving={updateBlockMutation.isPending}
                         isDeleting={deleteBlockMutation.isPending}
+                        readOnly={isReadOnlyPage}
+                        readOnlyMessage={VIEW_ONLY_MESSAGE}
                     />
                 </aside>
             </div>
@@ -341,12 +373,16 @@ function BlockEditorPanel({
     onDelete,
     isSaving,
     isDeleting,
+    readOnly,
+    readOnlyMessage,
 }: {
     block: BlockInstanceDto | null;
     onSave: (blockId: string, payload: UpdateBlockPayload) => void;
     onDelete: (blockId: string) => void;
     isSaving: boolean;
     isDeleting: boolean;
+    readOnly: boolean;
+    readOnlyMessage: string;
 }) {
     const [pinned, setPinned] = useState(false);
     const [order, setOrder] = useState(1);
@@ -371,6 +407,27 @@ function BlockEditorPanel({
         return <p className="text-sm text-muted-foreground">Выберите блок слева, чтобы отредактировать его.</p>;
     }
 
+    const blockHeader = (
+        <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Шаблон</p>
+            <h3 className="text-lg font-semibold">{block.template.title}</h3>
+            {block.template.description ? (
+                <p className="text-sm text-muted-foreground">{block.template.description}</p>
+            ) : null}
+        </div>
+    );
+
+    if (readOnly) {
+        return (
+            <div className="space-y-4">
+                {blockHeader}
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    {readOnlyMessage}
+                </div>
+            </div>
+        );
+    }
+
     const handleSave = () => {
         try {
             const parsed = JSON.parse(dataDraft);
@@ -383,13 +440,7 @@ function BlockEditorPanel({
 
     return (
         <div className="space-y-4">
-            <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Шаблон</p>
-                <h3 className="text-lg font-semibold">{block.template.title}</h3>
-                {block.template.description ? (
-                    <p className="text-sm text-muted-foreground">{block.template.description}</p>
-                ) : null}
-            </div>
+            {blockHeader}
 
             <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm">
