@@ -128,9 +128,35 @@ export class SitesService {
         }
     }
 
-    /** Удаляет сайт. */
+    /** Полностью удаляет сайт вместе с зависимыми сущностями. */
     async remove(siteId: string) {
-        return this.siteDelegate.delete({ where: { id: siteId } });
+        return this.prisma.$transaction(async (tx) => {
+            const site = await tx.site.findUnique({ where: { id: siteId }, select: { id: true } });
+
+            if (!site) {
+                throw new NotFoundException('Сайт не найден');
+            }
+
+            await tx.commentInstance.deleteMany({ where: { block: { page: { siteId } } } });
+            await tx.blockInstance.deleteMany({ where: { page: { siteId } } });
+            await tx.page.deleteMany({ where: { siteId } });
+
+            await tx.productMedia.deleteMany({ where: { product: { siteId } } });
+            await tx.product.deleteMany({ where: { siteId } });
+            await tx.productCategory.deleteMany({ where: { siteId } });
+
+            await tx.cartItem.deleteMany({ where: { cart: { siteId } } });
+            await tx.cart.deleteMany({ where: { siteId } });
+
+            await tx.orderItem.deleteMany({ where: { order: { siteId } } });
+            await tx.order.deleteMany({ where: { siteId } });
+
+            await tx.siteMember.deleteMany({ where: { siteId } });
+
+            await tx.site.delete({ where: { id: siteId } });
+
+            return { removed: true } as const;
+        });
     }
 
     /** Возвращает участников сайта. */
