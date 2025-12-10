@@ -69,6 +69,16 @@ export interface ProductMediaDto {
     order: number;
 }
 
+export interface ProductCategoryDto {
+    id: string;
+    siteId: string;
+    name: string;
+    slug: string;
+    parentId?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface ProductDto {
     id: string;
     siteId: string;
@@ -84,6 +94,19 @@ export interface ProductDto {
     createdAt: string;
     updatedAt: string;
 }
+
+export interface CreateProductPayload {
+    title: string;
+    description?: string;
+    price: number;
+    currency?: string;
+    sku?: string;
+    stock?: number;
+    stockStatus?: StockStatus;
+    categoryId?: string;
+}
+
+export type UpdateProductPayload = Partial<CreateProductPayload>;
 
 export interface PaginatedResponse<T> {
     data: T[];

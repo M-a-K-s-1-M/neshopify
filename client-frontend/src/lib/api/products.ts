@@ -1,5 +1,5 @@
 import { $api } from "@/lib/config/httpConfig";
-import type { PaginatedResponse, ProductDto } from "@/lib/types";
+import type { CreateProductPayload, PaginatedResponse, ProductDto, UpdateProductPayload } from "@/lib/types";
 
 export interface ProductListParams {
     page?: number;
@@ -33,5 +33,19 @@ export class ProductsApi {
     static async get(siteId: string, productId: string): Promise<ProductDto> {
         const res = await $api.get<ProductDto>(`/sites/${siteId}/products/${productId}`);
         return res.data;
+    }
+
+    static async create(siteId: string, payload: CreateProductPayload): Promise<ProductDto> {
+        const res = await $api.post<ProductDto>(`/sites/${siteId}/products`, payload);
+        return res.data;
+    }
+
+    static async update(siteId: string, productId: string, payload: UpdateProductPayload): Promise<ProductDto> {
+        const res = await $api.patch<ProductDto>(`/sites/${siteId}/products/${productId}`, payload);
+        return res.data;
+    }
+
+    static async remove(siteId: string, productId: string): Promise<void> {
+        await $api.delete(`/sites/${siteId}/products/${productId}`);
     }
 }

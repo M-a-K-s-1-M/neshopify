@@ -1,0 +1,493 @@
+'use client'
+
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { Button, Input, Label } from "@/components";
+import { SitePageView } from "./site-page-view";
+import { useSiteQuery } from "@/lib/query/hooks";
+import { queryKeys } from "@/lib/query/keys";
+import { ProductsApi } from "@/lib/api/products";
+import { CategoriesApi } from "@/lib/api/categories";
+import type {
+    CreateProductPayload,
+    ProductCategoryDto,
+    ProductDto,
+} from "@/lib/types";
+import { getRequestErrorMessage } from "@/lib/utils/error";
+import { cn } from "@/lib/utils";
+
+interface CatalogWorkspaceProps {
+    siteId: string;
+}
+
+const DEFAULT_FORM = {
+    title: "",
+    description: "",
+    price: "",
+    stock: "0",
+    categoryId: "",
+};
+
+const PAGE_SIZE = 10;
+
+export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
+    const queryClient = useQueryClient();
+    const [searchInput, setSearchInput] = useState("");
+    const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [isCreatingNew, setIsCreatingNew] = useState(false);
+    const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+    const [selectedProductSnapshot, setSelectedProductSnapshot] = useState<ProductDto | null>(null);
+    const [formState, setFormState] = useState(() => ({ ...DEFAULT_FORM }));
+    const [formError, setFormError] = useState<string | null>(null);
+
+    const { data: site } = useSiteQuery(siteId);
+
+    const {
+        data: productPage,
+        isLoading: productsLoading,
+        isFetching: productsFetching,
+        error: productsError,
+    } = useQuery({
+        queryKey: queryKeys.siteProductsList(siteId, page, search || undefined),
+        queryFn: () => ProductsApi.list(siteId, { page, limit: PAGE_SIZE, search: search || undefined }),
+    });
+
+    const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+        queryKey: queryKeys.siteCategories(siteId),
+        queryFn: () => CategoriesApi.list(siteId),
+        staleTime: 60 * 1000,
+    });
+
+    const products = productPage?.data ?? [];
+    const paginationMeta = productPage?.meta;
+
+    useEffect(() => {
+        if (isCreatingNew || selectedProductId) {
+            return;
+        }
+        if (products.length > 0) {
+            setSelectedProductId(products[0].id);
+            setSelectedProductSnapshot(products[0]);
+        }
+    }, [isCreatingNew, selectedProductId, products]);
+
+    useEffect(() => {
+        if (!selectedProductId) {
+            return;
+        }
+        const updated = products.find((product) => product.id === selectedProductId);
+        if (updated) {
+            setSelectedProductSnapshot(updated);
+        }
+    }, [products, selectedProductId]);
+
+    useEffect(() => {
+        if (isCreatingNew) {
+            setFormState({ ...DEFAULT_FORM });
+            setFormError(null);
+            return;
+        }
+        if (selectedProductSnapshot) {
+            setFormState({
+                title: selectedProductSnapshot.title ?? "",
+                description: selectedProductSnapshot.description ?? "",
+                price: String(selectedProductSnapshot.price ?? ""),
+                stock: String(selectedProductSnapshot.stock ?? 0),
+                categoryId: selectedProductSnapshot.categoryId ?? "",
+            });
+            setFormError(null);
+        }
+    }, [isCreatingNew, selectedProductSnapshot]);
+
+    const saveProductMutation = useMutation({
+        mutationFn: async (params: { payload: CreateProductPayload; productId?: string }) => {
+            if (params.productId) {
+                return ProductsApi.update(siteId, params.productId, params.payload);
+            }
+            return ProductsApi.create(siteId, params.payload);
+        },
+        onSuccess: async (product) => {
+            setIsCreatingNew(false);
+            setSelectedProductId(product.id);
+            setSelectedProductSnapshot(product);
+            setFormState({
+                title: product.title ?? "",
+                description: product.description ?? "",
+                price: String(product.price ?? ""),
+                stock: String(product.stock ?? 0),
+                categoryId: product.categoryId ?? "",
+            });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.siteProducts(siteId) });
+        },
+        onError: (error) => {
+            window.alert(getRequestErrorMessage(error, "Не удалось сохранить товар"));
+        },
+    });
+
+    const deleteProductMutation = useMutation({
+        mutationFn: (productId: string) => ProductsApi.remove(siteId, productId),
+        onSuccess: async () => {
+            setSelectedProductId(null);
+            setSelectedProductSnapshot(null);
+            setIsCreatingNew(true);
+            setFormState({ ...DEFAULT_FORM });
+            setFormError(null);
+            await queryClient.invalidateQueries({ queryKey: queryKeys.siteProducts(siteId) });
+        },
+        onError: (error) => {
+            window.alert(getRequestErrorMessage(error, "Не удалось удалить товар"));
+        },
+    });
+
+    const maxPage = useMemo(() => {
+        if (!paginationMeta) return 1;
+        return Math.max(1, Math.ceil((paginationMeta.total ?? 0) / paginationMeta.limit));
+    }, [paginationMeta]);
+
+    const categoryOptions = useMemo(() => buildCategoryOptions(categories), [categories]);
+
+    const productsErrorMessage = productsError
+        ? getRequestErrorMessage(productsError, "Не удалось загрузить товары")
+        : null;
+
+    const handleSearchSubmit = (event: React.FormEvent) => {
+        event.preventDefault();
+        setSearch(searchInput.trim());
+        setPage(1);
+    };
+
+    const handleResetSearch = () => {
+        setSearchInput("");
+        setSearch("");
+        setPage(1);
+    };
+
+    const handlePageChange = (direction: "prev" | "next") => {
+        setPage((current) => {
+            const nextPage = direction === "next" ? current + 1 : current - 1;
+            if (nextPage < 1 || (paginationMeta && nextPage > maxPage)) {
+                return current;
+            }
+            return nextPage;
+        });
+    };
+
+    const handleSelectProduct = (product: ProductDto) => {
+        setIsCreatingNew(false);
+        setSelectedProductId(product.id);
+        setSelectedProductSnapshot(product);
+    };
+
+    const handleStartCreate = () => {
+        setIsCreatingNew(true);
+        setSelectedProductId(null);
+        setSelectedProductSnapshot(null);
+        setFormState({ ...DEFAULT_FORM });
+        setFormError(null);
+    };
+
+    const handleChange = (field: keyof typeof DEFAULT_FORM, value: string) => {
+        setFormState((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleSubmit = (event: React.FormEvent) => {
+        event.preventDefault();
+        const title = formState.title.trim();
+        if (!title) {
+            setFormError("Укажите название товара");
+            return;
+        }
+        const priceValue = Number(formState.price);
+        if (Number.isNaN(priceValue) || priceValue <= 0) {
+            setFormError("Укажите цену больше нуля");
+            return;
+        }
+        const stockValue = Math.max(0, Number(formState.stock) || 0);
+        const payload: CreateProductPayload = {
+            title,
+            description: formState.description?.trim() || undefined,
+            price: parseFloat(priceValue.toFixed(2)),
+            currency: "RUB",
+            stock: stockValue,
+            stockStatus: stockValue > 0 ? "IN_STOCK" : "OUT_OF_STOCK",
+            categoryId: formState.categoryId || undefined,
+        };
+
+        const editingProductId = !isCreatingNew ? selectedProductId ?? null : null;
+        if (!isCreatingNew && !editingProductId) {
+            setFormError("Выберите товар для редактирования или создайте новый");
+            return;
+        }
+
+        saveProductMutation.mutate({
+            productId: editingProductId ?? undefined,
+            payload,
+        });
+    };
+
+    const isSaving = saveProductMutation.isPending;
+    const isDeleting = deleteProductMutation.isPending;
+    const isBusy = isSaving || isDeleting;
+    const canSubmit = Boolean(formState.title.trim() && formState.price.trim()) && !isBusy;
+
+    const handleDelete = () => {
+        if (!selectedProductId || isCreatingNew) {
+            return;
+        }
+        if (!window.confirm("Удалить этот товар?")) {
+            return;
+        }
+        deleteProductMutation.mutate(selectedProductId);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Каталог</p>
+                    <h1 className="text-2xl font-semibold">{site?.name ?? "Сайт"}</h1>
+                    <p className="font-mono text-sm text-muted-foreground">/catalog</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <span>{productsPageCount(productsLoading, paginationMeta)}</span>
+                    <span>•</span>
+                    <span>{isCreatingNew ? "Новый товар" : selectedProductSnapshot?.title ?? "Без выбора"}</span>
+                </div>
+            </div>
+
+            {productsErrorMessage ? (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {productsErrorMessage}
+                </div>
+            ) : null}
+
+            <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)_360px]">
+                <aside className="space-y-4 rounded-2xl border border-border bg-card p-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Товары</h2>
+                        <Button size="icon" variant="ghost" type="button" onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.siteProducts(siteId) })}>
+                            <RefreshCw className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <form onSubmit={handleSearchSubmit} className="flex flex-wrap gap-2">
+                        <Input
+                            placeholder="Поиск"
+                            value={searchInput}
+                            onChange={(event) => setSearchInput(event.target.value)}
+                        />
+                        <Button type="submit" size="sm">
+                            Искать
+                        </Button>
+                        <Button type="button" size="sm" variant="outline" onClick={handleResetSearch}>
+                            Сбросить
+                        </Button>
+                    </form>
+                    <Button type="button" className="w-full" variant="secondary" onClick={handleStartCreate}>
+                        <Plus className="mr-2 h-4 w-4" /> Новый товар
+                    </Button>
+                    <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                        {productsLoading ? (
+                            <p className="text-sm text-muted-foreground">Загрузка списка...</p>
+                        ) : products.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Добавьте первый товар, чтобы увидеть его в каталоге.</p>
+                        ) : (
+                            products.map((product) => (
+                                <button
+                                    key={product.id}
+                                    type="button"
+                                    className={cn(
+                                        "w-full rounded-lg border px-3 py-2 text-left text-sm",
+                                        selectedProductId === product.id && !isCreatingNew
+                                            ? "border-primary bg-primary/10 text-primary"
+                                            : "border-border hover:border-primary/40",
+                                    )}
+                                    onClick={() => handleSelectProduct(product)}
+                                >
+                                    <p className="font-medium line-clamp-1">{product.title}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {Number(product.price).toLocaleString("ru-RU")} {product.currency}
+                                    </p>
+                                </button>
+                            ))
+                        )}
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                            Стр. {paginationMeta?.page ?? 1} из {maxPage}
+                        </span>
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handlePageChange("prev")}
+                                disabled={productsFetching || (paginationMeta?.page ?? 1) <= 1}
+                            >
+                                Назад
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handlePageChange("next")}
+                                disabled={productsFetching || (paginationMeta?.page ?? 1) >= maxPage}
+                            >
+                                Далее
+                            </Button>
+                        </div>
+                    </div>
+                </aside>
+
+                <section className="rounded-2xl border border-border bg-background p-4">
+                    <SitePageView slug="catalog" title="Каталог" description="Предпросмотр страницы каталога" />
+                </section>
+
+                <aside className="rounded-2xl border border-border bg-card p-4">
+                    <div className="mb-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-xs uppercase tracking-wide text-muted-foreground">{isCreatingNew ? "Новый товар" : "Редактирование"}</p>
+                            <h2 className="text-lg font-semibold">
+                                {isCreatingNew ? "Добавьте карточку" : selectedProductSnapshot?.title ?? "Выберите товар"}
+                            </h2>
+                        </div>
+                        {isBusy ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
+                    </div>
+                    <form className="space-y-4" onSubmit={handleSubmit}>
+                        <div className="space-y-2">
+                            <Label htmlFor="product-title">Название*</Label>
+                            <Input
+                                id="product-title"
+                                placeholder="Например, Космическая худи"
+                                value={formState.title}
+                                onChange={(event) => handleChange("title", event.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="product-description">Описание</Label>
+                            <textarea
+                                id="product-description"
+                                className="min-h-24 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                                placeholder="Расскажите, почему этот товар особенный"
+                                value={formState.description}
+                                onChange={(event) => handleChange("description", event.target.value)}
+                            />
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="product-price">Цена*</Label>
+                                <Input
+                                    id="product-price"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    inputMode="decimal"
+                                    value={formState.price}
+                                    onChange={(event) => handleChange("price", event.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="product-stock">Количество</Label>
+                                <Input
+                                    id="product-stock"
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    inputMode="numeric"
+                                    value={formState.stock}
+                                    onChange={(event) => handleChange("stock", event.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="product-category">Категория</Label>
+                            <select
+                                id="product-category"
+                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                                disabled={categoriesLoading}
+                                value={formState.categoryId}
+                                onChange={(event) => handleChange("categoryId", event.target.value)}
+                            >
+                                <option value="">Без категории</option>
+                                {categoryOptions.map((category) => (
+                                    <option key={category.id} value={category.id}>
+                                        {category.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
+                        <Button type="submit" className="w-full" disabled={!canSubmit}>
+                            {isSaving ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Сохраняем
+                                </span>
+                            ) : isCreatingNew ? (
+                                "Создать товар"
+                            ) : (
+                                "Сохранить изменения"
+                            )}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            className="w-full"
+                            disabled={isCreatingNew || !selectedProductId || isBusy}
+                            onClick={handleDelete}
+                        >
+                            {isDeleting ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Удаляем
+                                </span>
+                            ) : (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Trash2 className="h-4 w-4" /> Удалить товар
+                                </span>
+                            )}
+                        </Button>
+                    </form>
+                </aside>
+            </div>
+        </div>
+    );
+}
+
+function buildCategoryOptions(categories: ProductCategoryDto[]) {
+    if (!categories || categories.length === 0) {
+        return [] as Array<{ id: string; label: string }>;
+    }
+    const map = new Map<string, ProductCategoryDto>();
+    categories.forEach((category) => {
+        map.set(category.id, category);
+    });
+    return categories.map((category) => ({
+        id: category.id,
+        label: buildCategoryLabel(category, map),
+    }));
+}
+
+function buildCategoryLabel(category: ProductCategoryDto, map: Map<string, ProductCategoryDto>) {
+    const chain: string[] = [category.name];
+    let current = category;
+    while (current.parentId) {
+        const parent = map.get(current.parentId);
+        if (!parent) {
+            break;
+        }
+        chain.push(parent.name);
+        current = parent;
+    }
+    return chain.reverse().join(" / ");
+}
+
+function productsPageCount(loading: boolean, meta?: { total: number; limit: number }) {
+    if (loading) {
+        return "Загрузка товаров";
+    }
+    if (!meta) {
+        return "0 товаров";
+    }
+    return `${meta.total} товаров`;
+}

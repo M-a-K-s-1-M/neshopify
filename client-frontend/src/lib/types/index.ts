@@ -15,6 +15,7 @@ export type {
 	BlockTemplateDto,
 	BlockCategory,
 	ProductDto,
+	ProductCategoryDto,
 	StockStatus,
 	PaginatedResponse,
 	CreateSitePayload,
@@ -23,4 +24,6 @@ export type {
 	UpdatePagePayload,
 	CreateBlockPayload,
 	UpdateBlockPayload,
+	CreateProductPayload,
+	UpdateProductPayload,
 } from './site';

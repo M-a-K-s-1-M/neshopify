@@ -5,4 +5,8 @@ export const queryKeys = {
     page: (siteId: string, pageId: string) => ["sites", siteId, "pages", pageId] as const,
     pageBlocks: (siteId: string, pageId: string) => ["sites", siteId, "pages", pageId, "blocks"] as const,
     blockTemplates: () => ["block-templates"] as const,
+    siteProducts: (siteId: string) => ["sites", siteId, "products"] as const,
+    siteProductsList: (siteId: string, page: number, search?: string) =>
+        ["sites", siteId, "products", { page, search: search ?? null }] as const,
+    siteCategories: (siteId: string) => ["sites", siteId, "categories"] as const,
 };
