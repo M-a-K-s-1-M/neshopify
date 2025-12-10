@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 
 import { Button, Input, Label } from "@/components";
 import { SitePageView } from "./site-page-view";
@@ -12,6 +13,7 @@ import { ProductsApi } from "@/lib/api/products";
 import { CategoriesApi } from "@/lib/api/categories";
 import type {
     CreateProductPayload,
+    PaginatedResponse,
     ProductCategoryDto,
     ProductDto,
 } from "@/lib/types";
@@ -44,6 +46,7 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
     const [formError, setFormError] = useState<string | null>(null);
 
     const { data: site } = useSiteQuery(siteId);
+    const activeSearch = search || undefined;
 
     const {
         data: productPage,
@@ -51,8 +54,8 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
         isFetching: productsFetching,
         error: productsError,
     } = useQuery({
-        queryKey: queryKeys.siteProductsList(siteId, page, search || undefined),
-        queryFn: () => ProductsApi.list(siteId, { page, limit: PAGE_SIZE, search: search || undefined }),
+        queryKey: queryKeys.siteProductsList(siteId, page, activeSearch, PAGE_SIZE),
+        queryFn: () => ProductsApi.list(siteId, { page, limit: PAGE_SIZE, search: activeSearch }),
     });
 
     const { data: categories = [], isLoading: categoriesLoading } = useQuery({
@@ -109,7 +112,7 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
             }
             return ProductsApi.create(siteId, params.payload);
         },
-        onSuccess: async (product) => {
+        onSuccess: async (product, variables) => {
             setIsCreatingNew(false);
             setSelectedProductId(product.id);
             setSelectedProductSnapshot(product);
@@ -120,6 +123,9 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
                 stock: String(product.stock ?? 0),
                 categoryId: product.categoryId ?? "",
             });
+            syncProductListsAfterUpsert(queryClient, siteId, page, activeSearch, PAGE_SIZE, product, {
+                isNew: !variables?.productId,
+            });
             await queryClient.invalidateQueries({ queryKey: queryKeys.siteProducts(siteId) });
         },
         onError: (error) => {
@@ -129,7 +135,10 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
 
     const deleteProductMutation = useMutation({
         mutationFn: (productId: string) => ProductsApi.remove(siteId, productId),
-        onSuccess: async () => {
+        onSuccess: async (_, productId) => {
+            if (productId) {
+                syncProductListsAfterRemoval(queryClient, siteId, page, activeSearch, PAGE_SIZE, productId);
+            }
             setSelectedProductId(null);
             setSelectedProductSnapshot(null);
             setIsCreatingNew(true);
@@ -452,6 +461,107 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
             </div>
         </div>
     );
+}
+
+type ProductListCache = PaginatedResponse<ProductDto> | undefined;
+
+function syncProductListsAfterUpsert(
+    queryClient: QueryClient,
+    siteId: string,
+    page: number,
+    search: string | undefined,
+    limit: number,
+    product: ProductDto,
+    options: { isNew: boolean },
+) {
+    const targets = buildProductListTargets(siteId, page, search, limit);
+    const seen = new Set<string>();
+    targets.forEach((target) => {
+        const keyId = JSON.stringify(target.key);
+        if (seen.has(keyId)) {
+            return;
+        }
+        seen.add(keyId);
+        queryClient.setQueryData(target.key, (cached: ProductListCache) =>
+            upsertProductInCache(cached, product, { allowInsert: target.allowInsert, isNew: options.isNew }),
+        );
+    });
+}
+
+function syncProductListsAfterRemoval(
+    queryClient: QueryClient,
+    siteId: string,
+    page: number,
+    search: string | undefined,
+    limit: number,
+    productId: string,
+) {
+    const targets = buildProductListTargets(siteId, page, search, limit);
+    const seen = new Set<string>();
+    targets.forEach((target) => {
+        const keyId = JSON.stringify(target.key);
+        if (seen.has(keyId)) {
+            return;
+        }
+        seen.add(keyId);
+        queryClient.setQueryData(target.key, (cached: ProductListCache) =>
+            removeProductFromCache(cached, productId),
+        );
+    });
+}
+
+function buildProductListTargets(siteId: string, page: number, search: string | undefined, limit: number) {
+    const targets = [
+        { key: queryKeys.siteProductsList(siteId, page, search, limit), allowInsert: !search },
+        { key: queryKeys.siteProductsList(siteId, 1, undefined, limit), allowInsert: true },
+    ];
+    return targets;
+}
+
+function upsertProductInCache(
+    cache: ProductListCache,
+    product: ProductDto,
+    options: { allowInsert: boolean; isNew: boolean },
+): ProductListCache {
+    if (!cache) {
+        return cache;
+    }
+    const index = cache.data.findIndex((item) => item.id === product.id);
+    if (index >= 0) {
+        const nextData = cache.data.slice();
+        nextData[index] = product;
+        return { ...cache, data: nextData };
+    }
+    if (!options.isNew || !options.allowInsert || cache.meta.page !== 1) {
+        return cache;
+    }
+    let nextData = [product, ...cache.data];
+    if (nextData.length > cache.meta.limit) {
+        nextData = nextData.slice(0, cache.meta.limit);
+    }
+    const total = typeof cache.meta.total === "number" ? cache.meta.total : cache.data.length;
+    return {
+        ...cache,
+        data: nextData,
+        meta: { ...cache.meta, total: total + 1 },
+    };
+}
+
+function removeProductFromCache(cache: ProductListCache, productId: string): ProductListCache {
+    if (!cache) {
+        return cache;
+    }
+    const index = cache.data.findIndex((item) => item.id === productId);
+    if (index === -1) {
+        return cache;
+    }
+    const nextData = cache.data.filter((item) => item.id !== productId);
+    const total = typeof cache.meta.total === "number" ? cache.meta.total : cache.data.length;
+    return {
+        ...cache,
+        data: nextData,
+        meta: { ...cache.meta, total: Math.max(0, total - 1) },
+    };
 }
 
 function buildCategoryOptions(categories: ProductCategoryDto[]) {
