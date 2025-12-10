@@ -109,6 +109,61 @@ export const BLOCK_TEMPLATE_PRESETS: Record<string, BlockPreset[]> = {
             },
         },
     ],
+    "profile-account-form": [
+        {
+            id: "profile-default",
+            name: "Основные данные",
+            data: {
+                title: "Данные аккаунта",
+                description: "Обновите email и пароль, чтобы защитить аккаунт",
+                fields: [
+                    { label: "Электронная почта", type: "email", placeholder: "you@example.com" },
+                    { label: "Пароль", type: "password", placeholder: "••••••••" },
+                ],
+                actions: [
+                    { label: "Сохранить", variant: "default" },
+                    { label: "Сменить пароль", variant: "outline" },
+                ],
+            },
+        },
+    ],
+    "profile-favorites-showcase": [
+        {
+            id: "favorites-default",
+            name: "Избранные товары",
+            data: {
+                title: "Избранное",
+                subtitle: "Вы отметили эти товары, чтобы вернуться позже",
+                items: [
+                    { name: "Cosmiq Air Max", price: 5990, currency: "RUB", status: "В наличии" },
+                    { name: "Flex Lamp", price: 3490, currency: "RUB", status: "Ожидается" },
+                ],
+            },
+        },
+    ],
+    "cart-items-list": [
+        {
+            id: "cart-default",
+            name: "Корзина",
+            data: {
+                title: "Товары в корзине",
+                note: "Проверьте состав заказа перед оплатой",
+                items: [
+                    { name: "Cosmiq Air Max", sku: "AIR-001", quantity: 1, price: 5990, currency: "RUB" },
+                    { name: "Набор аксессуаров", sku: "ACC-200", quantity: 2, price: 990, currency: "RUB" },
+                ],
+                summary: {
+                    total: 7970,
+                    currency: "RUB",
+                    description: "Предварительная сумма",
+                },
+                actions: [
+                    { label: "Оформить заказ", variant: "default" },
+                    { label: "Продолжить покупки", variant: "outline" },
+                ],
+            },
+        },
+    ],
 };
 
 export function getPresetsByTemplate(templateKey: string) {

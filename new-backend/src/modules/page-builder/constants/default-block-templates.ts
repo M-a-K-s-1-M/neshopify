@@ -209,4 +209,115 @@ export const DEFAULT_BLOCK_TEMPLATES: DefaultBlockTemplate[] = [
             },
         },
     },
+    {
+        key: "profile-account-form",
+        title: "Форма профиля",
+        description: "Поля для обновления email и пароля",
+        category: BlockCategory.CONTENT,
+        schema: {
+            type: "object",
+            required: ["title"],
+            properties: {
+                title: { type: "string" },
+                description: { type: "string" },
+                fields: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["label", "type"],
+                        properties: {
+                            label: { type: "string" },
+                            type: { type: "string", enum: ["text", "email", "password"] },
+                            placeholder: { type: "string" },
+                        },
+                    },
+                },
+                actions: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["label"],
+                        properties: {
+                            label: { type: "string" },
+                            variant: { type: "string" },
+                        },
+                    },
+                },
+            },
+        },
+    },
+    {
+        key: "profile-favorites-showcase",
+        title: "Избранные товары",
+        description: "Список сохранённых позиций пользователя",
+        category: BlockCategory.PRODUCT,
+        schema: {
+            type: "object",
+            required: ["title"],
+            properties: {
+                title: { type: "string" },
+                subtitle: { type: "string" },
+                items: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["name"],
+                        properties: {
+                            name: { type: "string" },
+                            price: { type: "number" },
+                            currency: { type: "string" },
+                            status: { type: "string" },
+                        },
+                    },
+                },
+            },
+        },
+    },
+    {
+        key: "cart-items-list",
+        title: "Корзина с товарами",
+        description: "Позиции заказа и итоговая сумма",
+        category: BlockCategory.PRODUCT,
+        schema: {
+            type: "object",
+            required: ["title", "items"],
+            properties: {
+                title: { type: "string" },
+                note: { type: "string" },
+                items: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["name", "quantity"],
+                        properties: {
+                            name: { type: "string" },
+                            sku: { type: "string" },
+                            quantity: { type: "number", minimum: 1 },
+                            price: { type: "number" },
+                            currency: { type: "string" },
+                        },
+                    },
+                },
+                summary: {
+                    type: "object",
+                    properties: {
+                        total: { type: "number" },
+                        currency: { type: "string" },
+                        description: { type: "string" },
+                    },
+                },
+                actions: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        required: ["label"],
+                        properties: {
+                            label: { type: "string" },
+                            variant: { type: "string" },
+                        },
+                    },
+                },
+            },
+        },
+    },
 ];

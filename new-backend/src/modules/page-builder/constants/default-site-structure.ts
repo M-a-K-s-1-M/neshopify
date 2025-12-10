@@ -130,13 +130,103 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
         slug: "profile",
         title: "Профиль",
         isVisible: true,
-        blocks: [],
+        blocks: [
+            {
+                templateKey: "header-nav-basic",
+                pinned: true,
+                data: {
+                    logo: "Cosmiq",
+                    sticky: true,
+                    links: NAV_LINKS,
+                    actions: [{ label: "Выйти", href: "/auth/logout" }],
+                },
+            },
+            {
+                templateKey: "profile-account-form",
+                data: {
+                    title: "Данные аккаунта",
+                    description: "Обновите email и пароль, чтобы ваш магазин всегда был под защитой.",
+                    fields: [
+                        {
+                            label: "Электронная почта",
+                            type: "email",
+                            placeholder: "founder@cosmiq.store",
+                        },
+                        {
+                            label: "Пароль",
+                            type: "password",
+                            placeholder: "••••••••••••",
+                        },
+                    ],
+                    actions: [
+                        { label: "Сохранить изменения", variant: "default" },
+                        { label: "Сменить пароль", variant: "outline" },
+                    ],
+                },
+            },
+            {
+                templateKey: "profile-favorites-showcase",
+                data: {
+                    title: "Избранные товары",
+                    subtitle: "Все, что вы отметили, чтобы вернуться позже",
+                    items: [
+                        { name: "Cosmiq Air Max", price: 5990, currency: "RUB", status: "В наличии" },
+                        { name: "Flex Lamp", price: 3490, currency: "RUB", status: "Ожидается" },
+                    ],
+                },
+            },
+            FOOTER_BLOCK,
+        ],
     },
     {
         type: PageType.CART,
         slug: "cart",
         title: "Корзина",
         isVisible: true,
-        blocks: [],
+        blocks: [
+            {
+                templateKey: "header-nav-basic",
+                pinned: true,
+                data: {
+                    logo: "Cosmiq",
+                    sticky: true,
+                    links: NAV_LINKS,
+                    actions: [{ label: "Каталог", href: "/catalog" }],
+                },
+            },
+            {
+                templateKey: "cart-items-list",
+                data: {
+                    title: "Товары в корзине",
+                    note: "Укажите адрес доставки на следующем шаге",
+                    items: [
+                        {
+                            name: "Cosmiq Air Max",
+                            sku: "AIR-001",
+                            quantity: 1,
+                            price: 5990,
+                            currency: "RUB",
+                        },
+                        {
+                            name: "Аксессуары для Air Max",
+                            sku: "AIR-KIT",
+                            quantity: 2,
+                            price: 990,
+                            currency: "RUB",
+                        },
+                    ],
+                    summary: {
+                        total: 7970,
+                        currency: "RUB",
+                        description: "Предварительная сумма заказа",
+                    },
+                    actions: [
+                        { label: "Оформить заказ", variant: "default" },
+                        { label: "Продолжить покупки", variant: "outline" },
+                    ],
+                },
+            },
+            FOOTER_BLOCK,
+        ],
     },
 ];
