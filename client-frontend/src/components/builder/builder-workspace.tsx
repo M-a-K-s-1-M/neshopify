@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSiteQuery, useSitePagesQuery, usePageDetailQuery, useBlockTemplatesQuery } from "@/lib/query/hooks";
 import { SitePageView } from "./site-page-view";
+import { BlockRenderer } from "./block-registry";
 import type { BlockInstanceDto, BlockTemplateDto, CreateBlockPayload, PageDto, UpdateBlockPayload } from "@/lib/types";
 import { getPresetsByTemplate } from "./block-presets";
 import { getRequestErrorMessage } from "@/lib/utils/error";
@@ -334,51 +335,54 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                                 <Plus className="mr-2 h-4 w-4" /> Добавить блок
                             </Button>
                         </DrawerTrigger>
-                        <DrawerContent className="p-0">
+                        <DrawerContent className="p-0 flex max-h-[90vh] flex-col overflow-hidden">
                             <DrawerHeader className="text-left">
                                 <DrawerTitle>Добавить блок</DrawerTitle>
                                 <DrawerDescription>Выберите шаблон и вариант блока.</DrawerDescription>
                             </DrawerHeader>
-                            <div className="grid gap-4 border-t border-border p-4 md:grid-cols-[220px_minmax(0,1fr)]">
-                                <div className="space-y-2">
-                                    {templates?.map((template) => (
-                                        <button
-                                            key={template.id}
-                                            type="button"
-                                            className={cn(
-                                                "w-full rounded-lg border px-3 py-2 text-left text-sm",
-                                                template.key === activeTemplate?.key
-                                                    ? "border-primary bg-primary/10 text-primary"
-                                                    : "border-border hover:border-primary/40",
-                                            )}
-                                            onClick={() => setActiveTemplateKey(template.key)}
-                                        >
-                                            <p className="font-medium">{template.title}</p>
-                                            <p className="text-xs text-muted-foreground">{template.category}</p>
-                                        </button>
-                                    ))}
-                                    {!templates || templates.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">Нет доступных шаблонов.</p>
-                                    ) : null}
-                                </div>
-                                <div className="space-y-4">
-                                    {activeTemplate ? (
-                                        <>
-                                            <div>
-                                                <h3 className="text-lg font-semibold">{activeTemplate.title}</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {activeTemplate.description ?? "Шаблон блока"}
-                                                </p>
-                                            </div>
-                                            <PresetGrid
-                                                template={activeTemplate}
-                                                onSelect={(data) => handleAddPreset(activeTemplate, data)}
-                                                isSubmitting={createBlockMutation.isPending}
-                                            />
-                                        </>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground">Выберите шаблон слева.</p>
-                                    )}
+                            <div className="flex-1 overflow-y-auto border-t border-border p-4">
+                                <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
+                                    <div className="space-y-2">
+                                        {templates?.map((template) => (
+                                            <button
+                                                key={template.id}
+                                                type="button"
+                                                className={cn(
+                                                    "w-full rounded-lg border px-3 py-2 text-left text-sm",
+                                                    template.key === activeTemplate?.key
+                                                        ? "border-primary bg-primary/10 text-primary"
+                                                        : "border-border hover:border-primary/40",
+                                                )}
+                                                onClick={() => setActiveTemplateKey(template.key)}
+                                            >
+                                                <p className="font-medium">{template.title}</p>
+                                                <p className="text-xs text-muted-foreground">{template.category}</p>
+                                            </button>
+                                        ))}
+                                        {!templates || templates.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">Нет доступных шаблонов.</p>
+                                        ) : null}
+                                    </div>
+                                    <div className="space-y-4">
+                                        {activeTemplate ? (
+                                            <>
+                                                <div>
+                                                    <h3 className="text-lg font-semibold">{activeTemplate.title}</h3>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {activeTemplate.description ?? "Шаблон блока"}
+                                                    </p>
+                                                </div>
+                                                <PresetGrid
+                                                    template={activeTemplate}
+                                                    siteId={siteId}
+                                                    onSelect={(data) => handleAddPreset(activeTemplate, data)}
+                                                    isSubmitting={createBlockMutation.isPending}
+                                                />
+                                            </>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">Выберите шаблон слева.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <DrawerFooter>
@@ -416,10 +420,12 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
 
 function PresetGrid({
     template,
+    siteId,
     onSelect,
     isSubmitting,
 }: {
     template: BlockTemplateDto;
+    siteId: string;
     onSelect: (data: Record<string, unknown>) => void;
     isSubmitting: boolean;
 }) {
@@ -431,22 +437,48 @@ function PresetGrid({
 
     return (
         <div className="space-y-3">
-            {presets.map((preset) => (
-                <div key={preset.id} className="rounded-xl border border-border p-4">
-                    <p className="text-sm font-medium">{preset.name}</p>
-                    {preset.description ? (
-                        <p className="text-xs text-muted-foreground">{preset.description}</p>
-                    ) : null}
-                    <Button
-                        className="mt-3"
-                        size={'sm'}
-                        disabled={isSubmitting}
-                        onClick={() => onSelect(preset.data)}
-                    >
-                        {isSubmitting ? "Добавляем..." : "Использовать"}
-                    </Button>
-                </div>
-            ))}
+            <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+                {presets.map((preset) => {
+                    const previewBlock: BlockInstanceDto = {
+                        id: `preset-${preset.id}`,
+                        pageId: "__preset_preview__",
+                        order: 1,
+                        pinned: false,
+                        data: preset.data,
+                        templateId: template.id,
+                        template,
+                    };
+
+                    return (
+                        <div
+                            key={preset.id}
+                            className="w-full rounded-xl border border-border p-4"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-medium">{preset.name}</p>
+                                    {preset.description ? (
+                                        <p className="text-xs text-muted-foreground">{preset.description}</p>
+                                    ) : null}
+                                </div>
+                                <Button
+                                    size={'sm'}
+                                    disabled={isSubmitting}
+                                    onClick={() => onSelect(preset.data)}
+                                >
+                                    {isSubmitting ? "Добавляем..." : "Использовать"}
+                                </Button>
+                            </div>
+
+                            <div className="mt-3 rounded-lg border border-border bg-background p-3">
+                                <div className="w-full">
+                                    <BlockRenderer block={previewBlock} siteId={siteId} />
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
