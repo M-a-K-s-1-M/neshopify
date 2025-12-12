@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,7 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     } = useQuery({
         queryKey: queryKeys.siteProductsList(siteId, page, activeSearch, pageSize),
         queryFn: () => ProductsApi.list(siteId, { page, limit: pageSize, search: activeSearch }),
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
     });
 
     const gridItems = productsPage?.data ?? [];
