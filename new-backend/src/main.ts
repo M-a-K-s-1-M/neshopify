@@ -13,9 +13,15 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
+  const appEnv = configService.get<string>('app.env') ?? 'development';
+  const isProd = appEnv === 'production';
 
   const clientUrl = configService.get<string>('app.clientUrl') ?? '';
-  const origins = clientUrl.split(',').map((url) => url.trim()).filter(Boolean);
+  const origins = clientUrl
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .map((url) => url.replace(/\/+$/g, ''));
 
 
   const port = configService.get<number>('app.port') ?? 5000;
@@ -49,14 +55,22 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, swaggerDocument);
 
   app.enableCors({
-    origin: origins,
+    // В dev разрешаем любой origin (нужно для cookie-auth из разных фронтендов).
+    // В production — строго по списку CLIENT_URL.
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (!isProd) return callback(null, true);
+      if (!origins.length) return callback(null, false);
+      return callback(null, origins.includes(origin));
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: [
       'Content-Type',
       'X-Requested-With',
       'Accept',
       'Authorization',
-      "X-Skip-Auth-Redirect",
+      'X-Skip-Auth-Redirect',
+      'x-skip-auth-redirect',
     ],
     credentials: true,
     optionsSuccessStatus: 200,

@@ -50,6 +50,8 @@ export class SitesService {
 
                 await this.siteStructure.provisionDefaultStructure(site.id, tx);
 
+                await this.seedDefaultCosmeticsCategories(site.id, tx);
+
                 return site;
             });
         } catch (error) {
@@ -58,6 +60,35 @@ export class SitesService {
             }
             throw error;
         }
+    }
+
+    private async seedDefaultCosmeticsCategories(siteId: string, tx: any) {
+        const existing = await tx.productCategory.count({ where: { siteId } });
+        if (existing > 0) {
+            return;
+        }
+
+        const categories = [
+            { name: 'Уход за лицом', slug: 'face-care' },
+            { name: 'Макияж', slug: 'makeup' },
+            { name: 'Уход за телом', slug: 'body-care' },
+            { name: 'Уход за волосами', slug: 'hair-care' },
+            { name: 'Парфюмерия', slug: 'fragrance' },
+            { name: 'Ногти', slug: 'nails' },
+            { name: 'Аксессуары', slug: 'accessories' },
+            { name: 'Наборы и подарки', slug: 'sets-gifts' },
+            { name: 'Мужская косметика', slug: 'men' },
+            { name: 'Мини-форматы', slug: 'travel-size' },
+        ];
+
+        await tx.productCategory.createMany({
+            data: categories.map((c) => ({
+                siteId,
+                name: c.name,
+                slug: c.slug,
+            })),
+            skipDuplicates: true,
+        });
     }
 
     /** Возвращает сайты, доступные пользователю (или все для админа). */
