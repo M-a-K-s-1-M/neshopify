@@ -130,38 +130,38 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
                             <Card key={product.id} className="overflow-hidden">
                                 {product.media?.length ? (
                                     product.media.length > 1 ? (
-                                        <div className="p-2">
-                                            <Carousel className="w-full" opts={{ loop: true }}>
-                                                <CarouselContent>
+                                        <div className="relative h-40 w-full overflow-hidden bg-muted">
+                                            <Carousel className="h-full w-full" opts={{ loop: true }}>
+                                                <CarouselContent className="ml-0 h-40">
                                                     {product.media
                                                         .slice()
                                                         .sort((a, b) => a.order - b.order)
                                                         .map((item) => (
-                                                            <CarouselItem key={item.id} className="basis-full">
-                                                                <div className="relative h-40 w-full overflow-hidden rounded-md">
+                                                            <CarouselItem key={item.id} className="basis-full pl-0">
+                                                                <div className="relative h-40 w-full">
                                                                     <Image
                                                                         src={resolveMediaUrl(item.url)}
                                                                         alt={item.alt ?? product.title}
                                                                         fill
                                                                         unoptimized
-                                                                        className="object-cover"
+                                                                        className="object-contain"
                                                                     />
                                                                 </div>
                                                             </CarouselItem>
                                                         ))}
                                                 </CarouselContent>
-                                                <CarouselPrevious />
-                                                <CarouselNext />
+                                                <CarouselPrevious className="left-2" />
+                                                <CarouselNext className="right-2" />
                                             </Carousel>
                                         </div>
                                     ) : (
-                                        <div className="relative h-40 w-full">
+                                        <div className="relative h-40 w-full overflow-hidden bg-muted">
                                             <Image
                                                 src={resolveMediaUrl(product.media[0].url)}
                                                 alt={product.media[0].alt ?? product.title}
                                                 fill
                                                 unoptimized
-                                                className="object-cover"
+                                                className="object-contain"
                                             />
                                         </div>
                                     )
