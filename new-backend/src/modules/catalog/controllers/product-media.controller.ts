@@ -1,11 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { randomUUID } from 'crypto';
+import { extname, join } from 'path';
+import { mkdirSync } from 'fs';
 import { JwtAuthGuard, RolesGuard, SiteAccessGuard } from '../../../common/guards';
 import { SiteAccess, SiteAccessRequirement } from '../../../common/decorators/site-access.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { ProductMediaService } from '../services/product-media.service';
 import { CreateProductMediaDto } from '../dto/create-product-media.dto';
 import { UpdateProductMediaDto } from '../dto/update-product-media.dto';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { ProductMediaResponseDto, RemovedResponseDto } from 'src/common/swagger/api-models';
 
 /**
@@ -38,6 +43,51 @@ export class ProductMediaController {
         @Body() dto: CreateProductMediaDto,
     ) {
         return this.productMediaService.create(siteId, productId, dto);
+    }
+
+    /** Загружает сразу несколько изображений и создаёт записи ProductMedia. */
+    @Post('upload')
+    @Roles('SITE_OWNER', 'ADMIN')
+    @SiteAccess(SiteAccessRequirement.OWNER)
+    @UseGuards(RolesGuard, SiteAccessGuard)
+    @ApiConsumes('multipart/form-data')
+    @ApiCreatedResponse({ type: ProductMediaResponseDto, isArray: true })
+    @UseInterceptors(
+        FilesInterceptor('files', 20, {
+            limits: { fileSize: 10 * 1024 * 1024 },
+            fileFilter: (_req, file, cb) => {
+                if (file.mimetype?.startsWith('image/')) {
+                    cb(null, true);
+                    return;
+                }
+                cb(null, false);
+            },
+            storage: diskStorage({
+                destination: (req, _file, cb) => {
+                    const productId = (req as any)?.params?.productId as string;
+                    const dest = join(process.cwd(), 'uploads', 'products', productId);
+                    mkdirSync(dest, { recursive: true });
+                    cb(null, dest);
+                },
+                filename: (_req, file, cb) => {
+                    const safeExt = extname(file.originalname) || '';
+                    cb(null, `${randomUUID()}${safeExt}`);
+                },
+            }),
+        }),
+    )
+    async upload(
+        @Param('siteId') siteId: string,
+        @Param('productId') productId: string,
+        @UploadedFiles()
+        files: Array<{ filename: string; originalname: string }>,
+    ) {
+        const items = (files ?? []).map((file) => ({
+            url: `/uploads/products/${productId}/${file.filename}`,
+            alt: file.originalname,
+        }));
+
+        return this.productMediaService.createMany(siteId, productId, items);
     }
 
     /** Обновляет подписи, порядок или другой метаданные медиа. */

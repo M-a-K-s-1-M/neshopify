@@ -6,9 +6,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { TrimStringsPipe } from './common/pipes';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
 
@@ -20,6 +22,10 @@ async function bootstrap() {
 
 
   app.setGlobalPrefix('api');
+
+  // Статические файлы (например, загруженные изображения товаров)
+  // Важно: middleware статики не зависит от globalPrefix.
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   app.useGlobalPipes(
     new TrimStringsPipe(), // Обрезаем пробелы во всех строковых payload до валидации
