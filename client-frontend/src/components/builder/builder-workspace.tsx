@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -15,6 +15,7 @@ import {
     DrawerTitle,
     DrawerTrigger,
     Label,
+    Input,
 } from "@/components";
 import { cn } from "@/lib/utils";
 import { useSiteQuery, useSitePagesQuery, usePageDetailQuery, useBlockTemplatesQuery } from "@/lib/query/hooks";
@@ -117,8 +118,50 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
     });
 
     const updateBlockMutation = useMutation({
-        mutationFn: (params: { blockId: string; payload: UpdateBlockPayload }) =>
-            PageBlocksApi.update(siteId, pageId as string, params.blockId, params.payload),
+        mutationFn: async (params: {
+            blockId: string;
+            payload: UpdateBlockPayload;
+            templateKey?: string;
+            footerLinkTargets?: Array<{ id: string; data: unknown }>;
+        }) => {
+            if (!pageId) {
+                throw new Error("pageId is required");
+            }
+
+            const result = await PageBlocksApi.update(siteId, pageId as string, params.blockId, params.payload);
+
+            if (
+                params.templateKey === "header-nav-basic" &&
+                params.footerLinkTargets &&
+                params.footerLinkTargets.length > 0 &&
+                params.payload.data
+            ) {
+                const headerData = params.payload.data;
+                const nextLinks =
+                    isPlainObject(headerData) && Array.isArray((headerData as Record<string, unknown>).links)
+                        ? ((headerData as Record<string, unknown>).links as unknown[])
+                        : null;
+
+                if (nextLinks) {
+                    await Promise.all(
+                        params.footerLinkTargets.map((target) => {
+                            const baseData = isPlainObject(target.data)
+                                ? ({ ...(target.data as Record<string, unknown>) } as Record<string, unknown>)
+                                : ({} as Record<string, unknown>);
+
+                            return PageBlocksApi.update(siteId, pageId as string, target.id, {
+                                data: {
+                                    ...baseData,
+                                    links: nextLinks,
+                                },
+                            });
+                        }),
+                    );
+                }
+            }
+
+            return result;
+        },
         onSuccess: async () => {
             await invalidatePage();
         },
@@ -146,6 +189,32 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
         return true;
     };
 
+    const handleMoveBlock = async (blockId: string, direction: "up" | "down") => {
+        if (guardReadOnly() || !pageId) {
+            return;
+        }
+        const currentIndex = blocks.findIndex((block) => block.id === blockId);
+        if (currentIndex === -1) {
+            return;
+        }
+        const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+        if (targetIndex < 0 || targetIndex >= blocks.length) {
+            return;
+        }
+        const currentBlock = blocks[currentIndex];
+        const targetBlock = blocks[targetIndex];
+        try {
+            await Promise.all([
+                PageBlocksApi.update(siteId, pageId, currentBlock.id, { order: targetBlock.order }),
+                PageBlocksApi.update(siteId, pageId, targetBlock.id, { order: currentBlock.order }),
+            ]);
+            await invalidatePage();
+            setSelectedBlockId(currentBlock.id);
+        } catch (error) {
+            window.alert(getRequestErrorMessage(error, "Не удалось изменить порядок блоков"));
+        }
+    };
+
     const handleAddPreset = (template: BlockTemplateDto, presetData: Record<string, unknown>) => {
         if (!pageId || guardReadOnly()) return;
         const nextOrder = blocks.length > 0 ? blocks[blocks.length - 1].order + 1 : 1;
@@ -158,7 +227,16 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
 
     const handleSaveBlock = (blockId: string, payload: UpdateBlockPayload) => {
         if (guardReadOnly()) return;
-        updateBlockMutation.mutate({ blockId, payload });
+        const templateKey = blocks.find((item) => item.id === blockId)?.template?.key;
+
+        const footerLinkTargets =
+            templateKey === "header-nav-basic"
+                ? blocks
+                    .filter((item) => item.template.key === "footer-contacts-basic")
+                    .map((item) => ({ id: item.id, data: item.data }))
+                : [];
+
+        updateBlockMutation.mutate({ blockId, payload, templateKey, footerLinkTargets });
     };
 
     const handleDeleteBlock = (blockId: string) => {
@@ -179,6 +257,10 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
             </div>
         );
     }
+
+    const selectedIndex = selectedBlock ? blocks.findIndex((block) => block.id === selectedBlock.id) : -1;
+    const canMoveUp = selectedIndex > 0;
+    const canMoveDown = selectedIndex >= 0 && selectedIndex < blocks.length - 1;
 
     return (
         <div className="space-y-6">
@@ -319,10 +401,14 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                         block={selectedBlock}
                         onSave={handleSaveBlock}
                         onDelete={handleDeleteBlock}
+                        onMove={handleMoveBlock}
                         isSaving={updateBlockMutation.isPending}
                         isDeleting={deleteBlockMutation.isPending}
                         readOnly={isReadOnlyPage}
                         readOnlyMessage={VIEW_ONLY_MESSAGE}
+                        canMoveUp={canMoveUp}
+                        canMoveDown={canMoveDown}
+                        availablePages={pages ?? []}
                     />
                 </aside>
             </div>
@@ -371,37 +457,81 @@ function BlockEditorPanel({
     block,
     onSave,
     onDelete,
+    onMove,
     isSaving,
     isDeleting,
     readOnly,
     readOnlyMessage,
+    canMoveUp,
+    canMoveDown,
+    availablePages,
 }: {
     block: BlockInstanceDto | null;
     onSave: (blockId: string, payload: UpdateBlockPayload) => void;
     onDelete: (blockId: string) => void;
+    onMove: (blockId: string, direction: "up" | "down") => void;
     isSaving: boolean;
     isDeleting: boolean;
     readOnly: boolean;
     readOnlyMessage: string;
+    canMoveUp: boolean;
+    canMoveDown: boolean;
+    availablePages: PageDto[];
 }) {
     const [pinned, setPinned] = useState(false);
     const [order, setOrder] = useState(1);
-    const [dataDraft, setDataDraft] = useState("{}");
+    const [draftData, setDraftData] = useState<Record<string, unknown>>({});
+    const [headerLinks, setHeaderLinks] = useState<Array<{ id: string; label: string; pageId: string }>>([]);
+    const [headerActions, setHeaderActions] = useState<Array<{ id: string; label: string; href: string; variant?: string }>>([]);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!block) {
             setPinned(false);
             setOrder(1);
-            setDataDraft("{}");
+            setDraftData({});
+            setHeaderLinks([]);
+            setHeaderActions([]);
             setError(null);
             return;
         }
         setPinned(block.pinned);
         setOrder(block.order);
-        setDataDraft(JSON.stringify(block.data ?? {}, null, 2));
+        setDraftData(isPlainObject(block.data) ? (block.data as Record<string, unknown>) : {});
+
+        if (block.template.key === 'header-nav-basic') {
+            const data = isPlainObject(block.data) ? (block.data as Record<string, any>) : {};
+            const links = Array.isArray(data.links) ? data.links : [];
+            const actions = Array.isArray(data.actions) ? data.actions : [];
+
+            setHeaderLinks(
+                links.map((link: any) => {
+                    const pageId = typeof link?.pageId === 'string'
+                        ? link.pageId
+                        : resolvePageIdFromHref(availablePages, typeof link?.href === 'string' ? link.href : '');
+
+                    return {
+                        id: createEntryId(),
+                        label: typeof link?.label === 'string' ? link.label : 'Ссылка',
+                        pageId: pageId ?? '',
+                    };
+                }),
+            );
+
+            setHeaderActions(
+                actions.map((action: any) => ({
+                    id: createEntryId(),
+                    label: typeof action?.label === 'string' ? action.label : 'Действие',
+                    href: typeof action?.href === 'string' ? action.href : '#',
+                    variant: typeof action?.variant === 'string' ? action.variant : undefined,
+                })),
+            );
+        } else {
+            setHeaderLinks([]);
+            setHeaderActions([]);
+        }
         setError(null);
-    }, [block]);
+    }, [block, availablePages]);
 
     if (!block) {
         return <p className="text-sm text-muted-foreground">Выберите блок слева, чтобы отредактировать его.</p>;
@@ -429,18 +559,83 @@ function BlockEditorPanel({
     }
 
     const handleSave = () => {
-        try {
-            const parsed = JSON.parse(dataDraft);
-            onSave(block.id, { data: parsed, pinned, order });
+        const templateKey = block.template.key;
+
+        if (templateKey === 'header-nav-basic') {
+            const logo = typeof draftData.logo === 'string' ? draftData.logo : '';
+            const sticky = Boolean(draftData.sticky);
+
+            const normalizedLinks = normalizeHeaderLinks({
+                links: headerLinks,
+                pages: availablePages,
+            });
+
+            if (!normalizedLinks.ok) {
+                setError(normalizedLinks.error);
+                return;
+            }
+
+            const normalizedActions = headerActions
+                .map((item) => ({
+                    label: item.label.trim() || 'Действие',
+                    href: item.href.trim() || '#',
+                    variant: item.variant,
+                }))
+                .filter((item) => Boolean(item.label));
+
+            const nextData = {
+                ...draftData,
+                logo,
+                sticky,
+                links: normalizedLinks.links,
+                actions: normalizedActions,
+            } satisfies Record<string, unknown>;
+
+            onSave(block.id, { data: nextData, pinned, order });
             setError(null);
-        } catch (err) {
-            setError("Некорректный JSON. Проверьте синтаксис.");
+            return;
         }
+
+        if (templateKey === 'footer-contacts-basic') {
+            // links управляются через header-nav-basic и синхронизируются при его сохранении,
+            // но при сохранении footer мы не должны затирать уже синхронизированные ссылки
+            onSave(block.id, { data: draftData, pinned, order });
+            setError(null);
+            return;
+        }
+
+        onSave(block.id, { data: draftData, pinned, order });
+        setError(null);
+    };
+
+    const setDraftValue = (key: string, value: unknown) => {
+        setDraftData((prev) => ({ ...prev, [key]: value }));
     };
 
     return (
         <div className="space-y-4">
             {blockHeader}
+
+            <div className="flex flex-wrap gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onMove(block.id, "up")}
+                    disabled={!canMoveUp || isSaving || isDeleting}
+                >
+                    <ChevronUp className="mr-2 h-4 w-4" /> Вверх
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onMove(block.id, "down")}
+                    disabled={!canMoveDown || isSaving || isDeleting}
+                >
+                    <ChevronDown className="mr-2 h-4 w-4" /> Вниз
+                </Button>
+            </div>
 
             <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm">
@@ -467,17 +662,33 @@ function BlockEditorPanel({
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <Label htmlFor="block-json" className="text-sm">
-                    Данные блока (JSON)
-                </Label>
-                <textarea
-                    id="block-json"
-                    value={dataDraft}
-                    onChange={(event) => setDataDraft(event.target.value)}
-                    rows={12}
-                    className="w-full rounded-md border border-input bg-background p-3 font-mono text-xs"
-                />
+            <div className="space-y-3">
+                <Label className="text-sm">Настройки блока</Label>
+
+                {block.template.key === 'header-nav-basic' ? (
+                    <HeaderNavEditor
+                        logo={typeof draftData.logo === 'string' ? (draftData.logo as string) : ''}
+                        sticky={Boolean(draftData.sticky)}
+                        links={headerLinks}
+                        actions={headerActions}
+                        pages={availablePages}
+                        onLogoChange={(value) => setDraftValue('logo', value)}
+                        onStickyChange={(value) => setDraftValue('sticky', value)}
+                        onLinksChange={setHeaderLinks}
+                        onActionsChange={setHeaderActions}
+                    />
+                ) : block.template.key === 'footer-contacts-basic' ? (
+                    <FooterEditor
+                        data={draftData}
+                        onChange={setDraftData}
+                    />
+                ) : (
+                    <GenericBlockDataEditor
+                        data={draftData}
+                        onChange={setDraftData}
+                    />
+                )}
+
                 {error ? <p className="text-xs text-destructive">{error}</p> : null}
             </div>
 
@@ -498,6 +709,558 @@ function BlockEditorPanel({
                     <Trash2 className="mr-2 h-4 w-4" />
                     {isDeleting ? "Удаляем..." : "Удалить"}
                 </Button>
+            </div>
+        </div>
+    );
+}
+function createEntryId() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getPageHref(page: PageDto) {
+    if (page.type === 'HOME') {
+        return '/';
+    }
+    return `/${page.slug}`;
+}
+
+function resolvePageIdFromHref(pages: PageDto[], href: string): string | null {
+    const normalized = (href || '').trim();
+    if (!normalized) {
+        return null;
+    }
+    const match = pages.find((page) => getPageHref(page) === normalized);
+    return match?.id ?? null;
+}
+
+function normalizeHeaderLinks({
+    links,
+    pages,
+}: {
+    links: Array<{ label: string; pageId: string }>;
+    pages: PageDto[];
+}): { ok: true; links: Array<{ label: string; href: string; pageId: string }> } | { ok: false; error: string } {
+    const cleaned = links
+        .map((item) => ({
+            label: item.label.trim(),
+            pageId: item.pageId.trim(),
+        }))
+        .filter((item) => item.label || item.pageId);
+
+    for (const item of cleaned) {
+        if (!item.label) {
+            return { ok: false, error: 'Заполните название пункта меню.' };
+        }
+        if (!item.pageId) {
+            return { ok: false, error: `Для пункта "${item.label}" выберите страницу.` };
+        }
+    }
+
+    const duplicates = findDuplicates(cleaned.map((item) => item.pageId));
+    if (duplicates.length > 0) {
+        return { ok: false, error: 'Одна и та же страница не может быть добавлена в меню дважды.' };
+    }
+
+    const resolved = cleaned.map((item) => {
+        const page = pages.find((p) => p.id === item.pageId);
+        if (!page) {
+            return null;
+        }
+        return {
+            label: item.label,
+            href: getPageHref(page),
+            pageId: item.pageId,
+        };
+    });
+
+    if (resolved.some((item) => item === null)) {
+        return { ok: false, error: 'Некоторые выбранные страницы больше недоступны. Обновите список.' };
+    }
+
+    return { ok: true, links: resolved as Array<{ label: string; href: string; pageId: string }> };
+}
+
+function findDuplicates(values: string[]): string[] {
+    const seen = new Set<string>();
+    const duplicates = new Set<string>();
+    for (const value of values) {
+        if (seen.has(value)) {
+            duplicates.add(value);
+        }
+        seen.add(value);
+    }
+    return Array.from(duplicates);
+}
+
+function GenericBlockDataEditor({
+    data,
+    onChange,
+}: {
+    data: Record<string, unknown>;
+    onChange: (next: Record<string, unknown>) => void;
+}) {
+    const handlePrimitiveChange = (key: string, value: unknown) => {
+        onChange({ ...data, [key]: value });
+    };
+
+    const keys = Object.keys(data);
+
+    if (keys.length === 0) {
+        return <p className="text-xs text-muted-foreground">У этого блока нет редактируемых полей.</p>;
+    }
+
+    return (
+        <div className="space-y-3">
+            {keys.map((key) => (
+                <DataField
+                    key={key}
+                    label={key}
+                    value={data[key]}
+                    onChange={(value) => handlePrimitiveChange(key, value)}
+                />
+            ))}
+        </div>
+    );
+}
+
+function DataField({
+    label,
+    value,
+    onChange,
+}: {
+    label: string;
+    value: unknown;
+    onChange: (value: unknown) => void;
+}) {
+    if (Array.isArray(value)) {
+        return (
+            <ArrayField
+                label={label}
+                value={value}
+                onChange={onChange}
+            />
+        );
+    }
+
+    if (isPlainObject(value)) {
+        return (
+            <ObjectField
+                label={label}
+                value={value}
+                onChange={(next) => onChange(next)}
+            />
+        );
+    }
+
+    if (typeof value === 'boolean') {
+        return (
+            <Label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
+                <span className="font-medium">{label}</span>
+                <input
+                    type="checkbox"
+                    checked={value}
+                    onChange={(event) => onChange(event.target.checked)}
+                    className="h-4 w-4 rounded border-border"
+                />
+            </Label>
+        );
+    }
+
+    if (typeof value === 'number') {
+        return (
+            <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{label}</Label>
+                <Input
+                    type="number"
+                    value={Number.isFinite(value) ? value : 0}
+                    onChange={(event) => onChange(Number(event.target.value))}
+                />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">{label}</Label>
+            <Input
+                value={typeof value === 'string' ? value : value == null ? '' : String(value)}
+                onChange={(event) => onChange(event.target.value)}
+            />
+        </div>
+    );
+}
+
+function ObjectField({
+    label,
+    value,
+    onChange,
+}: {
+    label: string;
+    value: Record<string, unknown>;
+    onChange: (next: Record<string, unknown>) => void;
+}) {
+    const keys = Object.keys(value);
+    return (
+        <div className="rounded-lg border border-border p-3">
+            <p className="text-sm font-medium">{label}</p>
+            <div className="mt-3 space-y-3">
+                {keys.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Нет полей.</p>
+                ) : (
+                    keys.map((key) => (
+                        <DataField
+                            key={key}
+                            label={key}
+                            value={value[key]}
+                            onChange={(nextValue) => onChange({ ...value, [key]: nextValue })}
+                        />
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
+
+function ArrayField({
+    label,
+    value,
+    onChange,
+}: {
+    label: string;
+    value: unknown[];
+    onChange: (next: unknown) => void;
+}) {
+    const isObjects = value.some((item) => isPlainObject(item));
+    const canAdd = true;
+
+    const handleRemove = (index: number) => {
+        const next = value.filter((_, i) => i !== index);
+        onChange(next);
+    };
+
+    const handleAdd = () => {
+        const sample = value.find((item) => item != null) ?? (isObjects ? {} : '');
+        if (isPlainObject(sample)) {
+            const keys = Object.keys(sample);
+            const nextItem: Record<string, unknown> = {};
+            for (const key of keys) {
+                nextItem[key] = '';
+            }
+            onChange([...value, nextItem]);
+            return;
+        }
+        onChange([...value, '']);
+    };
+
+    return (
+        <div className="rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">{label}</p>
+                {canAdd ? (
+                    <Button type="button" size="sm" variant="outline" onClick={handleAdd}>
+                        <Plus className="mr-2 h-4 w-4" /> Добавить
+                    </Button>
+                ) : null}
+            </div>
+            <div className="mt-3 space-y-3">
+                {value.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Список пуст.</p>
+                ) : (
+                    value.map((item, index) => (
+                        <div key={index} className="rounded-lg border border-border p-3">
+                            <div className="flex items-start justify-between gap-2">
+                                <p className="text-xs text-muted-foreground">Элемент {index + 1}</p>
+                                <Button type="button" size="icon" variant="ghost" onClick={() => handleRemove(index)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <div className="mt-2">
+                                {isPlainObject(item) ? (
+                                    <ObjectField
+                                        label=""
+                                        value={item}
+                                        onChange={(nextObject) => {
+                                            const next = [...value];
+                                            next[index] = nextObject;
+                                            onChange(next);
+                                        }}
+                                    />
+                                ) : (
+                                    <Input
+                                        value={typeof item === 'string' ? item : item == null ? '' : String(item)}
+                                        onChange={(event) => {
+                                            const next = [...value];
+                                            next[index] = event.target.value;
+                                            onChange(next);
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
+
+function HeaderNavEditor({
+    logo,
+    sticky,
+    links,
+    actions,
+    pages,
+    onLogoChange,
+    onStickyChange,
+    onLinksChange,
+    onActionsChange,
+}: {
+    logo: string;
+    sticky: boolean;
+    links: Array<{ id: string; label: string; pageId: string }>;
+    actions: Array<{ id: string; label: string; href: string; variant?: string }>;
+    pages: PageDto[];
+    onLogoChange: (value: string) => void;
+    onStickyChange: (value: boolean) => void;
+    onLinksChange: (next: Array<{ id: string; label: string; pageId: string }>) => void;
+    onActionsChange: (next: Array<{ id: string; label: string; href: string; variant?: string }>) => void;
+}) {
+    const selectablePages = pages.filter((page) => page.isVisible);
+
+    const usedPageIds = new Set(links.map((item) => item.pageId).filter(Boolean));
+
+    const addLink = () => {
+        onLinksChange([...links, { id: createEntryId(), label: '', pageId: '' }]);
+    };
+
+    const removeLink = (id: string) => {
+        onLinksChange(links.filter((item) => item.id !== id));
+    };
+
+    const updateLink = (id: string, patch: Partial<{ label: string; pageId: string }>) => {
+        onLinksChange(links.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    };
+
+    const addAction = () => {
+        onActionsChange([...actions, { id: createEntryId(), label: '', href: '' }]);
+    };
+
+    const removeAction = (id: string) => {
+        onActionsChange(actions.filter((item) => item.id !== id));
+    };
+
+    const updateAction = (id: string, patch: Partial<{ label: string; href: string; variant?: string }>) => {
+        onActionsChange(actions.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Логотип (текст)</Label>
+                <Input value={logo} onChange={(event) => onLogoChange(event.target.value)} placeholder="Название" />
+            </div>
+
+            <Label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
+                <span className="font-medium">Закрепить (sticky)</span>
+                <input
+                    type="checkbox"
+                    checked={sticky}
+                    onChange={(event) => onStickyChange(event.target.checked)}
+                    className="h-4 w-4 rounded border-border"
+                />
+            </Label>
+
+            <div className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">Меню навигации</p>
+                    <Button type="button" size="sm" variant="outline" onClick={addLink}>
+                        <Plus className="mr-2 h-4 w-4" /> Добавить пункт
+                    </Button>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                    Пункты меню привязываются только к существующим страницам сайта. Одну страницу нельзя добавить дважды.
+                </p>
+
+                <div className="mt-3 space-y-3">
+                    {links.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Пока нет пунктов меню.</p>
+                    ) : (
+                        links.map((link) => {
+                            const otherUsed = new Set(Array.from(usedPageIds));
+                            if (link.pageId) {
+                                otherUsed.delete(link.pageId);
+                            }
+                            const options = selectablePages.filter((p) => !otherUsed.has(p.id));
+
+                            return (
+                                <div key={link.id} className="rounded-lg border border-border p-3 space-y-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-xs text-muted-foreground">Пункт меню</p>
+                                        <Button type="button" size="icon" variant="ghost" onClick={() => removeLink(link.id)}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Input
+                                            value={link.label}
+                                            onChange={(event) => updateLink(link.id, { label: event.target.value })}
+                                            placeholder="Название (например, Каталог)"
+                                        />
+
+                                        <select
+                                            value={link.pageId}
+                                            onChange={(event) => updateLink(link.id, { pageId: event.target.value })}
+                                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                        >
+                                            <option value="">Выберите страницу</option>
+                                            {options.map((page) => (
+                                                <option key={page.id} value={page.id}>
+                                                    {page.title} (/{page.slug})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
+
+            <div className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">Кнопки действий</p>
+                    <Button type="button" size="sm" variant="outline" onClick={addAction}>
+                        <Plus className="mr-2 h-4 w-4" /> Добавить кнопку
+                    </Button>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                    Для кнопок действий пока используется прямой URL (например, /auth).
+                </p>
+
+                <div className="mt-3 space-y-3">
+                    {actions.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Кнопок действий нет.</p>
+                    ) : (
+                        actions.map((action) => (
+                            <div key={action.id} className="rounded-lg border border-border p-3 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="text-xs text-muted-foreground">Кнопка</p>
+                                    <Button type="button" size="icon" variant="ghost" onClick={() => removeAction(action.id)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <Input
+                                    value={action.label}
+                                    onChange={(event) => updateAction(action.id, { label: event.target.value })}
+                                    placeholder="Текст кнопки"
+                                />
+                                <Input
+                                    value={action.href}
+                                    onChange={(event) => updateAction(action.id, { href: event.target.value })}
+                                    placeholder="Ссылка (href)"
+                                />
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function FooterEditor({
+    data,
+    onChange,
+}: {
+    data: Record<string, unknown>;
+    onChange: (next: Record<string, unknown>) => void;
+}) {
+    const contacts = Array.isArray(data.contacts) ? (data.contacts as any[]) : [];
+
+    const setField = (key: string, value: unknown) => onChange({ ...data, [key]: value });
+
+    const updateContact = (index: number, patch: Partial<{ type: string; value: string }>) => {
+        const next = contacts.map((item, i) => (i === index ? { ...item, ...patch } : item));
+        setField('contacts', next);
+    };
+
+    const addContact = () => {
+        setField('contacts', [...contacts, { type: 'email', value: '' }]);
+    };
+
+    const removeContact = (index: number) => {
+        setField('contacts', contacts.filter((_, i) => i !== index));
+    };
+
+    return (
+        <div className="space-y-3">
+            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                Ссылки в футере берутся из блока Header (header-nav-basic).
+            </div>
+
+            <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Бренд</Label>
+                <Input
+                    value={typeof data.brand === 'string' ? (data.brand as string) : ''}
+                    onChange={(event) => setField('brand', event.target.value)}
+                />
+            </div>
+
+            <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Описание</Label>
+                <Input
+                    value={typeof data.description === 'string' ? (data.description as string) : ''}
+                    onChange={(event) => setField('description', event.target.value)}
+                />
+            </div>
+
+            <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Юридическая строка</Label>
+                <Input
+                    value={typeof data.legal === 'string' ? (data.legal as string) : ''}
+                    onChange={(event) => setField('legal', event.target.value)}
+                />
+            </div>
+
+            <div className="rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium">Контакты</p>
+                    <Button type="button" size="sm" variant="outline" onClick={addContact}>
+                        <Plus className="mr-2 h-4 w-4" /> Добавить
+                    </Button>
+                </div>
+                <div className="mt-3 space-y-3">
+                    {contacts.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Контактов нет.</p>
+                    ) : (
+                        contacts.map((contact, index) => (
+                            <div key={index} className="rounded-lg border border-border p-3 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="text-xs text-muted-foreground">Контакт</p>
+                                    <Button type="button" size="icon" variant="ghost" onClick={() => removeContact(index)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+
+                                <Input
+                                    value={typeof contact?.type === 'string' ? contact.type : ''}
+                                    onChange={(event) => updateContact(index, { type: event.target.value })}
+                                    placeholder="Тип (email/telegram/phone)"
+                                />
+                                <Input
+                                    value={typeof contact?.value === 'string' ? contact.value : ''}
+                                    onChange={(event) => updateContact(index, { value: event.target.value })}
+                                    placeholder="Значение"
+                                />
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
         </div>
     );

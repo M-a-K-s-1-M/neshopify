@@ -9,7 +9,7 @@ import Image from "next/image";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { X, Loader2 } from "lucide-react";
-import type { BlockInstanceDto, ProductDto } from "@/lib/types";
+import type { BlockInstanceDto, PaginatedResponse, ProductDto } from "@/lib/types";
 import { ProductsApi } from "@/lib/api/products";
 import { PageBlocksApi } from "@/lib/api/page-blocks";
 import { queryKeys } from "@/lib/query/keys";
@@ -213,11 +213,16 @@ function ProductsFeaturedManager({ block, siteId, open, onOpenChange }: Products
         }
     }, [open, block]);
 
-    const { data, isLoading, isFetching, error } = useQuery({
+    const { data, isLoading, isFetching, error } = useQuery<PaginatedResponse<ProductDto>>({
         queryKey: queryKeys.siteProductsList(siteId, page, activeSearch, PICKER_PAGE_SIZE),
         queryFn: () => ProductsApi.list(siteId, { page, limit: PICKER_PAGE_SIZE, search: activeSearch }),
         enabled: open,
-        keepPreviousData: true,
+        placeholderData: (previousData) => previousData,
+        staleTime: 0,
+        refetchOnMount: true,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        // refetchInterval: open ? 4000 : false,
     });
 
     const productLookup = useMemo(() => {
@@ -277,7 +282,7 @@ function ProductsFeaturedManager({ block, siteId, open, onOpenChange }: Products
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-6xl min-w-3xl">
+            <DialogContent className="max-w-6xl md:min-w-3xl ">
                 <DialogHeader>
                     <DialogTitle>Управление блоком «Популярные товары»</DialogTitle>
                     <DialogDescription>
