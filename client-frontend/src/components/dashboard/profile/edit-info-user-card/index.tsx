@@ -1,6 +1,7 @@
 'use client'
 
-import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, Checkbox, EditInfoUserForm, Field, FieldError, FieldGroup, FieldLabel, FieldSet, IEditInfoUserForm, Input } from '@/components'
+import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, EditInfoUserForm, Field } from '@/components'
+import type { IEditInfoUserForm } from '@/lib'
 import { useForm } from 'react-hook-form'
 
 export function EditInfoUserCard() {

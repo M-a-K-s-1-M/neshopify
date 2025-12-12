@@ -21,7 +21,12 @@ interface ProductsFeaturedProps {
 }
 
 export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) {
-    const data = block.data ?? {};
+    const blockData =
+        block.data && typeof block.data === "object" && !Array.isArray(block.data)
+            ? (block.data as Record<string, unknown>)
+            : ({} as Record<string, unknown>);
+    const title = typeof blockData.title === "string" ? blockData.title : "Популярные товары";
+    const subtitle = typeof blockData.subtitle === "string" ? blockData.subtitle : null;
     const productIds = getProductIdsFromBlock(block);
     const [products, setProducts] = useState<ProductDto[]>([]);
     const [loading, setLoading] = useState(false);
@@ -76,8 +81,8 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
             <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 className="text-2xl font-semibold">{data.title ?? 'Популярные товары'}</h2>
-                        {data.subtitle && <p className="text-muted-foreground">{data.subtitle}</p>}
+                        <h2 className="text-2xl font-semibold">{title}</h2>
+                        {subtitle ? <p className="text-muted-foreground">{subtitle}</p> : null}
                     </div>
                     {canManage ? (
                         <div className="flex flex-wrap items-center gap-2">
