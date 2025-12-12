@@ -14,6 +14,14 @@ import { ProductsApi } from "@/lib/api/products";
 import { PageBlocksApi } from "@/lib/api/page-blocks";
 import { queryKeys } from "@/lib/query/keys";
 import { getRequestErrorMessage } from "@/lib/utils/error";
+import { resolveMediaUrl } from "@/lib/utils/media";
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface ProductsFeaturedProps {
     block: BlockInstanceDto;
@@ -120,17 +128,44 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
                     {getFilteredProducts(products, search).length > 0 ? (
                         getFilteredProducts(products, search).map((product) => (
                             <Card key={product.id} className="overflow-hidden">
-                                {product.media?.[0]?.url && (
-                                    <div className="relative h-40 w-full">
-                                        <Image
-                                            src={product.media[0].url}
-                                            alt={product.media[0].alt ?? product.title}
-                                            fill
-                                            unoptimized
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                )}
+                                {product.media?.length ? (
+                                    product.media.length > 1 ? (
+                                        <div className="p-2">
+                                            <Carousel className="w-full" opts={{ loop: true }}>
+                                                <CarouselContent>
+                                                    {product.media
+                                                        .slice()
+                                                        .sort((a, b) => a.order - b.order)
+                                                        .map((item) => (
+                                                            <CarouselItem key={item.id} className="basis-full">
+                                                                <div className="relative h-40 w-full overflow-hidden rounded-md">
+                                                                    <Image
+                                                                        src={resolveMediaUrl(item.url)}
+                                                                        alt={item.alt ?? product.title}
+                                                                        fill
+                                                                        unoptimized
+                                                                        className="object-cover"
+                                                                    />
+                                                                </div>
+                                                            </CarouselItem>
+                                                        ))}
+                                                </CarouselContent>
+                                                <CarouselPrevious />
+                                                <CarouselNext />
+                                            </Carousel>
+                                        </div>
+                                    ) : (
+                                        <div className="relative h-40 w-full">
+                                            <Image
+                                                src={resolveMediaUrl(product.media[0].url)}
+                                                alt={product.media[0].alt ?? product.title}
+                                                fill
+                                                unoptimized
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                    )
+                                ) : null}
                                 <CardHeader>
                                     <CardTitle className="line-clamp-1 text-base">{product.title}</CardTitle>
                                     <CardDescription>

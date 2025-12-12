@@ -10,6 +10,14 @@ import Image from "next/image";
 import type { BlockInstanceDto } from "@/lib/types";
 import { ProductsApi } from "@/lib/api/products";
 import { queryKeys } from "@/lib/query/keys";
+import { resolveMediaUrl } from "@/lib/utils/media";
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface CatalogProductGridProps {
     block: BlockInstanceDto;
@@ -88,17 +96,44 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {gridItems.map((product) => (
                         <Card key={product.id} className="flex h-full flex-col overflow-hidden">
-                            {product.media?.[0]?.url && (
-                                <div className="relative h-40 w-full">
-                                    <Image
-                                        src={product.media[0].url}
-                                        alt={product.media[0].alt ?? product.title}
-                                        fill
-                                        unoptimized
-                                        className="object-cover"
-                                    />
-                                </div>
-                            )}
+                            {product.media?.length ? (
+                                product.media.length > 1 ? (
+                                    <div className="p-2">
+                                        <Carousel className="w-full" opts={{ loop: true }}>
+                                            <CarouselContent>
+                                                {product.media
+                                                    .slice()
+                                                    .sort((a, b) => a.order - b.order)
+                                                    .map((item) => (
+                                                        <CarouselItem key={item.id} className="basis-full">
+                                                            <div className="relative h-40 w-full overflow-hidden rounded-md">
+                                                                <Image
+                                                                    src={resolveMediaUrl(item.url)}
+                                                                    alt={item.alt ?? product.title}
+                                                                    fill
+                                                                    unoptimized
+                                                                    className="object-cover"
+                                                                />
+                                                            </div>
+                                                        </CarouselItem>
+                                                    ))}
+                                            </CarouselContent>
+                                            <CarouselPrevious />
+                                            <CarouselNext />
+                                        </Carousel>
+                                    </div>
+                                ) : (
+                                    <div className="relative h-40 w-full">
+                                        <Image
+                                            src={resolveMediaUrl(product.media[0].url)}
+                                            alt={product.media[0].alt ?? product.title}
+                                            fill
+                                            unoptimized
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                )
+                            ) : null}
                             <CardHeader>
                                 <CardTitle className="line-clamp-1 text-base">{product.title}</CardTitle>
                                 <CardDescription>

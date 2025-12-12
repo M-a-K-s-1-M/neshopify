@@ -15,6 +15,7 @@ export type {
 	BlockTemplateDto,
 	BlockCategory,
 	ProductDto,
+	ProductMediaDto,
 	ProductCategoryDto,
 	StockStatus,
 	PaginatedResponse,

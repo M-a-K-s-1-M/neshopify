@@ -1,6 +1,7 @@
+
 'use client'
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
@@ -11,6 +12,7 @@ import { useSiteQuery } from "@/lib/query/hooks";
 import { queryKeys } from "@/lib/query/keys";
 import { ProductsApi } from "@/lib/api/products";
 import { CategoriesApi } from "@/lib/api/categories";
+import { ProductMediaApi } from "@/lib/api/product-media";
 import type {
     CreateProductPayload,
     PaginatedResponse,
@@ -19,6 +21,9 @@ import type {
 } from "@/lib/types";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { cn } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/utils/media";
+import Image from "next/image";
+import type { ProductMediaDto } from "@/lib/types";
 
 interface CatalogWorkspaceProps {
     siteId: string;
@@ -44,6 +49,8 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
     const [selectedProductSnapshot, setSelectedProductSnapshot] = useState<ProductDto | null>(null);
     const [formState, setFormState] = useState(() => ({ ...DEFAULT_FORM }));
     const [formError, setFormError] = useState<string | null>(null);
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+    const mediaInputRef = useRef<HTMLInputElement | null>(null);
 
     const { data: site } = useSiteQuery(siteId);
     const activeSearch = search || undefined;
@@ -62,6 +69,12 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
         queryKey: queryKeys.siteCategories(siteId),
         queryFn: () => CategoriesApi.list(siteId),
         staleTime: 60 * 1000,
+    });
+
+    const { data: selectedProductFull } = useQuery({
+        queryKey: selectedProductId ? queryKeys.siteProduct(siteId, selectedProductId) : ["sites", siteId, "products", "__none__"],
+        queryFn: () => ProductsApi.get(siteId, selectedProductId as string),
+        enabled: Boolean(selectedProductId) && !isCreatingNew,
     });
 
     const products = productPage?.data ?? [];
@@ -86,6 +99,13 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
             setSelectedProductSnapshot(updated);
         }
     }, [products, selectedProductId]);
+
+    useEffect(() => {
+        if (!selectedProductFull) {
+            return;
+        }
+        setSelectedProductSnapshot(selectedProductFull);
+    }, [selectedProductFull]);
 
     useEffect(() => {
         if (isCreatingNew) {
@@ -148,6 +168,78 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
         },
         onError: (error) => {
             window.alert(getRequestErrorMessage(error, "Не удалось удалить товар"));
+        },
+    });
+
+    const uploadMediaMutation = useMutation({
+        mutationFn: async () => {
+            if (!selectedProductId) {
+                throw new Error("productId is required");
+            }
+            if (pendingFiles.length === 0) {
+                return [];
+            }
+            return ProductMediaApi.upload(siteId, selectedProductId, pendingFiles);
+        },
+        onSuccess: async () => {
+            setPendingFiles([]);
+            if (mediaInputRef.current) {
+                // Позволяет выбрать те же самые файлы повторно (иначе onChange может не сработать).
+                mediaInputRef.current.value = "";
+            }
+            if (selectedProductId) {
+                await queryClient.invalidateQueries({ queryKey: queryKeys.siteProduct(siteId, selectedProductId) });
+            }
+            await queryClient.invalidateQueries({ queryKey: queryKeys.siteProducts(siteId) });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.siteProductsList(siteId, page, activeSearch, PAGE_SIZE) });
+        },
+        onError: (error) => {
+            window.alert(getRequestErrorMessage(error, "Не удалось загрузить фотографии"));
+        },
+    });
+
+    const deleteMediaMutation = useMutation({
+        mutationFn: async (media: ProductMediaDto) => {
+            if (!selectedProductId) {
+                throw new Error("productId is required");
+            }
+            await ProductMediaApi.remove(siteId, selectedProductId, media.id);
+        },
+        onMutate: async (media) => {
+            if (!selectedProductId) {
+                return { previous: null as ProductDto | null };
+            }
+
+            const key = queryKeys.siteProduct(siteId, selectedProductId);
+            await queryClient.cancelQueries({ queryKey: key });
+
+            const previous = queryClient.getQueryData<ProductDto>(key) ?? null;
+
+            queryClient.setQueryData<ProductDto>(key, (current) => {
+                if (!current) return current as any;
+                const nextMedia = (current.media ?? []).filter((item) => item.id !== media.id);
+                // Приведём order к 0..n-1, чтобы UI сразу выглядел консистентно.
+                const normalized = nextMedia
+                    .slice()
+                    .sort((a, b) => a.order - b.order)
+                    .map((item, index) => ({ ...item, order: index }));
+                return { ...current, media: normalized };
+            });
+
+            return { previous };
+        },
+        onError: (error, _media, ctx) => {
+            if (selectedProductId && ctx?.previous) {
+                queryClient.setQueryData(queryKeys.siteProduct(siteId, selectedProductId), ctx.previous);
+            }
+            window.alert(getRequestErrorMessage(error, "Не удалось удалить фотографию"));
+        },
+        onSuccess: async () => {
+            if (selectedProductId) {
+                await queryClient.invalidateQueries({ queryKey: queryKeys.siteProduct(siteId, selectedProductId) });
+            }
+            await queryClient.invalidateQueries({ queryKey: queryKeys.siteProducts(siteId) });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.siteProductsList(siteId, page, activeSearch, PAGE_SIZE) });
         },
     });
 
@@ -239,7 +331,9 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
 
     const isSaving = saveProductMutation.isPending;
     const isDeleting = deleteProductMutation.isPending;
-    const isBusy = isSaving || isDeleting;
+    const isUploadingMedia = uploadMediaMutation.isPending;
+    const isDeletingMedia = deleteMediaMutation.isPending;
+    const isBusy = isSaving || isDeleting || isUploadingMedia || isDeletingMedia;
     const canSubmit = Boolean(formState.title.trim() && formState.price.trim()) && !isBusy;
 
     const handleDelete = () => {
@@ -427,6 +521,86 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
                                 ))}
                             </select>
                         </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="product-media">Фотографии</Label>
+                            {selectedProductSnapshot?.media?.length ? (
+                                <div className="space-y-2">
+                                    {selectedProductSnapshot.media
+                                        .slice()
+                                        .sort((a, b) => a.order - b.order)
+                                        .map((item) => (
+                                            <div key={item.id} className="flex items-center gap-3 rounded-lg border border-border bg-background p-2">
+                                                <div className="relative h-16 w-16 overflow-hidden rounded-md border border-border">
+                                                    <Image
+                                                        src={resolveMediaUrl(item.url)}
+                                                        alt={item.alt ?? selectedProductSnapshot.title}
+                                                        fill
+                                                        unoptimized
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-medium line-clamp-1">{item.alt ?? "Фото"}</p>
+                                                    <p className="text-xs text-muted-foreground">Порядок: {item.order}</p>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    disabled={!selectedProductId || isCreatingNew || isBusy}
+                                                    onClick={() => {
+                                                        if (!window.confirm("Удалить эту фотографию?")) return;
+                                                        deleteMediaMutation.mutate(item);
+                                                    }}
+                                                    title="Удалить"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-muted-foreground">Фотографий пока нет.</p>
+                            )}
+
+                            <Input
+                                id="product-media"
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                ref={mediaInputRef}
+                                disabled={!selectedProductId || isCreatingNew || isBusy}
+                                onClick={(event) => {
+                                    // На некоторых браузерах выбор того же файла не триггерит onChange.
+                                    // Очищаем значение перед выбором.
+                                    (event.currentTarget as HTMLInputElement).value = "";
+                                }}
+                                onChange={(event) => {
+                                    const list = Array.from(event.target.files ?? []);
+                                    setPendingFiles(list);
+                                }}
+                            />
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="w-full"
+                                disabled={!selectedProductId || isCreatingNew || pendingFiles.length === 0 || isBusy}
+                                onClick={() => uploadMediaMutation.mutate()}
+                            >
+                                {isUploadingMedia ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Loader2 className="h-4 w-4 animate-spin" /> Загружаем
+                                    </span>
+                                ) : (
+                                    `Загрузить (${pendingFiles.length || 0})`
+                                )}
+                            </Button>
+                            <p className="text-xs text-muted-foreground">
+                                Сначала сохраните товар, затем загрузите фото.
+                            </p>
+                        </div>
+
                         {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
                         <Button type="submit" className="w-full" disabled={!canSubmit}>
                             {isSaving ? (
