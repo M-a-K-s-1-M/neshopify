@@ -12,7 +12,35 @@ export class CategoriesService {
     constructor(private readonly prisma: PrismaService) { }
 
     /** Возвращает список категорий с упорядочиванием по родителю и названию. */
-    list(siteId: string) {
+    async list(siteId: string) {
+        const existing = await this.prisma.productCategory.count({ where: { siteId } });
+
+        // Для уже созданных сайтов (до внедрения сидера) категории могут отсутствовать.
+        // Чтобы не ломать UI создания товара, создаем дефолтный набор один раз.
+        if (existing === 0) {
+            const categories = [
+                { name: 'Уход за лицом', slug: 'face-care' },
+                { name: 'Макияж', slug: 'makeup' },
+                { name: 'Уход за телом', slug: 'body-care' },
+                { name: 'Уход за волосами', slug: 'hair-care' },
+                { name: 'Парфюмерия', slug: 'fragrance' },
+                { name: 'Ногти', slug: 'nails' },
+                { name: 'Аксессуары', slug: 'accessories' },
+                { name: 'Наборы и подарки', slug: 'sets-gifts' },
+                { name: 'Мужская косметика', slug: 'men' },
+                { name: 'Мини-форматы', slug: 'travel-size' },
+            ];
+
+            await this.prisma.productCategory.createMany({
+                data: categories.map((c) => ({
+                    siteId,
+                    name: c.name,
+                    slug: c.slug,
+                })),
+                skipDuplicates: true,
+            });
+        }
+
         return this.prisma.productCategory.findMany({
             where: { siteId },
             orderBy: [
