@@ -19,3 +19,4 @@ export * from './dialog';
 export * from './table';
 export * from './chart';
 export * from './carousel';
+export * from './select';

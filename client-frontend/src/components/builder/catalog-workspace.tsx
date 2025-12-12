@@ -7,6 +7,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 
 import { Button, Input, Label } from "@/components";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui";
 import { SitePageView } from "./site-page-view";
 import { useSiteQuery } from "@/lib/query/hooks";
 import { queryKeys } from "@/lib/query/keys";
@@ -79,6 +86,8 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
 
     const products = productPage?.data ?? [];
     const paginationMeta = productPage?.meta;
+
+    const categorySelectValue = formState.categoryId ? formState.categoryId : "__none__";
 
     useEffect(() => {
         if (isCreatingNew || selectedProductId) {
@@ -506,20 +515,25 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="product-category">Категория</Label>
-                            <select
-                                id="product-category"
-                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                            <Select
+                                value={categorySelectValue}
+                                onValueChange={(value) => {
+                                    handleChange("categoryId", value === "__none__" ? "" : value);
+                                }}
                                 disabled={categoriesLoading}
-                                value={formState.categoryId}
-                                onChange={(event) => handleChange("categoryId", event.target.value)}
                             >
-                                <option value="">Без категории</option>
-                                {categoryOptions.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.label}
-                                    </option>
-                                ))}
-                            </select>
+                                <SelectTrigger id="product-category" className="w-full">
+                                    <SelectValue placeholder="Без категории" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__none__">Без категории</SelectItem>
+                                    {categoryOptions.map((category) => (
+                                        <SelectItem key={category.id} value={category.id}>
+                                            {category.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="space-y-2">
