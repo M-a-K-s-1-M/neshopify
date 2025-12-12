@@ -71,19 +71,24 @@ export class PageBlocksService {
             dto.templateId = template.id;
         }
 
-        const updated = await this.prisma.blockInstance.update({
+        const { order, ...rest } = dto as UpdateBlockDto & { order?: number };
+
+        await this.prisma.blockInstance.update({
             where: { id: blockId },
             data: {
-                ...dto,
+                ...rest,
             },
-            include: { template: true, comments: true },
         });
 
-        if (dto.order !== undefined) {
-            await this.normalizeOrder(pageId);
+        if (order !== undefined) {
+            const desired = await this.calculateOrder(pageId, order);
+            await this.moveBlock(pageId, blockId, desired);
         }
 
-        return updated;
+        return this.prisma.blockInstance.findUnique({
+            where: { id: blockId },
+            include: { template: true, comments: true },
+        });
     }
 
     /** Удаляет блок и нормализует порядок оставшихся. */
@@ -124,13 +129,56 @@ export class PageBlocksService {
             select: { id: true },
         });
 
-        await this.prisma.$transaction(
-            blocks.map((block, index) =>
+        await this.writeOrderSequence(pageId, blocks.map((b) => b.id));
+    }
+
+    private async moveBlock(pageId: string, blockId: string, desiredOrder: number) {
+        const blocks = await this.prisma.blockInstance.findMany({
+            where: { pageId },
+            orderBy: { order: 'asc' },
+            select: { id: true },
+        });
+
+        const ids = blocks.map((b) => b.id);
+        const fromIndex = ids.indexOf(blockId);
+        if (fromIndex === -1) {
+            return;
+        }
+
+        const clampedOrder = Number.isFinite(desiredOrder) ? desiredOrder : fromIndex + 1;
+        const toIndex = Math.max(0, Math.min(ids.length - 1, Math.round(clampedOrder) - 1));
+        if (toIndex === fromIndex) {
+            return;
+        }
+
+        ids.splice(fromIndex, 1);
+        ids.splice(toIndex, 0, blockId);
+
+        await this.writeOrderSequence(pageId, ids);
+    }
+
+    private async writeOrderSequence(pageId: string, orderedIds: string[]) {
+        if (orderedIds.length === 0) return;
+
+        const maxOrder = await this.prisma.blockInstance.aggregate({
+            where: { pageId },
+            _max: { order: true },
+        });
+        const base = (maxOrder._max.order ?? 0) + 1000;
+
+        await this.prisma.$transaction([
+            ...orderedIds.map((id, index) =>
                 this.prisma.blockInstance.update({
-                    where: { id: block.id },
+                    where: { id },
+                    data: { order: base + index + 1 },
+                }),
+            ),
+            ...orderedIds.map((id, index) =>
+                this.prisma.blockInstance.update({
+                    where: { id },
                     data: { order: index + 1 },
                 }),
             ),
-        );
+        ]);
     }
 }
