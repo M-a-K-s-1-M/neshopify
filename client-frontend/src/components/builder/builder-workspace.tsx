@@ -204,10 +204,8 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
         const currentBlock = blocks[currentIndex];
         const targetBlock = blocks[targetIndex];
         try {
-            await Promise.all([
-                PageBlocksApi.update(siteId, pageId, currentBlock.id, { order: targetBlock.order }),
-                PageBlocksApi.update(siteId, pageId, targetBlock.id, { order: currentBlock.order }),
-            ]);
+            // Сервер сам делает безопасный reorder (учитывая @@unique([pageId, order])).
+            await PageBlocksApi.update(siteId, pageId, currentBlock.id, { order: targetBlock.order });
             await invalidatePage();
             setSelectedBlockId(currentBlock.id);
         } catch (error) {
