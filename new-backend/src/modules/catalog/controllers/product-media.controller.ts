@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { randomUUID } from 'crypto';
@@ -82,6 +82,10 @@ export class ProductMediaController {
         @UploadedFiles()
         files: Array<{ filename: string; originalname: string }>,
     ) {
+        if (!files || files.length === 0) {
+            throw new BadRequestException('Не удалось загрузить файлы. Проверьте формат (только изображения) и размер.');
+        }
+
         const items = (files ?? []).map((file) => ({
             url: `/uploads/products/${productId}/${file.filename}`,
             alt: file.originalname,

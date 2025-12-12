@@ -41,6 +41,10 @@ export class ProductMediaService {
     async createMany(siteId: string, productId: string, items: Array<Omit<CreateProductMediaDto, 'order'> & { order?: number }>) {
         await this.ensureProduct(siteId, productId);
 
+        if (!items || items.length === 0) {
+            return [];
+        }
+
         // Чтобы не получать ошибки уникальности при массовом добавлении,
         // выставляем временный хвостовой order, затем безопасно нормализуем.
         const { _max } = await this.prisma.productMedia.aggregate({
@@ -91,7 +95,14 @@ export class ProductMediaService {
         await this.ensureProduct(siteId, productId);
         await this.ensureMedia(productId, mediaId);
         await this.prisma.productMedia.delete({ where: { id: mediaId } });
-        await this.normalizeOrder(productId);
+        try {
+            await this.normalizeOrder(productId);
+        } catch (error) {
+            // Удаление уже выполнено; не заваливаем запрос ошибкой из-за нормализации порядка.
+            // Нормализация может быть повторена следующими операциями (create/update/delete).
+            // eslint-disable-next-line no-console
+            console.error('ProductMediaService.normalizeOrder failed after delete', { productId, error });
+        }
         return { removed: true };
     }
 
@@ -175,7 +186,10 @@ export class ProductMediaService {
             return;
         }
 
-        const tempBase = -Date.now();
+        // Важно: поле `order` в Prisma = Int (Postgres int4), диапазон примерно ±2.1e9.
+        // Нельзя использовать Date.now() (≈1.7e12) — это приводит к integer out of range.
+        // Используем безопасный отрицательный диапазон, который не пересекается с нормализованными значениями (0..n-1).
+        const tempBase = -1_000_000;
         await this.prisma.$transaction([
             ...orderedIds.map((id, index) =>
                 this.prisma.productMedia.update({
