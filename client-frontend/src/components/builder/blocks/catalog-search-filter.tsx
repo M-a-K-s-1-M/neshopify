@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { BlockInstanceDto } from "@/lib/types";
 import { CategoriesApi } from "@/lib/api/categories";
 import { queryKeys } from "@/lib/query/keys";
+import { useCatalogFiltersOptional } from "../catalog-filters-context";
 
 interface CatalogSearchFilterProps {
     block: BlockInstanceDto;
@@ -48,6 +49,17 @@ export function CatalogSearchFilterBlock({ block, siteId }: CatalogSearchFilterP
     const [categorySearch, setCategorySearch] = useState('');
     const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
     const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+    const [searchText, setSearchText] = useState('');
+    const [priceMinInput, setPriceMinInput] = useState('');
+    const [priceMaxInput, setPriceMaxInput] = useState('');
+
+    const catalogFilters = useCatalogFiltersOptional();
+
+    useEffect(() => {
+        if (!catalogFilters) return;
+        const unregister = catalogFilters.registerFiltersUi();
+        return unregister;
+    }, [catalogFilters]);
 
     useEffect(() => {
         // По умолчанию выбираем всё, что настроено как "избранные категории".
@@ -75,6 +87,24 @@ export function CatalogSearchFilterBlock({ block, siteId }: CatalogSearchFilterP
         });
     };
 
+    const parseOptionalNumber = (raw: string) => {
+        const trimmed = raw.trim();
+        if (!trimmed) return undefined;
+        const value = Number(trimmed);
+        return Number.isFinite(value) ? value : undefined;
+    };
+
+    const applyFilters = () => {
+        if (!catalogFilters) return;
+
+        catalogFilters.setFilters({
+            search: searchText.trim() ? searchText.trim() : undefined,
+            categoryIds: allowCategory ? selectedCategoryIds : undefined,
+            priceMin: allowPrice ? parseOptionalNumber(priceMinInput) : undefined,
+            priceMax: allowPrice ? parseOptionalNumber(priceMaxInput) : undefined,
+        });
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -88,7 +118,12 @@ export function CatalogSearchFilterBlock({ block, siteId }: CatalogSearchFilterP
                     <FieldGroup>
                         <Field>
                             <FieldLabel>Поиск</FieldLabel>
-                            <Input placeholder={placeholder} className="w-full" />
+                            <Input
+                                placeholder={placeholder}
+                                className="w-full"
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                            />
                         </Field>
 
                         {allowCategory && (
@@ -156,15 +191,25 @@ export function CatalogSearchFilterBlock({ block, siteId }: CatalogSearchFilterP
                             <Field>
                                 <FieldLabel>Цена</FieldLabel>
                                 <div className="grid gap-3 sm:grid-cols-2">
-                                    <Input placeholder={`от ${priceRange?.min ?? 0}`} type="number" />
-                                    <Input placeholder={`до ${priceRange?.max ?? 0}`} type="number" />
+                                    <Input
+                                        placeholder={`от ${priceRange?.min ?? 0}`}
+                                        type="number"
+                                        value={priceMinInput}
+                                        onChange={(e) => setPriceMinInput(e.target.value)}
+                                    />
+                                    <Input
+                                        placeholder={`до ${priceRange?.max ?? 0}`}
+                                        type="number"
+                                        value={priceMaxInput}
+                                        onChange={(e) => setPriceMaxInput(e.target.value)}
+                                    />
                                 </div>
                             </Field>
                         )}
                     </FieldGroup>
 
                     <div className="flex justify-end">
-                        <Button type="button" variant="secondary">
+                        <Button type="button" variant="secondary" onClick={applyFilters}>
                             Применить фильтры
                         </Button>
                     </div>

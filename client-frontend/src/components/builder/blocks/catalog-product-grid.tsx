@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import type { BlockInstanceDto } from "@/lib/types";
 import { ProductsApi } from "@/lib/api/products";
 import { queryKeys } from "@/lib/query/keys";
 import { resolveMediaUrl } from "@/lib/utils/media";
+import { useCatalogFiltersOptional } from "../catalog-filters-context";
 import {
     Carousel,
     CarouselContent,
@@ -33,7 +34,36 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
-    const activeSearch = search || undefined;
+
+    const catalogFilters = useCatalogFiltersOptional();
+    const hasFiltersUi = Boolean(catalogFilters?.hasFiltersUi);
+
+    const activeSearch = hasFiltersUi ? catalogFilters?.filters.search || undefined : search || undefined;
+    const activeCategoryIds = hasFiltersUi ? catalogFilters?.filters.categoryIds ?? [] : [];
+    const activePriceMin = hasFiltersUi ? catalogFilters?.filters.priceMin : undefined;
+    const activePriceMax = hasFiltersUi ? catalogFilters?.filters.priceMax : undefined;
+
+    const filtersKey = useMemo(
+        () => ({
+            search: activeSearch ?? null,
+            categoryIds: activeCategoryIds.length ? [...activeCategoryIds].sort().join(',') : null,
+            priceMin: activePriceMin ?? null,
+            priceMax: activePriceMax ?? null,
+        }),
+        [activeSearch, activeCategoryIds, activePriceMin, activePriceMax],
+    );
+
+    useEffect(() => {
+        // При изменении фильтров всегда возвращаемся на первую страницу.
+        if (!hasFiltersUi) return;
+        setPage(1);
+    }, [hasFiltersUi, filtersKey]);
+
+    const handleSearch = (event: React.FormEvent) => {
+        event.preventDefault();
+        setSearch(searchInput.trim());
+        setPage(1);
+    };
 
     const {
         data: productsPage,
@@ -41,20 +71,26 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
         isFetching,
         error,
     } = useQuery({
-        queryKey: queryKeys.siteProductsList(siteId, page, activeSearch, pageSize),
-        queryFn: () => ProductsApi.list(siteId, { page, limit: pageSize, search: activeSearch }),
+        queryKey: [
+            ...queryKeys.siteProducts(siteId),
+            "list",
+            { page, limit: pageSize, ...filtersKey },
+        ],
+        queryFn: () =>
+            ProductsApi.list(siteId, {
+                page,
+                limit: pageSize,
+                search: activeSearch,
+                categoryIds: activeCategoryIds,
+                priceMin: activePriceMin,
+                priceMax: activePriceMax,
+            }),
         placeholderData: keepPreviousData,
     });
 
     const gridItems = productsPage?.data ?? [];
     const meta = productsPage?.meta ?? { total: 0, page, limit: pageSize };
     const isBusy = isFetching && !!productsPage;
-
-    const handleSearch = (event: React.FormEvent) => {
-        event.preventDefault();
-        setSearch(searchInput.trim());
-        setPage(1);
-    };
 
     const handlePageChange = (direction: "next" | "prev") => {
         setPage((current) => {
@@ -76,15 +112,17 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                 {description && <p className="text-muted-foreground">{description}</p>}
             </div>
 
-            <form onSubmit={handleSearch} className="flex flex-wrap gap-3">
-                <Input
-                    placeholder="Поиск по каталогу"
-                    value={searchInput}
-                    onChange={(event) => setSearchInput(event.target.value)}
-                    className="max-w-md"
-                />
-                <Button type="submit">Искать</Button>
-            </form>
+            {!hasFiltersUi ? (
+                <form onSubmit={handleSearch} className="flex flex-wrap gap-3">
+                    <Input
+                        placeholder="Поиск по каталогу"
+                        value={searchInput}
+                        onChange={(event) => setSearchInput(event.target.value)}
+                        className="max-w-md"
+                    />
+                    <Button type="submit">Искать</Button>
+                </form>
+            ) : null}
 
             {isLoading ? (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

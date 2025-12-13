@@ -9,6 +9,36 @@ export class ProductFiltersDto {
     @IsUUID()
     categoryId?: string;
 
+    @ApiPropertyOptional({
+        type: String,
+        description: 'Список категорий (CSV: id1,id2,...)',
+        example: '1a2b3c4d-1111-2222-3333-444455556666,7a8b9c0d-1111-2222-3333-444455556666',
+    })
+    @IsOptional()
+    @Transform(({ value }) => {
+        if (value === undefined || value === null || value === '') {
+            return undefined;
+        }
+
+        if (Array.isArray(value)) {
+            return value
+                .flatMap((item) => (typeof item === 'string' ? item.split(',') : []))
+                .map((s) => s.trim())
+                .filter(Boolean);
+        }
+
+        if (typeof value === 'string') {
+            return value
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+        }
+
+        return undefined;
+    })
+    @IsUUID(undefined, { each: true })
+    categoryIds?: string[];
+
     @ApiPropertyOptional({ enum: StockStatus })
     @IsOptional()
     @IsEnum(StockStatus)

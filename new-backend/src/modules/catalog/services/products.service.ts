@@ -28,7 +28,9 @@ export class ProductsService {
             ];
         }
 
-        if (filters.categoryId) {
+        if (filters.categoryIds?.length) {
+            where.categoryId = { in: filters.categoryIds };
+        } else if (filters.categoryId) {
             where.categoryId = filters.categoryId;
         }
 

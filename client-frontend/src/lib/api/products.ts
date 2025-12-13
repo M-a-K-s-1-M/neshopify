@@ -6,6 +6,7 @@ export interface ProductListParams {
     limit?: number;
     search?: string;
     categoryId?: string;
+    categoryIds?: string[];
     stockStatus?: string;
     inStock?: boolean;
     priceMin?: number;
@@ -14,12 +15,16 @@ export interface ProductListParams {
 
 export class ProductsApi {
     static async list(siteId: string, params: ProductListParams = {}): Promise<PaginatedResponse<ProductDto>> {
+        const categoryIds = params.categoryIds?.filter(Boolean);
+        const categoryIdsCsv = categoryIds && categoryIds.length > 0 ? categoryIds.join(',') : undefined;
+
         const res = await $api.get<PaginatedResponse<ProductDto>>(`/sites/${siteId}/products`, {
             params: {
                 page: params.page ?? 1,
                 limit: params.limit ?? 12,
                 search: params.search,
                 categoryId: params.categoryId,
+                categoryIds: categoryIdsCsv,
                 stockStatus: params.stockStatus,
                 inStock: params.inStock,
                 priceMin: params.priceMin,
