@@ -8,6 +8,7 @@ import { BlockRenderer } from "./block-registry";
 import { useSiteQuery, useSitePagesQuery, usePageDetailQuery } from "@/lib/query/hooks";
 import { getDefaultBlocksForPageType, INTERNAL_LAYOUT_PAGE_SLUG } from "./default-page-blocks";
 import { getRequestErrorMessage } from "@/lib/utils/error";
+import { CatalogFiltersProvider } from "./catalog-filters-context";
 
 interface SitePageViewProps {
     slug: string;
@@ -177,13 +178,15 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
             ) : null}
 
             {!isLoading && resolvedPage && blocks.length > 0 ? (
-                <div className="space-y-4">
-                    {blocks.map((block) => (
-                        <div key={block.id} className="rounded-2xl border border-border bg-card">
-                            <BlockRenderer block={block} siteId={siteId} />
-                        </div>
-                    ))}
-                </div>
+                <CatalogFiltersProvider>
+                    <div className="space-y-4">
+                        {blocks.map((block) => (
+                            <div key={block.id} className="rounded-2xl border border-border bg-card">
+                                <BlockRenderer block={block} siteId={siteId} />
+                            </div>
+                        ))}
+                    </div>
+                </CatalogFiltersProvider>
             ) : null}
         </div>
     );
