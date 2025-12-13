@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { Edit, Link as LinkIcon } from "lucide-react";
+import { Component, Edit, Link as LinkIcon } from "lucide-react";
 
 import {
     ActionsSiteBtn,
@@ -41,7 +41,7 @@ export function SiteCard({ site }: SiteCardProps) {
 
     return (
         <Card className="w-full shadow-md">
-            <CardHeader className="relative space-y-3">
+            <CardHeader className="mb-2">
                 <CardTitle className="flex items-center justify-between gap-3 text-xl">
                     <span>{site.name}</span>
                     <span
@@ -62,15 +62,18 @@ export function SiteCard({ site }: SiteCardProps) {
 
             <CardFooter>
                 <div className="flex flex-wrap items-center justify-between w-full gap-3">
-                    <ButtonGroup>
-                        <Button variant={'secondary'} size={'sm'} asChild>
+                    <ButtonGroup className="bg-linear-to-r from-primary to-secondary rounded-md">
+                        <Button variant={'ghost'} size={'sm'} asChild>
                             <Link href={dashboardHref}>
-                                <Edit className="mr-2 h-4 w-4" />
+                                <Edit className="h-4 w-4" />
                                 Управление
                             </Link>
                         </Button>
                         <Button variant={'ghost'} size={'sm'} asChild>
-                            <Link href={builderHref}>Конструктор</Link>
+                            <Link href={builderHref}>
+                                Конструктор
+                                <Component className="h-4 w-4" />
+                            </Link>
                         </Button>
                     </ButtonGroup>
 
