@@ -109,8 +109,6 @@ const DEFAULT_PAGE_BLOCKS: Partial<Record<PageDto["type"], PreviewBlock[]>> = {
             data: {
                 title: "Популярные товары",
                 subtitle: "Добавьте до четырёх товаров, чтобы показать лучшие позиции",
-                maxItems: 4,
-                layout: { columns: 4, variant: "cards" },
                 productIds: [],
             },
         },
