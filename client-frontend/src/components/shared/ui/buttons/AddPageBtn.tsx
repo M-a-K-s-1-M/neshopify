@@ -30,6 +30,7 @@ import { queryKeys } from "@/lib/query/keys";
 import type { CreatePagePayload, PageType } from "@/lib/types";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { INTERNAL_LAYOUT_PAGE_SLUG } from "@/components/builder/default-page-blocks";
 
 interface AddPageBtnProps {
     siteId: string;
@@ -183,6 +184,8 @@ function CreatePageForm({ siteId, onSuccess }: { siteId: string; onSuccess: () =
                                 value: /^[a-z0-9-]+$/,
                                 message: "Только строчные буквы, цифры и дефисы",
                             },
+                            validate: (value) =>
+                                value !== INTERNAL_LAYOUT_PAGE_SLUG || "Этот slug зарезервирован системой",
                         }}
                         render={({ field, fieldState }) => (
                             <Field className="gap-2">

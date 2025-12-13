@@ -25,7 +25,9 @@ import type { BlockInstanceDto, BlockTemplateDto, CreateBlockPayload, PageDto, U
 import { getPresetsByTemplate } from "./block-presets";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { PageBlocksApi } from "@/lib/api/page-blocks";
+import { PagesApi } from "@/lib/api/pages";
 import { queryKeys } from "@/lib/query/keys";
+import { DEFAULT_LAYOUT_BLOCKS, INTERNAL_LAYOUT_PAGE_SLUG } from "./default-page-blocks";
 
 interface BuilderWorkspaceProps {
     siteId: string;
@@ -44,6 +46,12 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
     const { data: site, isLoading: siteLoading, error: siteError } = useSiteQuery(siteId);
     const { data: pages, isLoading: pagesLoading, error: pagesError } = useSitePagesQuery(siteId);
 
+    const layoutPage = useMemo(
+        () => pages?.find((page) => page.slug === INTERNAL_LAYOUT_PAGE_SLUG),
+        [pages],
+    );
+    const layoutPageId = layoutPage?.id;
+
     const currentPage = useMemo(() => pages?.find((page) => page.slug === pageSlug), [pages, pageSlug]);
     const isReadOnlyPage = currentPage ? VIEW_ONLY_PAGE_TYPES.includes(currentPage.type) : false;
     const pageId = currentPage?.id;
@@ -54,13 +62,39 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
         error: pageError,
     } = usePageDetailQuery(siteId, pageId);
 
+    const {
+        data: layoutDetail,
+        isLoading: layoutLoading,
+        error: layoutError,
+    } = usePageDetailQuery(siteId, layoutPageId);
+
     const { data: templates, isLoading: templatesLoading } = useBlockTemplatesQuery();
 
+    const pageTemplates = useMemo(() => {
+        const items = templates ?? [];
+        return items.filter(
+            (tpl) => !tpl.key.startsWith('header-') && !tpl.key.startsWith('footer-'),
+        );
+    }, [templates]);
+
+    const headerTemplates = useMemo(() => {
+        const items = templates ?? [];
+        return items.filter((tpl) => tpl.key.startsWith('header-'));
+    }, [templates]);
+
+    const footerTemplates = useMemo(() => {
+        const items = templates ?? [];
+        return items.filter((tpl) => tpl.key.startsWith('footer-'));
+    }, [templates]);
+
     useEffect(() => {
-        if (!activeTemplateKey && templates && templates.length > 0) {
-            setActiveTemplateKey(templates[0].key);
+        if (!activeTemplateKey && pageTemplates.length > 0) {
+            setActiveTemplateKey(pageTemplates[0].key);
         }
-    }, [templates, activeTemplateKey]);
+        if (activeTemplateKey && pageTemplates.length > 0 && !pageTemplates.some((tpl) => tpl.key === activeTemplateKey)) {
+            setActiveTemplateKey(pageTemplates[0].key);
+        }
+    }, [pageTemplates, activeTemplateKey]);
 
     useEffect(() => {
         if (isReadOnlyPage) {
@@ -68,12 +102,46 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
         }
     }, [isReadOnlyPage]);
 
-    const blocks = useMemo(() => {
-        if (!pageDetail?.blocks) {
+    const pageBlocks = useMemo(() => {
+        const raw = pageDetail?.blocks ? [...pageDetail.blocks].sort((a, b) => a.order - b.order) : [];
+        // Не допускаем локальные header/footer на странице — они должны быть общими.
+        return raw.filter(
+            (block) => !block.template.key.startsWith('header-') && !block.template.key.startsWith('footer-'),
+        );
+    }, [pageDetail?.blocks]);
+
+    const layoutBlocks = useMemo(() => {
+        if (!layoutDetail?.blocks) {
             return [] as BlockInstanceDto[];
         }
-        return [...pageDetail.blocks].sort((a, b) => a.order - b.order);
-    }, [pageDetail?.blocks]);
+        return [...layoutDetail.blocks].sort((a, b) => a.order - b.order);
+    }, [layoutDetail?.blocks]);
+
+    const blocks = useMemo(() => {
+        if (layoutPageId) {
+            const header = layoutBlocks.find((b) => b.template.key.startsWith('header-')) ?? null;
+            const footer = layoutBlocks.find((b) => b.template.key.startsWith('footer-')) ?? null;
+            return [
+                ...(header ? [header] : []),
+                ...pageBlocks,
+                ...(footer ? [footer] : []),
+            ];
+        }
+
+        // Fallback для старых сайтов: если layout еще не создан, показываем header/footer из страницы.
+        const raw = pageDetail?.blocks ? [...pageDetail.blocks].sort((a, b) => a.order - b.order) : [];
+        const header = raw.find((b) => b.template.key.startsWith('header-')) ?? null;
+        const footer = raw.find((b) => b.template.key.startsWith('footer-')) ?? null;
+        const content = raw.filter(
+            (block) => !block.template.key.startsWith('header-') && !block.template.key.startsWith('footer-'),
+        );
+
+        return [
+            ...(header ? [header] : []),
+            ...content,
+            ...(footer ? [footer] : []),
+        ];
+    }, [layoutPageId, layoutBlocks, pageBlocks, pageDetail?.blocks]);
 
     useEffect(() => {
         if (!selectedBlockId && blocks.length > 0) {
@@ -86,7 +154,7 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
     }, [blocks, selectedBlockId]);
 
     const selectedBlock = blocks.find((block) => block.id === selectedBlockId) ?? null;
-    const activeTemplate = templates?.find((tpl) => tpl.key === activeTemplateKey) ?? templates?.[0] ?? null;
+    const activeTemplate = pageTemplates.find((tpl) => tpl.key === activeTemplateKey) ?? pageTemplates?.[0] ?? null;
 
     const errorMessage = siteError
         ? getRequestErrorMessage(siteError, "Не удалось загрузить сайт")
@@ -94,22 +162,82 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
             ? getRequestErrorMessage(pagesError, "Не удалось загрузить страницы")
             : pageError
                 ? getRequestErrorMessage(pageError, "Не удалось загрузить страницу")
-                : null;
+                : layoutError
+                    ? getRequestErrorMessage(layoutError, "Не удалось загрузить layout сайта")
+                    : null;
 
-    const isLoading = siteLoading || pagesLoading || pageLoading;
+    const isLoading = siteLoading || pagesLoading || pageLoading || layoutLoading;
 
-    const invalidatePage = async () => {
-        if (!pageId) return;
+    const invalidatePageById = async (targetPageId: string) => {
         await Promise.all([
-            queryClient.invalidateQueries({ queryKey: queryKeys.page(siteId, pageId) }),
-            queryClient.invalidateQueries({ queryKey: queryKeys.pageBlocks(siteId, pageId) }),
+            queryClient.invalidateQueries({ queryKey: queryKeys.page(siteId, targetPageId) }),
+            queryClient.invalidateQueries({ queryKey: queryKeys.pageBlocks(siteId, targetPageId) }),
         ]);
     };
+
+    const invalidateCurrentPage = async () => {
+        if (!pageId) return;
+        await invalidatePageById(pageId);
+    };
+
+    const ensureLayoutMutation = useMutation({
+        mutationFn: async () => {
+            const seedHeader = pageDetail?.blocks?.find((b) => b.template.key.startsWith('header-'));
+            const seedFooter = pageDetail?.blocks?.find((b) => b.template.key.startsWith('footer-'));
+
+            const initialLayoutBlocks = [
+                seedHeader
+                    ? { templateKey: seedHeader.template.key, data: seedHeader.data, pinned: seedHeader.pinned }
+                    : DEFAULT_LAYOUT_BLOCKS[0],
+                seedFooter
+                    ? { templateKey: seedFooter.template.key, data: seedFooter.data, pinned: seedFooter.pinned }
+                    : DEFAULT_LAYOUT_BLOCKS[1],
+            ];
+
+            const layout = await PagesApi.create(siteId, {
+                title: "Layout",
+                slug: INTERNAL_LAYOUT_PAGE_SLUG,
+                type: "CUSTOM",
+                isVisible: false,
+            });
+
+            for (let index = 0; index < initialLayoutBlocks.length; index += 1) {
+                const block = initialLayoutBlocks[index];
+                await PageBlocksApi.create(siteId, layout.id, {
+                    templateKey: block.templateKey,
+                    data: block.data,
+                    pinned: Boolean(block.pinned),
+                    order: index + 1,
+                });
+            }
+
+            return layout;
+        },
+        onSuccess: async (layout) => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: queryKeys.sitePages(siteId) }),
+                invalidatePageById(layout.id),
+            ]);
+        },
+        onError: () => {
+            // Тихо игнорируем: у пользователя может не быть прав OWNER/ADMIN.
+        },
+    });
+
+    useEffect(() => {
+        if (pagesLoading) return;
+        if (!pages) return;
+        if (layoutPageId) return;
+        if (ensureLayoutMutation.isPending) return;
+
+        // Для старых сайтов создаем служебную layout-страницу (общие header/footer)
+        ensureLayoutMutation.mutate();
+    }, [pagesLoading, pages, layoutPageId, ensureLayoutMutation.isPending, ensureLayoutMutation.mutate]);
 
     const createBlockMutation = useMutation({
         mutationFn: (payload: CreateBlockPayload) => PageBlocksApi.create(siteId, pageId as string, payload),
         onSuccess: async (block) => {
-            await invalidatePage();
+            await invalidateCurrentPage();
             setSelectedBlockId(block.id);
             setIsLibraryOpen(false);
         },
@@ -120,16 +248,13 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
 
     const updateBlockMutation = useMutation({
         mutationFn: async (params: {
+            pageId: string;
             blockId: string;
             payload: UpdateBlockPayload;
             templateKey?: string;
-            footerLinkTargets?: Array<{ id: string; data: unknown }>;
+            footerLinkTargets?: Array<{ id: string; pageId: string; data: unknown }>;
         }) => {
-            if (!pageId) {
-                throw new Error("pageId is required");
-            }
-
-            const result = await PageBlocksApi.update(siteId, pageId as string, params.blockId, params.payload);
+            const result = await PageBlocksApi.update(siteId, params.pageId, params.blockId, params.payload);
 
             if (
                 params.templateKey === "header-nav-basic" &&
@@ -143,17 +268,23 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                         ? ((headerData as Record<string, unknown>).links as unknown[])
                         : null;
 
-                if (nextLinks) {
+                const nextBrand =
+                    isPlainObject(headerData) && typeof (headerData as Record<string, unknown>).logo === 'string'
+                        ? ((headerData as Record<string, unknown>).logo as string)
+                        : null;
+
+                if (nextLinks || nextBrand !== null) {
                     await Promise.all(
                         params.footerLinkTargets.map((target) => {
                             const baseData = isPlainObject(target.data)
                                 ? ({ ...(target.data as Record<string, unknown>) } as Record<string, unknown>)
                                 : ({} as Record<string, unknown>);
 
-                            return PageBlocksApi.update(siteId, pageId as string, target.id, {
+                            return PageBlocksApi.update(siteId, target.pageId, target.id, {
                                 data: {
                                     ...baseData,
-                                    links: nextLinks,
+                                    ...(nextLinks ? { links: nextLinks } : null),
+                                    ...(nextBrand !== null ? { brand: nextBrand } : null),
                                 },
                             });
                         }),
@@ -164,7 +295,13 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
             return result;
         },
         onSuccess: async () => {
-            await invalidatePage();
+            // Инвалидируем текущую страницу и layout (если есть), чтобы изменения отразились везде.
+            if (pageId) {
+                await invalidatePageById(pageId);
+            }
+            if (layoutPageId) {
+                await invalidatePageById(layoutPageId);
+            }
         },
         onError: (error) => {
             window.alert(getRequestErrorMessage(error, "Не удалось сохранить блок"));
@@ -172,9 +309,14 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
     });
 
     const deleteBlockMutation = useMutation({
-        mutationFn: (blockId: string) => PageBlocksApi.remove(siteId, pageId as string, blockId),
+        mutationFn: (params: { pageId: string; blockId: string }) => PageBlocksApi.remove(siteId, params.pageId, params.blockId),
         onSuccess: async () => {
-            await invalidatePage();
+            if (pageId) {
+                await invalidatePageById(pageId);
+            }
+            if (layoutPageId) {
+                await invalidatePageById(layoutPageId);
+            }
             setSelectedBlockId(null);
         },
         onError: (error) => {
@@ -194,20 +336,27 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
         if (guardReadOnly() || !pageId) {
             return;
         }
-        const currentIndex = blocks.findIndex((block) => block.id === blockId);
+
+        const block = pageBlocks.find((item) => item.id === blockId);
+        if (!block) {
+            // Нельзя перемещать глобальные блоки (header/footer) в контексте страницы.
+            return;
+        }
+
+        const currentIndex = pageBlocks.findIndex((item) => item.id === blockId);
         if (currentIndex === -1) {
             return;
         }
         const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-        if (targetIndex < 0 || targetIndex >= blocks.length) {
+        if (targetIndex < 0 || targetIndex >= pageBlocks.length) {
             return;
         }
-        const currentBlock = blocks[currentIndex];
-        const targetBlock = blocks[targetIndex];
+        const currentBlock = pageBlocks[currentIndex];
+        const targetBlock = pageBlocks[targetIndex];
         try {
             // Сервер сам делает безопасный reorder (учитывая @@unique([pageId, order])).
             await PageBlocksApi.update(siteId, pageId, currentBlock.id, { order: targetBlock.order });
-            await invalidatePage();
+            await invalidateCurrentPage();
             setSelectedBlockId(currentBlock.id);
         } catch (error) {
             window.alert(getRequestErrorMessage(error, "Не удалось изменить порядок блоков"));
@@ -216,7 +365,7 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
 
     const handleAddPreset = (template: BlockTemplateDto, presetData: Record<string, unknown>) => {
         if (!pageId || guardReadOnly()) return;
-        const nextOrder = blocks.length > 0 ? blocks[blocks.length - 1].order + 1 : 1;
+        const nextOrder = pageBlocks.length > 0 ? pageBlocks[pageBlocks.length - 1].order + 1 : 1;
         createBlockMutation.mutate({
             templateKey: template.key,
             data: presetData,
@@ -226,16 +375,21 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
 
     const handleSaveBlock = (blockId: string, payload: UpdateBlockPayload) => {
         if (guardReadOnly()) return;
-        const templateKey = blocks.find((item) => item.id === blockId)?.template?.key;
+        const target = blocks.find((item) => item.id === blockId);
+        if (!target) {
+            return;
+        }
+
+        const templateKey = target.template?.key;
 
         const footerLinkTargets =
             templateKey === "header-nav-basic"
                 ? blocks
-                    .filter((item) => item.template.key === "footer-contacts-basic")
-                    .map((item) => ({ id: item.id, data: item.data }))
+                    .filter((item) => item.template.key.startsWith("footer-"))
+                    .map((item) => ({ id: item.id, pageId: item.pageId, data: item.data }))
                 : [];
 
-        updateBlockMutation.mutate({ blockId, payload, templateKey, footerLinkTargets });
+        updateBlockMutation.mutate({ pageId: target.pageId, blockId, payload, templateKey, footerLinkTargets });
     };
 
     const handleDeleteBlock = (blockId: string) => {
@@ -243,7 +397,17 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
         if (!window.confirm("Удалить блок?")) {
             return;
         }
-        deleteBlockMutation.mutate(blockId);
+        const target = blocks.find((item) => item.id === blockId);
+        if (!target) {
+            return;
+        }
+        // Глобальные header/footer не удаляем.
+        if (layoutPageId && target.pageId === layoutPageId) {
+            window.alert("Header/Footer общие для сайта — их нельзя удалить. Можно только заменить и отредактировать.");
+            return;
+        }
+
+        deleteBlockMutation.mutate({ pageId: target.pageId, blockId });
     };
 
     if (!currentPage && !pagesLoading) {
@@ -257,9 +421,11 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
         );
     }
 
-    const selectedIndex = selectedBlock ? blocks.findIndex((block) => block.id === selectedBlock.id) : -1;
-    const canMoveUp = selectedIndex > 0;
-    const canMoveDown = selectedIndex >= 0 && selectedIndex < blocks.length - 1;
+    const selectedContentIndex = selectedBlock
+        ? pageBlocks.findIndex((block) => block.id === selectedBlock.id)
+        : -1;
+    const canMoveUp = selectedContentIndex > 0;
+    const canMoveDown = selectedContentIndex >= 0 && selectedContentIndex < pageBlocks.length - 1;
 
     return (
         <div className="space-y-6">
@@ -330,7 +496,7 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                             <Button
                                 className="w-full"
                                 variant={'secondary'}
-                                disabled={templatesLoading || !templates || isReadOnlyPage}
+                                disabled={templatesLoading || pageTemplates.length === 0 || isReadOnlyPage}
                             >
                                 <Plus className="mr-2 h-4 w-4" /> Добавить блок
                             </Button>
@@ -343,7 +509,7 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                             <div className="flex-1 overflow-y-auto border-t border-border p-4">
                                 <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
                                     <div className="space-y-2">
-                                        {templates?.map((template) => (
+                                        {pageTemplates.map((template) => (
                                             <button
                                                 key={template.id}
                                                 type="button"
@@ -359,7 +525,7 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                                                 <p className="text-xs text-muted-foreground">{template.category}</p>
                                             </button>
                                         ))}
-                                        {!templates || templates.length === 0 ? (
+                                        {pageTemplates.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">Нет доступных шаблонов.</p>
                                         ) : null}
                                     </div>
@@ -411,6 +577,8 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                         canMoveUp={canMoveUp}
                         canMoveDown={canMoveDown}
                         availablePages={pages ?? []}
+                        availableTemplates={templates ?? []}
+                        isGlobalBlock={Boolean(layoutPageId && selectedBlock?.pageId === layoutPageId)}
                     />
                 </aside>
             </div>
@@ -495,6 +663,8 @@ function BlockEditorPanel({
     canMoveUp,
     canMoveDown,
     availablePages,
+    availableTemplates,
+    isGlobalBlock,
 }: {
     block: BlockInstanceDto | null;
     onSave: (blockId: string, payload: UpdateBlockPayload) => void;
@@ -507,12 +677,15 @@ function BlockEditorPanel({
     canMoveUp: boolean;
     canMoveDown: boolean;
     availablePages: PageDto[];
+    availableTemplates: BlockTemplateDto[];
+    isGlobalBlock: boolean;
 }) {
     const [pinned, setPinned] = useState(false);
     const [order, setOrder] = useState(1);
     const [draftData, setDraftData] = useState<Record<string, unknown>>({});
     const [headerLinks, setHeaderLinks] = useState<Array<{ id: string; label: string; pageId: string }>>([]);
     const [headerActions, setHeaderActions] = useState<Array<{ id: string; label: string; href: string; variant?: string }>>([]);
+    const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -522,12 +695,14 @@ function BlockEditorPanel({
             setDraftData({});
             setHeaderLinks([]);
             setHeaderActions([]);
+            setSelectedTemplateKey("");
             setError(null);
             return;
         }
         setPinned(block.pinned);
         setOrder(block.order);
         setDraftData(isPlainObject(block.data) ? (block.data as Record<string, unknown>) : {});
+        setSelectedTemplateKey(block.template.key);
 
         if (block.template.key === 'header-nav-basic') {
             const data = isPlainObject(block.data) ? (block.data as Record<string, any>) : {};
@@ -563,6 +738,19 @@ function BlockEditorPanel({
         setError(null);
     }, [block, availablePages]);
 
+    const currentTemplateKey = block?.template.key ?? "";
+    const isHeaderBlock = currentTemplateKey.startsWith('header-');
+    const isFooterBlock = currentTemplateKey.startsWith('footer-');
+    const isGlobalHeaderOrFooter = Boolean(block) && isGlobalBlock && (isHeaderBlock || isFooterBlock);
+
+    const replacementTemplates = useMemo(() => {
+        if (!isGlobalHeaderOrFooter) {
+            return [] as BlockTemplateDto[];
+        }
+        const prefix = isHeaderBlock ? 'header-' : 'footer-';
+        return availableTemplates.filter((tpl) => tpl.key.startsWith(prefix));
+    }, [availableTemplates, isGlobalHeaderOrFooter, isHeaderBlock]);
+
     if (!block) {
         return <p className="text-sm text-muted-foreground">Выберите блок слева, чтобы отредактировать его.</p>;
     }
@@ -590,6 +778,21 @@ function BlockEditorPanel({
 
     const handleSave = () => {
         const templateKey = block.template.key;
+        const nextTemplateKey =
+            isGlobalHeaderOrFooter && selectedTemplateKey && selectedTemplateKey !== block.template.key
+                ? selectedTemplateKey
+                : undefined;
+
+        if (nextTemplateKey) {
+            onSave(block.id, {
+                data: draftData,
+                pinned: block.pinned,
+                order: block.order,
+                templateKey: nextTemplateKey,
+            });
+            setError(null);
+            return;
+        }
 
         if (templateKey === 'header-nav-basic') {
             const logo = typeof draftData.logo === 'string' ? draftData.logo : '';
@@ -621,7 +824,7 @@ function BlockEditorPanel({
                 actions: normalizedActions,
             } satisfies Record<string, unknown>;
 
-            onSave(block.id, { data: nextData, pinned, order });
+            onSave(block.id, { data: nextData, pinned: isGlobalHeaderOrFooter ? block.pinned : pinned, order: isGlobalHeaderOrFooter ? block.order : order, templateKey: nextTemplateKey });
             setError(null);
             return;
         }
@@ -629,12 +832,12 @@ function BlockEditorPanel({
         if (templateKey === 'footer-contacts-basic') {
             // links управляются через header-nav-basic и синхронизируются при его сохранении,
             // но при сохранении footer мы не должны затирать уже синхронизированные ссылки
-            onSave(block.id, { data: draftData, pinned, order });
+            onSave(block.id, { data: draftData, pinned: isGlobalHeaderOrFooter ? block.pinned : pinned, order: isGlobalHeaderOrFooter ? block.order : order, templateKey: nextTemplateKey });
             setError(null);
             return;
         }
 
-        onSave(block.id, { data: draftData, pinned, order });
+        onSave(block.id, { data: draftData, pinned: isGlobalHeaderOrFooter ? block.pinned : pinned, order: isGlobalHeaderOrFooter ? block.order : order, templateKey: nextTemplateKey });
         setError(null);
     };
 
@@ -652,7 +855,7 @@ function BlockEditorPanel({
                     variant="outline"
                     size="sm"
                     onClick={() => onMove(block.id, "up")}
-                    disabled={!canMoveUp || isSaving || isDeleting}
+                    disabled={!canMoveUp || isSaving || isDeleting || isGlobalHeaderOrFooter}
                 >
                     <ChevronUp className="mr-2 h-4 w-4" /> Вверх
                 </Button>
@@ -661,11 +864,32 @@ function BlockEditorPanel({
                     variant="outline"
                     size="sm"
                     onClick={() => onMove(block.id, "down")}
-                    disabled={!canMoveDown || isSaving || isDeleting}
+                    disabled={!canMoveDown || isSaving || isDeleting || isGlobalHeaderOrFooter}
                 >
                     <ChevronDown className="mr-2 h-4 w-4" /> Вниз
                 </Button>
             </div>
+
+            {isGlobalHeaderOrFooter && replacementTemplates.length > 0 ? (
+                <div className="space-y-2">
+                    <Label className="text-sm">Шаблон (общий для всех страниц)</Label>
+                    <select
+                        value={selectedTemplateKey}
+                        onChange={(event) => setSelectedTemplateKey(event.target.value)}
+                        disabled={isSaving || isDeleting}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                        {replacementTemplates.map((tpl) => (
+                            <option key={tpl.id} value={tpl.key}>
+                                {tpl.title}
+                            </option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                        Этот {isHeaderBlock ? 'header' : 'footer'} общий: изменения применятся ко всем страницам.
+                    </p>
+                </div>
+            ) : null}
 
             <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm">
@@ -674,6 +898,7 @@ function BlockEditorPanel({
                         checked={pinned}
                         onChange={(event) => setPinned(event.target.checked)}
                         className="h-4 w-4 rounded border-border"
+                        disabled={isGlobalHeaderOrFooter}
                     />
                     Закреплённый блок
                 </Label>
@@ -688,6 +913,7 @@ function BlockEditorPanel({
                         min={1}
                         onChange={(event) => setOrder(Number(event.target.value))}
                         className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        disabled={isGlobalHeaderOrFooter}
                     />
                 </div>
             </div>
@@ -734,10 +960,10 @@ function BlockEditorPanel({
                 <Button
                     variant={'destructive'}
                     onClick={() => onDelete(block.id)}
-                    disabled={isDeleting}
+                    disabled={isDeleting || isGlobalHeaderOrFooter}
                 >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    {isDeleting ? "Удаляем..." : "Удалить"}
+                    {isGlobalHeaderOrFooter ? "Нельзя удалить" : isDeleting ? "Удаляем..." : "Удалить"}
                 </Button>
             </div>
         </div>
@@ -1230,7 +1456,7 @@ function FooterEditor({
     return (
         <div className="space-y-3">
             <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-                Ссылки в футере берутся из блока Header (header-nav-basic).
+                Название (бренд) и ссылки в футере синхронизируются из блока Header (header-nav-basic).
             </div>
 
             <div className="space-y-1">
@@ -1238,6 +1464,7 @@ function FooterEditor({
                 <Input
                     value={typeof data.brand === 'string' ? (data.brand as string) : ''}
                     onChange={(event) => setField('brand', event.target.value)}
+                    disabled
                 />
             </div>
 

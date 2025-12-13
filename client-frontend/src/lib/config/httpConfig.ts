@@ -1,8 +1,17 @@
 /* eslint-disable no-useless-catch */
 import axios from "axios";
 
+const ENV_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "";
+const FALLBACK_DEV_BASE_URL = "http://localhost:5000/api";
+
+const baseURL = ENV_BASE_URL
+    ? ENV_BASE_URL
+    : process.env.NODE_ENV === "development"
+        ? FALLBACK_DEV_BASE_URL
+        : "";
+
 const $api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "",
+    baseURL,
     params: {},
     withCredentials: true,
 })

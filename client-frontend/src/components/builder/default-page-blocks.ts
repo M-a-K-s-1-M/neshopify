@@ -6,11 +6,39 @@ interface PreviewBlock {
     pinned?: boolean;
 }
 
+export const INTERNAL_LAYOUT_PAGE_SLUG = "__layout__";
+
 const NAV_LINKS = [
     { label: "Главная", href: "/" },
     { label: "Каталог", href: "/catalog" },
     { label: "Профиль", href: "/profile" },
     { label: "Корзина", href: "/cart" },
+];
+
+export const DEFAULT_LAYOUT_BLOCKS: PreviewBlock[] = [
+    {
+        templateKey: "header-nav-basic",
+        pinned: true,
+        data: {
+            logo: "Cosmiq",
+            sticky: true,
+            links: NAV_LINKS,
+            actions: [{ label: "Войти", href: "/auth" }],
+        },
+    },
+    {
+        templateKey: "footer-contacts-basic",
+        data: {
+            brand: "Cosmiq",
+            description: "Создайте интернет-магазин за минуту",
+            links: NAV_LINKS,
+            contacts: [
+                { type: "email", value: "hello@cosmiq.store" },
+                { type: "telegram", value: "@cosmiq_support" },
+            ],
+            legal: "© 2025 Cosmiq",
+        },
+    },
 ];
 
 const TEMPLATE_HINTS: Record<
@@ -61,16 +89,6 @@ const TEMPLATE_HINTS: Record<
 const DEFAULT_PAGE_BLOCKS: Partial<Record<PageDto["type"], PreviewBlock[]>> = {
     HOME: [
         {
-            templateKey: "header-nav-basic",
-            pinned: true,
-            data: {
-                logo: "Cosmiq",
-                sticky: true,
-                links: NAV_LINKS,
-                actions: [{ label: "Войти", href: "/auth" }],
-            },
-        },
-        {
             templateKey: "hero-brand-highlight",
             data: {
                 badge: "Beta",
@@ -96,31 +114,8 @@ const DEFAULT_PAGE_BLOCKS: Partial<Record<PageDto["type"], PreviewBlock[]>> = {
                 productIds: [],
             },
         },
-        {
-            templateKey: "footer-contacts-basic",
-            data: {
-                brand: "Cosmiq",
-                description: "Создайте интернет-магазин за минуту",
-                links: NAV_LINKS,
-                contacts: [
-                    { type: "email", value: "hello@cosmiq.store" },
-                    { type: "telegram", value: "@cosmiq_support" },
-                ],
-                legal: "© 2025 Cosmiq",
-            },
-        },
     ],
     CATALOG: [
-        {
-            templateKey: "header-nav-basic",
-            pinned: true,
-            data: {
-                logo: "Cosmiq",
-                sticky: true,
-                links: NAV_LINKS,
-                actions: [{ label: "Профиль", href: "/profile" }],
-            },
-        },
         {
             templateKey: "catalog-search-filter",
             data: {
@@ -145,31 +140,8 @@ const DEFAULT_PAGE_BLOCKS: Partial<Record<PageDto["type"], PreviewBlock[]>> = {
                 },
             },
         },
-        {
-            templateKey: "footer-contacts-basic",
-            data: {
-                brand: "Cosmiq",
-                description: "Создайте интернет-магазин за минуту",
-                links: NAV_LINKS,
-                contacts: [
-                    { type: "email", value: "hello@cosmiq.store" },
-                    { type: "telegram", value: "@cosmiq_support" },
-                ],
-                legal: "© 2025 Cosmiq",
-            },
-        },
     ],
     PROFILE: [
-        {
-            templateKey: "header-nav-basic",
-            pinned: true,
-            data: {
-                logo: "Cosmiq",
-                sticky: true,
-                links: NAV_LINKS,
-                actions: [{ label: "Выйти", href: "/auth/logout" }],
-            },
-        },
         {
             templateKey: "profile-account-form",
             data: {
@@ -196,31 +168,8 @@ const DEFAULT_PAGE_BLOCKS: Partial<Record<PageDto["type"], PreviewBlock[]>> = {
                 ],
             },
         },
-        {
-            templateKey: "footer-contacts-basic",
-            data: {
-                brand: "Cosmiq",
-                description: "Создайте интернет-магазин за минуту",
-                links: NAV_LINKS,
-                contacts: [
-                    { type: "email", value: "hello@cosmiq.store" },
-                    { type: "telegram", value: "@cosmiq_support" },
-                ],
-                legal: "© 2025 Cosmiq",
-            },
-        },
     ],
     CART: [
-        {
-            templateKey: "header-nav-basic",
-            pinned: true,
-            data: {
-                logo: "Cosmiq",
-                sticky: true,
-                links: NAV_LINKS,
-                actions: [{ label: "Каталог", href: "/catalog" }],
-            },
-        },
         {
             templateKey: "cart-items-list",
             data: {
@@ -251,19 +200,6 @@ const DEFAULT_PAGE_BLOCKS: Partial<Record<PageDto["type"], PreviewBlock[]>> = {
                     { label: "Оформить заказ", variant: "default" },
                     { label: "Продолжить покупки", variant: "outline" },
                 ],
-            },
-        },
-        {
-            templateKey: "footer-contacts-basic",
-            data: {
-                brand: "Cosmiq",
-                description: "Создайте интернет-магазин за минуту",
-                links: NAV_LINKS,
-                contacts: [
-                    { type: "email", value: "hello@cosmiq.store" },
-                    { type: "telegram", value: "@cosmiq_support" },
-                ],
-                legal: "© 2025 Cosmiq",
             },
         },
     ],

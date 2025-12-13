@@ -3,7 +3,11 @@ import { Prisma, BlockTemplate } from "../../../../generated/prisma/client";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { BlockSchemaRegistry } from "../schemas/block-schema.registry";
 import { DEFAULT_BLOCK_TEMPLATES } from "../constants/default-block-templates";
-import { DEFAULT_SITE_PAGES } from "../constants/default-site-structure";
+import {
+    DEFAULT_SITE_LAYOUT_BLOCKS,
+    DEFAULT_SITE_PAGES,
+    INTERNAL_LAYOUT_PAGE_SLUG,
+} from "../constants/default-site-structure";
 
 type PrismaClientLike = PrismaService | Prisma.TransactionClient;
 
@@ -66,7 +70,10 @@ export class SiteStructureService {
 
         const neededTemplateKeys = Array.from(
             new Set(
-                DEFAULT_SITE_PAGES.flatMap((page) => page.blocks.map((block) => block.templateKey)),
+                [
+                    ...DEFAULT_SITE_LAYOUT_BLOCKS.map((block) => block.templateKey),
+                    ...DEFAULT_SITE_PAGES.flatMap((page) => page.blocks.map((block) => block.templateKey)),
+                ],
             ),
         );
 
@@ -74,6 +81,35 @@ export class SiteStructureService {
             where: { key: { in: neededTemplateKeys } },
         });
         const templateMap = new Map<string, BlockTemplate>(templates.map((tpl) => [tpl.key, tpl]));
+
+        const layoutPage = await prisma.page.create({
+            data: {
+                siteId,
+                title: "Layout",
+                slug: INTERNAL_LAYOUT_PAGE_SLUG,
+                type: "CUSTOM",
+                isVisible: false,
+            },
+        });
+
+        let layoutOrder = 1;
+        for (const block of DEFAULT_SITE_LAYOUT_BLOCKS) {
+            const template = templateMap.get(block.templateKey);
+            if (!template) {
+                this.logger.warn(`Шаблон ${block.templateKey} отсутствует и блок пропущен`);
+                continue;
+            }
+
+            await prisma.blockInstance.create({
+                data: {
+                    pageId: layoutPage.id,
+                    templateId: template.id,
+                    order: layoutOrder++,
+                    data: block.data,
+                    pinned: block.pinned ?? false,
+                },
+            });
+        }
 
         for (const blueprint of DEFAULT_SITE_PAGES) {
             const page = await prisma.page.create({

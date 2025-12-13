@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 
 import { BlockRenderer } from "./block-registry";
 import { useSiteQuery, useSitePagesQuery, usePageDetailQuery } from "@/lib/query/hooks";
-import { getDefaultBlocksForPageType } from "./default-page-blocks";
+import { getDefaultBlocksForPageType, INTERNAL_LAYOUT_PAGE_SLUG } from "./default-page-blocks";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 
 interface SitePageViewProps {
@@ -42,8 +42,19 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
         error: pagesError,
     } = useSitePagesQuery(siteId);
 
+    const layoutPage = useMemo(
+        () => pages?.find((page) => page.slug === INTERNAL_LAYOUT_PAGE_SLUG),
+        [pages],
+    );
+
     const currentPage = useMemo(() => pages?.find((page) => page.slug === slug), [pages, slug]);
     const pageId = currentPage?.id;
+
+    const {
+        data: layoutPageDetail,
+        isLoading: layoutLoading,
+        error: layoutError,
+    } = usePageDetailQuery(siteId, layoutPage?.id);
 
     const {
         data: pageDetail,
@@ -52,6 +63,16 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
     } = usePageDetailQuery(siteId, pageId);
 
     const resolvedPage = pageDetail ?? currentPage;
+
+    const layoutBlocks = useMemo(() => {
+        if (!layoutPageDetail?.blocks) {
+            return [];
+        }
+
+        return [...layoutPageDetail.blocks]
+            .filter((block) => Boolean(block?.template?.key))
+            .sort((a, b) => a.order - b.order);
+    }, [layoutPageDetail?.blocks]);
 
     const actualBlocks = useMemo(() => {
         if (!resolvedPage?.blocks) {
@@ -62,6 +83,28 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
             .sort((a, b) => a.order - b.order);
     }, [resolvedPage?.blocks]);
 
+    const { globalHeader, globalFooter } = useMemo(() => {
+        const hasLayout = Boolean(layoutPage?.id);
+        const headerFromLayout = layoutBlocks.find((b) => b.template.key.startsWith("header-")) ?? null;
+        const footerFromLayout = layoutBlocks.find((b) => b.template.key.startsWith("footer-")) ?? null;
+
+        if (hasLayout) {
+            return {
+                globalHeader: headerFromLayout,
+                globalFooter: footerFromLayout,
+            };
+        }
+
+        // Fallback для старых сайтов: пока layout-страницы нет, берем header/footer со страницы.
+        const headerFromPage = actualBlocks.find((b) => b.template.key.startsWith("header-")) ?? null;
+        const footerFromPage = actualBlocks.find((b) => b.template.key.startsWith("footer-")) ?? null;
+
+        return {
+            globalHeader: headerFromPage,
+            globalFooter: footerFromPage,
+        };
+    }, [layoutBlocks, layoutPage?.id, actualBlocks]);
+
     const fallbackBlocks = useMemo(() => {
         if (!resolvedPage || actualBlocks.length > 0) {
             return [];
@@ -69,9 +112,21 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
         return getDefaultBlocksForPageType(resolvedPage.type);
     }, [resolvedPage, actualBlocks.length]);
 
-    const blocks = actualBlocks.length > 0 ? actualBlocks : fallbackBlocks;
+    const blocks = useMemo(() => {
+        const sourceBlocks = actualBlocks.length > 0 ? actualBlocks : fallbackBlocks;
 
-    const isLoading = siteLoading || pagesLoading || pageLoading;
+        const contentBlocks = sourceBlocks.filter(
+            (block) => !block.template.key.startsWith("header-") && !block.template.key.startsWith("footer-"),
+        );
+
+        return [
+            ...(globalHeader ? [globalHeader] : []),
+            ...contentBlocks,
+            ...(globalFooter ? [globalFooter] : []),
+        ];
+    }, [actualBlocks, fallbackBlocks, globalHeader, globalFooter]);
+
+    const isLoading = siteLoading || pagesLoading || pageLoading || layoutLoading;
     const pageHeading = title ?? resolvedPage?.title ?? "Страница";
     const seoDescription = resolvedPage?.seo?.description;
     const pageDescription = description ?? (typeof seoDescription === "string" ? seoDescription : "");
@@ -82,7 +137,9 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
             ? getRequestErrorMessage(pagesError, "Не удалось загрузить страницы")
             : pageError
                 ? getRequestErrorMessage(pageError, "Не удалось загрузить страницу")
-                : undefined;
+                : layoutError
+                    ? getRequestErrorMessage(layoutError, "Не удалось загрузить layout сайта")
+                    : undefined;
 
     return (
         <div className="space-y-6">
