@@ -1,16 +1,21 @@
 'use client'
 
 import { useEffect, useMemo, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
+import { Heart, Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
-import type { BlockInstanceDto } from "@/lib/types";
+import type { BlockInstanceDto, ProductDto } from "@/lib/types";
+import { CartApi } from "@/lib/api/cart";
 import { ProductsApi } from "@/lib/api/products";
 import { queryKeys } from "@/lib/query/keys";
+import { cn } from "@/lib/utils";
+import { getRequestErrorMessage } from "@/lib/utils/error";
 import { resolveMediaUrl } from "@/lib/utils/media";
+import { useFavoritesStore } from "@/stores/useFavoritesStore";
 import { useCatalogFiltersOptional } from "../catalog-filters-context";
 import {
     Carousel,
@@ -25,6 +30,8 @@ interface CatalogProductGridProps {
     siteId: string;
 }
 
+const EMPTY_FAVORITES: string[] = [];
+
 export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridProps) {
     const data = block.data ?? {};
     const title = typeof data.title === "string" ? data.title : "Каталог";
@@ -34,6 +41,12 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     const [searchInput, setSearchInput] = useState("");
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
+    const [quantityByProductId, setQuantityByProductId] = useState<Record<string, number>>({});
+    const [pendingCartProductId, setPendingCartProductId] = useState<string | null>(null);
+    const [lastAddedProductId, setLastAddedProductId] = useState<string | null>(null);
+
+    const favoriteIds = useFavoritesStore((state) => state.favoritesBySiteId[siteId] ?? EMPTY_FAVORITES);
+    const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
     const catalogFilters = useCatalogFiltersOptional();
     const hasFiltersUi = Boolean(catalogFilters?.hasFiltersUi);
@@ -105,6 +118,35 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     const maxPage = Math.max(1, Math.ceil((meta.total || 0) / meta.limit));
     const queryError = error ? "Не удалось загрузить товары" : null;
 
+    const addToCartMutation = useMutation({
+        mutationFn: async (payload: { productId: string; quantity: number }) => {
+            return CartApi.addItem(siteId, payload);
+        },
+    });
+
+    const getMaxQty = (product: ProductDto) => {
+        if (product.stockStatus === "OUT_OF_STOCK") return 0;
+        if (product.stockStatus === "PREORDER") return 99;
+        return Math.max(0, Number(product.stock) || 0);
+    };
+
+    const getQty = (product: ProductDto) => {
+        const max = getMaxQty(product);
+        if (max === 0) return 1;
+
+        const current = quantityByProductId[product.id];
+        if (typeof current === "number" && Number.isFinite(current)) {
+            return Math.min(Math.max(1, current), max);
+        }
+        return 1;
+    };
+
+    const setQty = (product: ProductDto, next: number) => {
+        const max = getMaxQty(product);
+        const clamped = max === 0 ? 1 : Math.min(Math.max(1, next), max);
+        setQuantityByProductId((prev) => ({ ...prev, [product.id]: clamped }));
+    };
+
     return (
         <section className="space-y-4">
             <div className="flex flex-col gap-2">
@@ -172,15 +214,117 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                                     </div>
                                 )
                             ) : null}
-                            <CardHeader>
-                                <CardTitle className="line-clamp-1 text-base">{product.title}</CardTitle>
-                                <CardDescription>
-                                    {Number(product.price).toLocaleString("ru-RU")} {product.currency}
-                                </CardDescription>
+
+                            <CardHeader className="space-y-2">
+                                <CardTitle className="line-clamp-2 text-base leading-snug">{product.title}</CardTitle>
+                                <p className="line-clamp-2 text-sm text-muted-foreground">
+                                    {product.description?.trim() ? product.description : "Описание отсутствует"}
+                                </p>
                             </CardHeader>
-                            <CardFooter className="mt-auto">
-                                <Button variant="secondary" size="sm" className="w-full" type="button">
-                                    Подробнее
+
+                            <CardContent className="space-y-3">
+                                <div className="flex items-baseline justify-between gap-2">
+                                    <p className="text-base font-semibold">
+                                        {Number(product.price).toLocaleString("ru-RU")} {product.currency}
+                                    </p>
+                                    <p
+                                        className={cn(
+                                            "text-xs",
+                                            product.stockStatus === "OUT_OF_STOCK" ? "text-destructive" : "text-muted-foreground",
+                                        )}
+                                    >
+                                        {product.stockStatus === "OUT_OF_STOCK"
+                                            ? "Нет в наличии"
+                                            : product.stockStatus === "PREORDER"
+                                                ? "Предзаказ"
+                                                : `В наличии: ${product.stock}`}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="text-sm text-muted-foreground">Кол-во</p>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => setQty(product, getQty(product) - 1)}
+                                            disabled={getQty(product) <= 1}
+                                        >
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <Input
+                                            value={String(getQty(product))}
+                                            readOnly
+                                            className="h-9 w-14 text-center"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => setQty(product, getQty(product) + 1)}
+                                            disabled={getMaxQty(product) > 0 ? getQty(product) >= getMaxQty(product) : true}
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+
+                            <CardFooter className="mt-auto flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => toggleFavorite(siteId, product.id)}
+                                    aria-label="Добавить в избранное"
+                                >
+                                    <Heart
+                                        className={cn(
+                                            "h-4 w-4",
+                                            favoriteIds.includes(product.id) ? "fill-current" : "",
+                                        )}
+                                    />
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    className="w-full"
+                                    onClick={() => {
+                                        const max = getMaxQty(product);
+                                        if (max === 0) return;
+
+                                        const quantity = getQty(product);
+                                        setPendingCartProductId(product.id);
+                                        addToCartMutation.mutate(
+                                            { productId: product.id, quantity },
+                                            {
+                                                onSuccess: () => {
+                                                    setLastAddedProductId(product.id);
+                                                    window.setTimeout(() => setLastAddedProductId(null), 1200);
+                                                },
+                                                onError: (err) => {
+                                                    window.alert(getRequestErrorMessage(err, "Не удалось добавить в корзину"));
+                                                },
+                                                onSettled: () => {
+                                                    setPendingCartProductId(null);
+                                                },
+                                            },
+                                        );
+                                    }}
+                                    disabled={getMaxQty(product) === 0 || (addToCartMutation.isPending && pendingCartProductId === product.id)}
+                                >
+                                    {addToCartMutation.isPending && pendingCartProductId === product.id ? (
+                                        <span className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin" /> Добавляем
+                                        </span>
+                                    ) : lastAddedProductId === product.id ? (
+                                        "Добавлено"
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            <ShoppingCart className="h-4 w-4" /> В корзину
+                                        </span>
+                                    )}
                                 </Button>
                             </CardFooter>
                         </Card>

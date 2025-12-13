@@ -1092,6 +1092,9 @@ function GenericBlockDataEditor({
         if (templateKey === 'products-featured' && key === 'productIds') {
             return false;
         }
+        if (templateKey === 'products-featured' && (key === 'layout' || key === 'maxItems')) {
+            return false;
+        }
         if (templateKey === 'catalog-search-filter' && key === 'featuredCategories') {
             return false;
         }

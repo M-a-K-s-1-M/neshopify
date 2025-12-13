@@ -2,19 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Heart, Loader2, Minus, Plus, ShoppingCart, X } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { X, Loader2 } from "lucide-react";
 import type { BlockInstanceDto, PaginatedResponse, ProductDto } from "@/lib/types";
+import { CartApi } from "@/lib/api/cart";
 import { ProductsApi } from "@/lib/api/products";
 import { PageBlocksApi } from "@/lib/api/page-blocks";
 import { queryKeys } from "@/lib/query/keys";
+import { cn } from "@/lib/utils";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { resolveMediaUrl } from "@/lib/utils/media";
+import { useFavoritesStore } from "@/stores/useFavoritesStore";
 import {
     Carousel,
     CarouselContent,
@@ -27,6 +30,9 @@ interface ProductsFeaturedProps {
     block: BlockInstanceDto;
     siteId: string;
 }
+
+const MAX_FEATURED_PRODUCTS = 4;
+const EMPTY_FAVORITES: string[] = [];
 
 export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) {
     const blockData =
@@ -41,8 +47,12 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
     const [error, setError] = useState<string | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [canManage, setCanManage] = useState(false);
-    const [searchInput, setSearchInput] = useState("");
-    const [search, setSearch] = useState("");
+    const [quantityByProductId, setQuantityByProductId] = useState<Record<string, number>>({});
+    const [pendingCartProductId, setPendingCartProductId] = useState<string | null>(null);
+    const [lastAddedProductId, setLastAddedProductId] = useState<string | null>(null);
+
+    const favoriteIds = useFavoritesStore((state) => state.favoritesBySiteId[siteId] ?? EMPTY_FAVORITES);
+    const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
     const productKey = useMemo(() => productIds.join(','), [productIds]);
 
     useEffect(() => {
@@ -84,6 +94,35 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
         };
     }, [productKey, productIds.length, siteId]);
 
+    const addToCartMutation = useMutation({
+        mutationFn: async (payload: { productId: string; quantity: number }) => {
+            return CartApi.addItem(siteId, payload);
+        },
+    });
+
+    const getMaxQty = (product: ProductDto) => {
+        if (product.stockStatus === "OUT_OF_STOCK") return 0;
+        if (product.stockStatus === "PREORDER") return 99;
+        return Math.max(0, Number(product.stock) || 0);
+    };
+
+    const getQty = (product: ProductDto) => {
+        const max = getMaxQty(product);
+        if (max === 0) return 1;
+
+        const current = quantityByProductId[product.id];
+        if (typeof current === "number" && Number.isFinite(current)) {
+            return Math.min(Math.max(1, current), max);
+        }
+        return 1;
+    };
+
+    const setQty = (product: ProductDto, next: number) => {
+        const max = getMaxQty(product);
+        const clamped = max === 0 ? 1 : Math.min(Math.max(1, next), max);
+        setQuantityByProductId((prev) => ({ ...prev, [product.id]: clamped }));
+    };
+
     return (
         <section className="space-y-4">
             <div className="space-y-2">
@@ -113,7 +152,7 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
 
             {loading && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {Array.from({ length: productIds.length || 4 }).map((_, index) => (
+                    {Array.from({ length: productIds.length || MAX_FEATURED_PRODUCTS }).map((_, index) => (
                         <Skeleton key={index} className="h-48 rounded-xl" />
                     ))}
                 </div>
@@ -124,10 +163,10 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
             )}
 
             {!loading && !error && (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {getFilteredProducts(products, search).length > 0 ? (
-                        getFilteredProducts(products, search).map((product) => (
-                            <Card key={product.id} className="overflow-hidden">
+                <div className="grid gap-4 sm:grid-cols-2 3xl:grid-cols-4">
+                    {products.length > 0 ? (
+                        products.map((product) => (
+                            <Card key={product.id} className="flex h-full flex-col overflow-hidden">
                                 {product.media?.length ? (
                                     product.media.length > 1 ? (
                                         <div className="relative h-40 w-full overflow-hidden bg-muted">
@@ -166,12 +205,118 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
                                         </div>
                                     )
                                 ) : null}
-                                <CardHeader>
-                                    <CardTitle className="line-clamp-1 text-base">{product.title}</CardTitle>
-                                    <CardDescription>
-                                        {Number(product.price).toLocaleString('ru-RU')} {product.currency}
-                                    </CardDescription>
+
+                                <CardHeader className="gap-1">
+                                    <CardTitle className="line-clamp-2 text-base leading-snug">{product.title}</CardTitle>
+                                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                                        {product.description?.trim() ? product.description : "Описание отсутствует"}
+                                    </p>
                                 </CardHeader>
+
+                                <CardContent className="space-y-1">
+                                    <div className="flex items-baseline justify-between gap-2">
+                                        <p className="text-base font-semibold">
+                                            {Number(product.price).toLocaleString("ru-RU")} {product.currency}
+                                        </p>
+                                        <p
+                                            className={cn(
+                                                "text-xs",
+                                                product.stockStatus === "OUT_OF_STOCK" ? "text-destructive" : "text-muted-foreground",
+                                            )}
+                                        >
+                                            {product.stockStatus === "OUT_OF_STOCK"
+                                                ? "Нет в наличии"
+                                                : product.stockStatus === "PREORDER"
+                                                    ? "Предзаказ"
+                                                    : `В наличии: ${product.stock}`}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-sm text-muted-foreground">Кол-во</p>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={() => setQty(product, getQty(product) - 1)}
+                                                disabled={getQty(product) <= 1}
+                                            >
+                                                <Minus className="h-4 w-4" />
+                                            </Button>
+                                            <Input
+                                                value={String(getQty(product))}
+                                                readOnly
+                                                className="h-9 w-14 text-center"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="icon"
+                                                onClick={() => setQty(product, getQty(product) + 1)}
+                                                disabled={getMaxQty(product) > 0 ? getQty(product) >= getMaxQty(product) : true}
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+
+                                <CardFooter className="mt-auto flex justify-between gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => toggleFavorite(siteId, product.id)}
+                                        aria-label="Добавить в избранное"
+                                    >
+                                        <Heart
+                                            className={cn(
+                                                "h-4 w-4",
+                                                favoriteIds.includes(product.id) ? "fill-current" : "",
+                                            )}
+                                        />
+                                    </Button>
+
+                                    <Button
+                                        type="button"
+                                        onClick={() => {
+                                            const max = getMaxQty(product);
+                                            if (max === 0) return;
+
+                                            const quantity = getQty(product);
+                                            setPendingCartProductId(product.id);
+                                            addToCartMutation.mutate(
+                                                { productId: product.id, quantity },
+                                                {
+                                                    onSuccess: () => {
+                                                        setLastAddedProductId(product.id);
+                                                        window.setTimeout(() => setLastAddedProductId(null), 1200);
+                                                    },
+                                                    onError: (err) => {
+                                                        window.alert(getRequestErrorMessage(err, "Не удалось добавить в корзину"));
+                                                    },
+                                                    onSettled: () => {
+                                                        setPendingCartProductId(null);
+                                                    },
+                                                },
+                                            );
+                                        }}
+                                        disabled={getMaxQty(product) === 0 || (addToCartMutation.isPending && pendingCartProductId === product.id)}
+                                    >
+                                        {addToCartMutation.isPending && pendingCartProductId === product.id ? (
+                                            <span className="flex items-center gap-2">
+                                                <Loader2 className="h-4 w-4 animate-spin" /> Добавляем
+                                            </span>
+                                        ) : lastAddedProductId === product.id ? (
+                                            "Добавлено"
+                                        ) : (
+                                            <span className="flex items-center gap-2">
+                                                <ShoppingCart className="h-4 w-4" /> В корзину
+                                            </span>
+                                        )}
+                                    </Button>
+                                </CardFooter>
                             </Card>
                         ))
                     ) : (
@@ -181,39 +326,6 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
                     )}
                 </div>
             )}
-
-            {!loading && !error && products.length > 0 ? (
-                <form
-                    className="flex flex-wrap gap-2 rounded-xl border border-border bg-card/70 p-3"
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        setSearch(searchInput.trim().toLowerCase());
-                    }}
-                >
-                    <Input
-                        placeholder="Поиск по товарам"
-                        value={searchInput}
-                        onChange={(event) => setSearchInput(event.target.value)}
-                        className="max-w-xs"
-                    />
-                    <Button type="submit" size="sm">
-                        Найти
-                    </Button>
-                    {search ? (
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                                setSearch("");
-                                setSearchInput("");
-                            }}
-                        >
-                            Сбросить
-                        </Button>
-                    ) : null}
-                </form>
-            ) : null}
 
             {canManage ? (
                 <ProductsFeaturedManager
@@ -271,10 +383,12 @@ function ProductsFeaturedManager({ block, siteId, open, onOpenChange }: Products
         return map;
     }, [data]);
 
+    const maxReached = selection.length >= MAX_FEATURED_PRODUCTS;
+
     const saveSelectionMutation = useMutation({
         mutationFn: (productIds: string[]) =>
             PageBlocksApi.update(siteId, block.pageId, block.id, {
-                data: { ...(block.data ?? {}), productIds },
+                data: { ...(block.data ?? {}), productIds: productIds.slice(0, MAX_FEATURED_PRODUCTS) },
             }),
         onSuccess: async () => {
             await Promise.all([
@@ -293,7 +407,15 @@ function ProductsFeaturedManager({ block, siteId, open, onOpenChange }: Products
     const queryError = error ? "Не удалось загрузить товары" : null;
 
     const toggleProduct = (productId: string) => {
-        setSelection((prev) => (prev.includes(productId) ? prev : [...prev, productId]));
+        setSelection((prev) => {
+            if (prev.includes(productId)) {
+                return prev;
+            }
+            if (prev.length >= MAX_FEATURED_PRODUCTS) {
+                return prev;
+            }
+            return [...prev, productId];
+        });
     };
 
     const removeProduct = (productId: string) => {
@@ -333,7 +455,8 @@ function ProductsFeaturedManager({ block, siteId, open, onOpenChange }: Products
                 <div className="grid gap-6 md:grid-cols-[260px_minmax(0,1fr)]">
                     <div className="space-y-4 rounded-xl border border-border p-4">
                         <div>
-                            <p className="text-sm font-semibold">Выбранные товары ({selection.length})</p>
+                            <p className="text-sm font-semibold">Выбранные товары ({selection.length}/{MAX_FEATURED_PRODUCTS})</p>
+                            <p className="text-xs text-muted-foreground">Максимум {MAX_FEATURED_PRODUCTS} товара в витрине.</p>
                             {selection.length === 0 ? (
                                 <p className="text-xs text-muted-foreground">Пока ничего не выбрано.</p>
                             ) : (
@@ -390,6 +513,7 @@ function ProductsFeaturedManager({ block, siteId, open, onOpenChange }: Products
                             <div className="space-y-3">
                                 {data.data.map((product) => {
                                     const alreadySelected = selection.includes(product.id);
+                                    const disableAdd = !alreadySelected && maxReached;
                                     return (
                                         <div
                                             key={product.id}
@@ -405,10 +529,10 @@ function ProductsFeaturedManager({ block, siteId, open, onOpenChange }: Products
                                                 type="button"
                                                 size="sm"
                                                 variant={alreadySelected ? "outline" : "secondary"}
-                                                disabled={alreadySelected}
+                                                disabled={alreadySelected || disableAdd}
                                                 onClick={() => toggleProduct(product.id)}
                                             >
-                                                {alreadySelected ? "Добавлено" : "Добавить"}
+                                                {alreadySelected ? "Добавлено" : disableAdd ? `Макс. ${MAX_FEATURED_PRODUCTS}` : "Добавить"}
                                             </Button>
                                         </div>
                                     );
@@ -477,16 +601,11 @@ function getProductIdsFromBlock(block: BlockInstanceDto) {
     if (!Array.isArray(rawIds)) {
         return [] as string[];
     }
-    return rawIds.filter((value): value is string => typeof value === "string");
+    return rawIds
+        .filter((value): value is string => typeof value === "string")
+        .slice(0, MAX_FEATURED_PRODUCTS);
 }
 
 function getFilteredProducts(products: ProductDto[], search: string) {
-    if (!search) {
-        return products;
-    }
-    const normalized = search.toLowerCase();
-    return products.filter((product) =>
-        product.title.toLowerCase().includes(normalized) ||
-        (product.description ? product.description.toLowerCase().includes(normalized) : false),
-    );
+    return products;
 }

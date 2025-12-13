@@ -98,11 +98,11 @@ export const DEFAULT_BLOCK_TEMPLATES: DefaultBlockTemplate[] = [
         category: BlockCategory.PRODUCT,
         schema: {
             type: "object",
-            required: ["title", "maxItems"],
+            required: ["title"],
             properties: {
                 title: { type: "string" },
                 subtitle: { type: "string" },
-                maxItems: { type: "number", minimum: 1, maximum: 8 },
+                maxItems: { type: "number", minimum: 1, maximum: 4, default: 4 },
                 layout: {
                     type: "object",
                     properties: {
@@ -113,7 +113,7 @@ export const DEFAULT_BLOCK_TEMPLATES: DefaultBlockTemplate[] = [
                 productIds: {
                     type: "array",
                     items: { type: "string", format: "uuid" },
-                    maxItems: 8,
+                    maxItems: 4,
                 },
             },
         },
