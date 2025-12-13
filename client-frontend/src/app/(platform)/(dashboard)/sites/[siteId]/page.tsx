@@ -51,7 +51,7 @@ export default function Site() {
     return (
         <div className="space-y-6">
             <HeaderPage>
-                <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-3  text-sm text-muted-foreground mb-3">
                     <p className="text-xl font-semibold text-foreground">{site?.name ?? "Загрузка..."}</p>
                     <p className="font-mono text-xs">/{site?.slug ?? "..."}</p>
                 </div>
