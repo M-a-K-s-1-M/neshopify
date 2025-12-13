@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from "react";
-import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Heart, Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { resolveMediaUrl } from "@/lib/utils/media";
+import { getOrCreateCartSessionId } from "@/lib/utils/cart-session";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
 import { useCatalogFiltersOptional } from "../catalog-filters-context";
 import {
@@ -43,10 +44,26 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     const [page, setPage] = useState(1);
     const [quantityByProductId, setQuantityByProductId] = useState<Record<string, number>>({});
     const [pendingCartProductId, setPendingCartProductId] = useState<string | null>(null);
-    const [lastAddedProductId, setLastAddedProductId] = useState<string | null>(null);
+    const [addedToCartIds, setAddedToCartIds] = useState<string[]>([]);
 
     const favoriteIds = useFavoritesStore((state) => state.favoritesBySiteId[siteId] ?? EMPTY_FAVORITES);
     const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
+
+    const queryClient = useQueryClient();
+
+    const sessionId = useMemo(() => getOrCreateCartSessionId(), []);
+    const { data: cart } = useQuery({
+        queryKey: queryKeys.siteCart(siteId, sessionId),
+        queryFn: () => CartApi.getCart(siteId, sessionId),
+    });
+
+    const cartItemIdByProductId = useMemo(() => {
+        const map = new Map<string, string>();
+        cart?.items?.forEach((item) => {
+            map.set(item.productId, item.id);
+        });
+        return map;
+    }, [cart]);
 
     const catalogFilters = useCatalogFiltersOptional();
     const hasFiltersUi = Boolean(catalogFilters?.hasFiltersUi);
@@ -121,6 +138,17 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     const addToCartMutation = useMutation({
         mutationFn: async (payload: { productId: string; quantity: number }) => {
             return CartApi.addItem(siteId, payload);
+        },
+    });
+
+    const removeFromCartMutation = useMutation({
+        mutationFn: async (productId: string) => {
+            const itemId = cartItemIdByProductId.get(productId);
+            if (!itemId) {
+                // Если по какой-то причине itemId не найден — просто рефетчим корзину.
+                return CartApi.getCart(siteId, sessionId);
+            }
+            return CartApi.removeItem(siteId, itemId, sessionId);
         },
     });
 
@@ -271,7 +299,7 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                                 </div>
                             </CardContent>
 
-                            <CardFooter className="mt-auto flex gap-2">
+                            <CardFooter className="mt-auto flex justify-between gap-2">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -289,19 +317,37 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
 
                                 <Button
                                     type="button"
-                                    className="w-full"
+                                    variant={cartItemIdByProductId.has(product.id) || addedToCartIds.includes(product.id) ? "destructive" : "default"}
                                     onClick={() => {
                                         const max = getMaxQty(product);
                                         if (max === 0) return;
 
-                                        const quantity = getQty(product);
+                                        const isInCart = cartItemIdByProductId.has(product.id);
                                         setPendingCartProductId(product.id);
+
+                                        if (isInCart) {
+                                            removeFromCartMutation.mutate(product.id, {
+                                                onSuccess: (nextCart) => {
+                                                    queryClient.setQueryData(queryKeys.siteCart(siteId, sessionId), nextCart);
+                                                    setAddedToCartIds((prev) => prev.filter((id) => id !== product.id));
+                                                },
+                                                onError: (err) => {
+                                                    window.alert(getRequestErrorMessage(err, "Не удалось убрать из корзины"));
+                                                },
+                                                onSettled: () => {
+                                                    setPendingCartProductId(null);
+                                                },
+                                            });
+                                            return;
+                                        }
+
+                                        const quantity = getQty(product);
                                         addToCartMutation.mutate(
                                             { productId: product.id, quantity },
                                             {
-                                                onSuccess: () => {
-                                                    setLastAddedProductId(product.id);
-                                                    window.setTimeout(() => setLastAddedProductId(null), 1200);
+                                                onSuccess: (nextCart) => {
+                                                    queryClient.setQueryData(queryKeys.siteCart(siteId, sessionId), nextCart);
+                                                    setAddedToCartIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
                                                 },
                                                 onError: (err) => {
                                                     window.alert(getRequestErrorMessage(err, "Не удалось добавить в корзину"));
@@ -312,14 +358,18 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                                             },
                                         );
                                     }}
-                                    disabled={getMaxQty(product) === 0 || (addToCartMutation.isPending && pendingCartProductId === product.id)}
+                                    disabled={
+                                        getMaxQty(product) === 0 ||
+                                        ((addToCartMutation.isPending || removeFromCartMutation.isPending) && pendingCartProductId === product.id)
+                                    }
                                 >
-                                    {addToCartMutation.isPending && pendingCartProductId === product.id ? (
+                                    {(addToCartMutation.isPending || removeFromCartMutation.isPending) && pendingCartProductId === product.id ? (
                                         <span className="flex items-center gap-2">
-                                            <Loader2 className="h-4 w-4 animate-spin" /> Добавляем
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            {cartItemIdByProductId.has(product.id) ? "Удаляем" : "Добавляем"}
                                         </span>
-                                    ) : lastAddedProductId === product.id ? (
-                                        "Добавлено"
+                                    ) : cartItemIdByProductId.has(product.id) || addedToCartIds.includes(product.id) ? (
+                                        "Убрать из корзины"
                                     ) : (
                                         <span className="flex items-center gap-2">
                                             <ShoppingCart className="h-4 w-4" /> В корзину

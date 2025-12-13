@@ -1,20 +1,55 @@
 'use client'
 
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { BlockInstanceDto } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { BlockInstanceDto, ProductDto } from "@/lib/types";
+import { ProductsApi } from "@/lib/api/products";
+import { useFavoritesStore } from "@/stores/useFavoritesStore";
 
-interface FavoriteItem {
-    name?: string;
-    price?: number;
-    currency?: string;
-    status?: string;
-}
+const EMPTY_FAVORITES: string[] = [];
 
-export function ProfileFavoritesShowcaseBlock({ block }: { block: BlockInstanceDto }) {
+export function ProfileFavoritesShowcaseBlock({
+    block,
+    siteId,
+}: {
+    block: BlockInstanceDto;
+    siteId: string;
+}) {
     const data = block.data ?? {};
     const title = typeof data.title === "string" ? data.title : block.template.title;
     const subtitle = typeof data.subtitle === "string" ? data.subtitle : undefined;
-    const items = Array.isArray(data.items) ? (data.items as FavoriteItem[]) : [];
+
+    const favoriteIds = useFavoritesStore((state) => state.favoritesBySiteId[siteId] ?? EMPTY_FAVORITES);
+    const favoriteKey = useMemo(() => favoriteIds.slice().sort().join(','), [favoriteIds]);
+    const [items, setItems] = useState<ProductDto[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!favoriteIds.length) {
+            setItems([]);
+            return;
+        }
+
+        let cancelled = false;
+        setLoading(true);
+
+        Promise.all(favoriteIds.map((id) => ProductsApi.get(siteId, id)))
+            .then((products) => {
+                if (!cancelled) setItems(products);
+            })
+            .catch(() => {
+                if (!cancelled) setItems([]);
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [siteId, favoriteKey, favoriteIds.length]);
 
     return (
         <section className="space-y-4">
@@ -23,24 +58,32 @@ export function ProfileFavoritesShowcaseBlock({ block }: { block: BlockInstanceD
                 {subtitle ? <p className="text-muted-foreground">{subtitle}</p> : null}
             </div>
 
-            {items.length === 0 ? (
+            {loading ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {Array.from({ length: 2 }).map((_, idx) => (
+                        <Skeleton key={idx} className="h-28 rounded-xl" />
+                    ))}
+                </div>
+            ) : items.length === 0 ? (
                 <Card className="p-6 text-sm text-muted-foreground">
                     Избранных товаров пока нет. Добавьте товары из каталога.
                 </Card>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
                     {items.map((item, index) => (
-                        <Card key={`${item.name ?? "favorite"}-${index}`} className="border shadow-sm">
+                        <Card key={`${item.id}-${index}`} className="border shadow-sm">
                             <CardHeader>
-                                <CardTitle className="text-base">{item.name ?? "Товар"}</CardTitle>
+                                <CardTitle className="text-base">{item.title ?? "Товар"}</CardTitle>
                                 <CardDescription className="flex items-center justify-between text-sm">
                                     <span>
-                                        {typeof item.price === "number"
-                                            ? `${item.price.toLocaleString("ru-RU")} ${item.currency ?? "RUB"}`
-                                            : "—"}
+                                        {Number(item.price).toLocaleString("ru-RU")} {item.currency}
                                     </span>
                                     <span className="text-xs uppercase text-muted-foreground">
-                                        {item.status ?? "В наличии"}
+                                        {item.stockStatus === "OUT_OF_STOCK"
+                                            ? "Нет в наличии"
+                                            : item.stockStatus === "PREORDER"
+                                                ? "Предзаказ"
+                                                : "В наличии"}
                                     </span>
                                 </CardDescription>
                             </CardHeader>
