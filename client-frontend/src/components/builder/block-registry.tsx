@@ -25,7 +25,7 @@ const registry: Record<string, BlockComponent> = {
     "products-featured": ({ block, siteId }) => (
         <ProductsFeaturedBlock block={block} siteId={siteId} />
     ),
-    "catalog-search-filter": ({ block }) => <CatalogSearchFilterBlock block={block} />,
+    "catalog-search-filter": ({ block, siteId }) => <CatalogSearchFilterBlock block={block} siteId={siteId} />,
     "catalog-product-grid": ({ block, siteId }) => (
         <CatalogProductGridBlock block={block} siteId={siteId} />
     ),

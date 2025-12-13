@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2, X } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
     Button,
@@ -16,7 +16,9 @@ import {
     DrawerTrigger,
     Label,
     Input,
+    Separator,
 } from "@/components";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useSiteQuery, useSitePagesQuery, usePageDetailQuery, useBlockTemplatesQuery } from "@/lib/query/hooks";
 import { SitePageView } from "./site-page-view";
@@ -26,6 +28,7 @@ import { getPresetsByTemplate } from "./block-presets";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { PageBlocksApi } from "@/lib/api/page-blocks";
 import { PagesApi } from "@/lib/api/pages";
+import { CategoriesApi } from "@/lib/api/categories";
 import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_LAYOUT_BLOCKS, INTERNAL_LAYOUT_PAGE_SLUG } from "./default-page-blocks";
 
@@ -566,6 +569,7 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
 
                 <aside className="rounded-2xl border border-border bg-card p-4">
                     <BlockEditorPanel
+                        siteId={siteId}
                         block={selectedBlock}
                         onSave={handleSaveBlock}
                         onDelete={handleDeleteBlock}
@@ -652,6 +656,7 @@ function PresetGrid({
 }
 
 function BlockEditorPanel({
+    siteId,
     block,
     onSave,
     onDelete,
@@ -666,6 +671,7 @@ function BlockEditorPanel({
     availableTemplates,
     isGlobalBlock,
 }: {
+    siteId: string;
     block: BlockInstanceDto | null;
     onSave: (blockId: string, payload: UpdateBlockPayload) => void;
     onDelete: (blockId: string) => void;
@@ -757,8 +763,8 @@ function BlockEditorPanel({
 
     const blockHeader = (
         <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Шаблон</p>
-            <h3 className="text-lg font-semibold">{block.template.title}</h3>
+            <p className="text-xs uppercase tracking-wide mb-2">Шаблон</p>
+            <h3 className="text-lg font-semibold text-primary mb-1">{block.template.title}</h3>
             {block.template.description ? (
                 <p className="text-sm text-muted-foreground">{block.template.description}</p>
             ) : null}
@@ -846,7 +852,7 @@ function BlockEditorPanel({
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-5">
             {blockHeader}
 
             <div className="flex flex-wrap gap-2">
@@ -870,9 +876,10 @@ function BlockEditorPanel({
                 </Button>
             </div>
 
+
             {isGlobalHeaderOrFooter && replacementTemplates.length > 0 ? (
                 <div className="space-y-2">
-                    <Label className="text-sm">Шаблон (общий для всех страниц)</Label>
+                    <Label className="text-sm text-primary">Шаблон (общий для всех страниц)</Label>
                     <select
                         value={selectedTemplateKey}
                         onChange={(event) => setSelectedTemplateKey(event.target.value)}
@@ -886,13 +893,14 @@ function BlockEditorPanel({
                         ))}
                     </select>
                     <p className="text-xs text-muted-foreground">
-                        Этот {isHeaderBlock ? 'header' : 'footer'} общий: изменения применятся ко всем страницам.
+                        Этот <span className="font-semibold text-secondary">{isHeaderBlock ? 'header' : 'footer'}</span> общий: изменения применятся ко всем страницам.
                     </p>
                 </div>
             ) : null}
 
+
             <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm">
+                {/* <Label className="flex items-center gap-2 text-sm text-secondary">
                     <input
                         type="checkbox"
                         checked={pinned}
@@ -901,9 +909,9 @@ function BlockEditorPanel({
                         disabled={isGlobalHeaderOrFooter}
                     />
                     Закреплённый блок
-                </Label>
+                </Label> */}
                 <div>
-                    <Label htmlFor="block-order" className="text-sm">
+                    <Label htmlFor="block-order" className="text-sm text-secondary">
                         Порядок отображения
                     </Label>
                     <input
@@ -918,8 +926,10 @@ function BlockEditorPanel({
                 </div>
             </div>
 
+            <Separator className=" border rounded-2xl my-7" />
+
             <div className="space-y-3">
-                <Label className="text-sm">Настройки блока</Label>
+                <Label className="text-sm text-primary">Настройки блока</Label>
 
                 {block.template.key === 'header-nav-basic' ? (
                     <HeaderNavEditor
@@ -939,10 +949,23 @@ function BlockEditorPanel({
                         onChange={setDraftData}
                     />
                 ) : (
-                    <GenericBlockDataEditor
-                        data={draftData}
-                        onChange={setDraftData}
-                    />
+                    <div className="space-y-4">
+                        {block.template.key === 'catalog-search-filter' ? (
+                            <CatalogSearchFilterCategoriesEditor
+                                siteId={siteId}
+                                value={Array.isArray((draftData as Record<string, unknown>).featuredCategories)
+                                    ? (((draftData as Record<string, unknown>).featuredCategories as unknown[]) as string[])
+                                    : []}
+                                onChange={(next) => setDraftValue('featuredCategories', next)}
+                            />
+                        ) : null}
+
+                        <GenericBlockDataEditor
+                            data={draftData}
+                            onChange={setDraftData}
+                            templateKey={block.template.key}
+                        />
+                    </div>
                 )}
 
                 {error ? <p className="text-xs text-destructive">{error}</p> : null}
@@ -1055,15 +1078,25 @@ function findDuplicates(values: string[]): string[] {
 function GenericBlockDataEditor({
     data,
     onChange,
+    templateKey,
 }: {
     data: Record<string, unknown>;
     onChange: (next: Record<string, unknown>) => void;
+    templateKey?: string;
 }) {
     const handlePrimitiveChange = (key: string, value: unknown) => {
         onChange({ ...data, [key]: value });
     };
 
-    const keys = Object.keys(data);
+    const keys = Object.keys(data).filter((key) => {
+        if (templateKey === 'products-featured' && key === 'productIds') {
+            return false;
+        }
+        if (templateKey === 'catalog-search-filter' && key === 'featuredCategories') {
+            return false;
+        }
+        return true;
+    });
 
     if (keys.length === 0) {
         return <p className="text-xs text-muted-foreground">У этого блока нет редактируемых полей.</p>;
@@ -1115,7 +1148,7 @@ function DataField({
     if (typeof value === 'boolean') {
         return (
             <Label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
-                <span className="font-medium">{label}</span>
+                <span className="font-medium text-secondary">{label}</span>
                 <input
                     type="checkbox"
                     checked={value}
@@ -1129,7 +1162,7 @@ function DataField({
     if (typeof value === 'number') {
         return (
             <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">{label}</Label>
+                <Label className="text-xs text-secondary">{label}</Label>
                 <Input
                     type="number"
                     value={Number.isFinite(value) ? value : 0}
@@ -1141,7 +1174,7 @@ function DataField({
 
     return (
         <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">{label}</Label>
+            <Label className="text-xs text-secondary">{label}</Label>
             <Input
                 value={typeof value === 'string' ? value : value == null ? '' : String(value)}
                 onChange={(event) => onChange(event.target.value)}
@@ -1162,7 +1195,7 @@ function ObjectField({
     const keys = Object.keys(value);
     return (
         <div className="rounded-lg border border-border p-3">
-            <p className="text-sm font-medium">{label}</p>
+            <p className="text-sm font-medium text-primary">{label}</p>
             <div className="mt-3 space-y-3">
                 {keys.length === 0 ? (
                     <p className="text-xs text-muted-foreground">Нет полей.</p>
@@ -1215,7 +1248,7 @@ function ArrayField({
     return (
         <div className="rounded-lg border border-border p-3">
             <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">{label}</p>
+                <p className="text-sm font-medium text-primary">{label}</p>
                 {canAdd ? (
                     <Button type="button" size="sm" variant="outline" onClick={handleAdd}>
                         <Plus className="mr-2 h-4 w-4" /> Добавить
@@ -1229,7 +1262,7 @@ function ArrayField({
                     value.map((item, index) => (
                         <div key={index} className="rounded-lg border border-border p-3">
                             <div className="flex items-start justify-between gap-2">
-                                <p className="text-xs text-muted-foreground">Элемент {index + 1}</p>
+                                <p className="text-xs text-secondary">Элемент {index + 1}</p>
                                 <Button type="button" size="icon" variant="ghost" onClick={() => handleRemove(index)}>
                                     <X className="h-4 w-4" />
                                 </Button>
@@ -1260,6 +1293,147 @@ function ArrayField({
                     ))
                 )}
             </div>
+        </div>
+    );
+}
+
+function CatalogSearchFilterCategoriesEditor({
+    siteId,
+    value,
+    onChange,
+}: {
+    siteId: string;
+    value: string[];
+    onChange: (next: string[]) => void;
+}) {
+    const [search, setSearch] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
+
+    const { data: categories = [], isLoading } = useQuery({
+        queryKey: queryKeys.siteCategories(siteId),
+        queryFn: () => CategoriesApi.list(siteId),
+        staleTime: 60 * 1000,
+    });
+
+    const normalizedSelectedIds = useMemo(() => {
+        const raw = Array.isArray(value) ? value : [];
+        const set = new Set<string>();
+
+        for (const item of raw) {
+            if (typeof item !== 'string' || !item) continue;
+
+            // Поддержка старого формата, где могли сохраняться name/slug.
+            const byId = categories.find((c) => c.id === item);
+            if (byId) {
+                set.add(byId.id);
+                continue;
+            }
+            const bySlug = categories.find((c) => c.slug === item);
+            if (bySlug) {
+                set.add(bySlug.id);
+                continue;
+            }
+            const byName = categories.find((c) => c.name === item);
+            if (byName) {
+                set.add(byName.id);
+                continue;
+            }
+        }
+
+        return Array.from(set);
+    }, [value, categories]);
+
+    const selectedSet = useMemo(() => new Set(normalizedSelectedIds), [normalizedSelectedIds]);
+
+    const selectedNamesSummary = useMemo(() => {
+        const selectedNames = normalizedSelectedIds
+            .map((id) => categories.find((c) => c.id === id)?.name)
+            .filter((name): name is string => Boolean(name));
+
+        if (selectedNames.length === 0) return 'Выбрать категории';
+        if (selectedNames.length <= 2) return selectedNames.join(', ');
+        return `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2}`;
+    }, [normalizedSelectedIds, categories]);
+
+    const filteredCategories = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        if (!q) return categories;
+        return categories.filter((c) => c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q));
+    }, [categories, search]);
+
+    const toggle = (categoryId: string) => {
+        const next = new Set(selectedSet);
+        if (next.has(categoryId)) {
+            next.delete(categoryId);
+        } else {
+            next.add(categoryId);
+        }
+        onChange(Array.from(next));
+    };
+
+    return (
+        <div className="rounded-lg border border-border p-3 space-y-3">
+            <div>
+                <p className="text-sm font-medium text-primary">Категории</p>
+                <p className="text-xs text-muted-foreground">
+                    Выберите несколько категорий, по которым будут фильтроваться товары.
+                </p>
+            </div>
+
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between">
+                        <span className="truncate">{selectedNamesSummary}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{normalizedSelectedIds.length}</span>
+                    </Button>
+                </PopoverTrigger>
+
+                <PopoverContent align="start" className="w-80 p-3">
+                    <div className="space-y-2">
+                        <div className="space-y-2">
+                            <Label className="text-xs text-secondary">Поиск</Label>
+                            <Input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder={isLoading ? 'Загрузка категорий...' : 'Начните вводить название'}
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        <div className="max-h-56 space-y-2 overflow-y-auto rounded-md border border-border p-2">
+                            {isLoading ? (
+                                <p className="text-xs text-muted-foreground">Загрузка...</p>
+                            ) : filteredCategories.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">Ничего не найдено.</p>
+                            ) : (
+                                filteredCategories.map((cat) => {
+                                    const checked = selectedSet.has(cat.id);
+                                    return (
+                                        <label
+                                            key={cat.id}
+                                            className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-muted/40"
+                                        >
+                                            <span className="text-sm text-secondary">{cat.name}</span>
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={() => toggle(cat.id)}
+                                                className="h-4 w-4 rounded border-border"
+                                            />
+                                        </label>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        <div className="flex justify-end">
+                            <Button type="button" size="sm" variant="outline" onClick={() => setIsOpen(false)}>
+                                Готово
+                            </Button>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
         </div>
     );
 }
@@ -1316,7 +1490,7 @@ function HeaderNavEditor({
     return (
         <div className="space-y-4">
             <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Логотип (текст)</Label>
+                <Label className="text-xs text-secondary">Логотип (текст)</Label>
                 <Input value={logo} onChange={(event) => onLogoChange(event.target.value)} placeholder="Название" />
             </div>
 
@@ -1332,7 +1506,7 @@ function HeaderNavEditor({
 
             <div className="rounded-lg border border-border p-3">
                 <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium">Меню навигации</p>
+                    <p className="text-sm font-medium text-primary">Меню навигации</p>
                     <Button type="button" size="sm" variant="outline" onClick={addLink}>
                         <Plus className="mr-2 h-4 w-4" /> Добавить пункт
                     </Button>
@@ -1355,7 +1529,7 @@ function HeaderNavEditor({
                             return (
                                 <div key={link.id} className="rounded-lg border border-border p-3 space-y-2">
                                     <div className="flex items-center justify-between gap-2">
-                                        <p className="text-xs text-muted-foreground">Пункт меню</p>
+                                        <p className="text-xs text-secondary">Пункт меню</p>
                                         <Button type="button" size="icon" variant="ghost" onClick={() => removeLink(link.id)}>
                                             <X className="h-4 w-4" />
                                         </Button>
@@ -1389,7 +1563,7 @@ function HeaderNavEditor({
 
             <div className="rounded-lg border border-border p-3">
                 <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium">Кнопки действий</p>
+                    <p className="text-sm font-medium text-primary">Кнопки действий</p>
                     <Button type="button" size="sm" variant="outline" onClick={addAction}>
                         <Plus className="mr-2 h-4 w-4" /> Добавить кнопку
                     </Button>
@@ -1405,7 +1579,7 @@ function HeaderNavEditor({
                         actions.map((action) => (
                             <div key={action.id} className="rounded-lg border border-border p-3 space-y-2">
                                 <div className="flex items-center justify-between gap-2">
-                                    <p className="text-xs text-muted-foreground">Кнопка</p>
+                                    <p className="text-xs text-secondary">Кнопка</p>
                                     <Button type="button" size="icon" variant="ghost" onClick={() => removeAction(action.id)}>
                                         <X className="h-4 w-4" />
                                     </Button>
@@ -1460,7 +1634,7 @@ function FooterEditor({
             </div>
 
             <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Бренд</Label>
+                <Label className="text-xs text-secondary">Бренд</Label>
                 <Input
                     value={typeof data.brand === 'string' ? (data.brand as string) : ''}
                     onChange={(event) => setField('brand', event.target.value)}
@@ -1469,7 +1643,7 @@ function FooterEditor({
             </div>
 
             <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Описание</Label>
+                <Label className="text-xs text-secondary">Описание</Label>
                 <Input
                     value={typeof data.description === 'string' ? (data.description as string) : ''}
                     onChange={(event) => setField('description', event.target.value)}
@@ -1477,7 +1651,7 @@ function FooterEditor({
             </div>
 
             <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Юридическая строка</Label>
+                <Label className="text-xs text-secondary">Юридическая строка</Label>
                 <Input
                     value={typeof data.legal === 'string' ? (data.legal as string) : ''}
                     onChange={(event) => setField('legal', event.target.value)}
