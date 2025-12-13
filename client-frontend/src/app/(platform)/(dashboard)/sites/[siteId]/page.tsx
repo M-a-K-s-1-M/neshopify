@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { AddPageBtn, HeaderPage, SettingsSiteBtn } from "@/components";
 import { PageCard } from "@/components/dashboard/site/page-card";
+import { INTERNAL_LAYOUT_PAGE_SLUG } from "@/components/builder/default-page-blocks";
 import { SitesApi } from "@/lib/api/sites";
 import { queryKeys } from "@/lib/query/keys";
 import { getRequestErrorMessage } from "@/lib/utils/error";
@@ -48,6 +49,8 @@ export default function Site() {
         return <div className="text-destructive">Не удалось определить сайт</div>;
     }
 
+    const visiblePages = pages?.filter((page) => page.slug !== INTERNAL_LAYOUT_PAGE_SLUG) ?? [];
+
     return (
         <div className="space-y-6">
             <HeaderPage>
@@ -74,7 +77,7 @@ export default function Site() {
                 </div>
             ) : null}
 
-            {!pagesLoading && pages && pages.length === 0 ? (
+            {!pagesLoading && pages && visiblePages.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-muted-foreground/30 bg-muted/30 px-6 py-10 text-center">
                     <p className="text-lg font-semibold">На сайте пока нет страниц</p>
                     <p className="text-sm text-muted-foreground">
@@ -83,9 +86,9 @@ export default function Site() {
                 </div>
             ) : null}
 
-            {!pagesLoading && pages && pages.length > 0 ? (
+            {!pagesLoading && pages && visiblePages.length > 0 ? (
                 <div className="flex flex-col gap-3">
-                    {pages.map((page) => (
+                    {visiblePages.map((page) => (
                         <PageCard key={page.id} page={page} siteId={siteId} />
                     ))}
                 </div>

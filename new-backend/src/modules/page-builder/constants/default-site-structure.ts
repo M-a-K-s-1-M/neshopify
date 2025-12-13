@@ -1,5 +1,7 @@
 import { PageType } from "../../../../generated/prisma/client";
 
+export const INTERNAL_LAYOUT_PAGE_SLUG = "__layout__";
+
 export interface DefaultBlockBlueprint {
     templateKey: string;
     data: Record<string, any>;
@@ -22,7 +24,7 @@ const NAV_LINKS = [
     { label: "Корзина", href: "/cart" },
 ];
 
-const FOOTER_BLOCK = {
+export const DEFAULT_FOOTER_BLOCK: DefaultBlockBlueprint = {
     templateKey: "footer-contacts-basic",
     data: {
         brand: "Cosmiq",
@@ -36,6 +38,22 @@ const FOOTER_BLOCK = {
     },
 };
 
+export const DEFAULT_HEADER_BLOCK: DefaultBlockBlueprint = {
+    templateKey: "header-nav-basic",
+    pinned: true,
+    data: {
+        logo: "Cosmiq",
+        sticky: true,
+        links: NAV_LINKS,
+        actions: [{ label: "Войти", href: "/auth" }],
+    },
+};
+
+export const DEFAULT_SITE_LAYOUT_BLOCKS: DefaultBlockBlueprint[] = [
+    DEFAULT_HEADER_BLOCK,
+    DEFAULT_FOOTER_BLOCK,
+];
+
 export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
     {
         type: PageType.HOME,
@@ -43,16 +61,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
         title: "Главная",
         isVisible: true,
         blocks: [
-            {
-                templateKey: "header-nav-basic",
-                pinned: true,
-                data: {
-                    logo: "Cosmiq",
-                    sticky: true,
-                    links: NAV_LINKS,
-                    actions: [{ label: "Войти", href: "/auth" }],
-                },
-            },
             {
                 templateKey: "hero-brand-highlight",
                 data: {
@@ -79,7 +87,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
                     productIds: [],
                 },
             },
-            FOOTER_BLOCK,
         ],
     },
     {
@@ -88,16 +95,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
         title: "Каталог",
         isVisible: true,
         blocks: [
-            {
-                templateKey: "header-nav-basic",
-                pinned: true,
-                data: {
-                    logo: "Cosmiq",
-                    sticky: true,
-                    links: NAV_LINKS,
-                    actions: [{ label: "Профиль", href: "/profile" }],
-                },
-            },
             {
                 templateKey: "catalog-search-filter",
                 data: {
@@ -122,7 +119,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
                     },
                 },
             },
-            FOOTER_BLOCK,
         ],
     },
     {
@@ -131,16 +127,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
         title: "Профиль",
         isVisible: true,
         blocks: [
-            {
-                templateKey: "header-nav-basic",
-                pinned: true,
-                data: {
-                    logo: "Cosmiq",
-                    sticky: true,
-                    links: NAV_LINKS,
-                    actions: [{ label: "Выйти", href: "/auth/logout" }],
-                },
-            },
             {
                 templateKey: "profile-account-form",
                 data: {
@@ -175,7 +161,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
                     ],
                 },
             },
-            FOOTER_BLOCK,
         ],
     },
     {
@@ -184,16 +169,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
         title: "Корзина",
         isVisible: true,
         blocks: [
-            {
-                templateKey: "header-nav-basic",
-                pinned: true,
-                data: {
-                    logo: "Cosmiq",
-                    sticky: true,
-                    links: NAV_LINKS,
-                    actions: [{ label: "Каталог", href: "/catalog" }],
-                },
-            },
             {
                 templateKey: "cart-items-list",
                 data: {
@@ -226,7 +201,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
                     ],
                 },
             },
-            FOOTER_BLOCK,
         ],
     },
 ];
