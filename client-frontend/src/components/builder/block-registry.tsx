@@ -31,8 +31,10 @@ const registry: Record<string, BlockComponent> = {
     ),
     "footer-contacts-basic": ({ block }) => <FooterContactsBlock block={block} />,
     "profile-account-form": ({ block }) => <ProfileAccountFormBlock block={block} />,
-    "profile-favorites-showcase": ({ block }) => <ProfileFavoritesShowcaseBlock block={block} />,
-    "cart-items-list": ({ block }) => <CartItemsListBlock block={block} />,
+    "profile-favorites-showcase": ({ block, siteId }) => (
+        <ProfileFavoritesShowcaseBlock block={block} siteId={siteId} />
+    ),
+    "cart-items-list": ({ block, siteId }) => <CartItemsListBlock block={block} siteId={siteId} />,
 };
 
 const FallbackComponent: BlockComponent = ({ block }) => <FallbackBlock block={block} />;

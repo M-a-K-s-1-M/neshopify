@@ -17,6 +17,7 @@ import { queryKeys } from "@/lib/query/keys";
 import { cn } from "@/lib/utils";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { resolveMediaUrl } from "@/lib/utils/media";
+import { getOrCreateCartSessionId } from "@/lib/utils/cart-session";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
 import {
     Carousel,
@@ -49,7 +50,22 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
     const [canManage, setCanManage] = useState(false);
     const [quantityByProductId, setQuantityByProductId] = useState<Record<string, number>>({});
     const [pendingCartProductId, setPendingCartProductId] = useState<string | null>(null);
-    const [lastAddedProductId, setLastAddedProductId] = useState<string | null>(null);
+    const [addedToCartIds, setAddedToCartIds] = useState<string[]>([]);
+
+    const queryClient = useQueryClient();
+    const sessionId = useMemo(() => getOrCreateCartSessionId(), []);
+    const { data: cart } = useQuery({
+        queryKey: queryKeys.siteCart(siteId, sessionId),
+        queryFn: () => CartApi.getCart(siteId, sessionId),
+    });
+
+    const cartItemIdByProductId = useMemo(() => {
+        const map = new Map<string, string>();
+        cart?.items?.forEach((item) => {
+            map.set(item.productId, item.id);
+        });
+        return map;
+    }, [cart]);
 
     const favoriteIds = useFavoritesStore((state) => state.favoritesBySiteId[siteId] ?? EMPTY_FAVORITES);
     const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
@@ -97,6 +113,16 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
     const addToCartMutation = useMutation({
         mutationFn: async (payload: { productId: string; quantity: number }) => {
             return CartApi.addItem(siteId, payload);
+        },
+    });
+
+    const removeFromCartMutation = useMutation({
+        mutationFn: async (productId: string) => {
+            const itemId = cartItemIdByProductId.get(productId);
+            if (!itemId) {
+                return CartApi.getCart(siteId, sessionId);
+            }
+            return CartApi.removeItem(siteId, itemId, sessionId);
         },
     });
 
@@ -280,18 +306,36 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
 
                                     <Button
                                         type="button"
+                                        variant={cartItemIdByProductId.has(product.id) || addedToCartIds.includes(product.id) ? "destructive" : "default"}
                                         onClick={() => {
                                             const max = getMaxQty(product);
                                             if (max === 0) return;
+                                            setPendingCartProductId(product.id);
+
+                                            const isInCart = cartItemIdByProductId.has(product.id);
+                                            if (isInCart) {
+                                                removeFromCartMutation.mutate(product.id, {
+                                                    onSuccess: (nextCart) => {
+                                                        queryClient.setQueryData(queryKeys.siteCart(siteId, sessionId), nextCart);
+                                                        setAddedToCartIds((prev) => prev.filter((id) => id !== product.id));
+                                                    },
+                                                    onError: (err) => {
+                                                        window.alert(getRequestErrorMessage(err, "Не удалось убрать из корзины"));
+                                                    },
+                                                    onSettled: () => {
+                                                        setPendingCartProductId(null);
+                                                    },
+                                                });
+                                                return;
+                                            }
 
                                             const quantity = getQty(product);
-                                            setPendingCartProductId(product.id);
                                             addToCartMutation.mutate(
                                                 { productId: product.id, quantity },
                                                 {
-                                                    onSuccess: () => {
-                                                        setLastAddedProductId(product.id);
-                                                        window.setTimeout(() => setLastAddedProductId(null), 1200);
+                                                    onSuccess: (nextCart) => {
+                                                        queryClient.setQueryData(queryKeys.siteCart(siteId, sessionId), nextCart);
+                                                        setAddedToCartIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
                                                     },
                                                     onError: (err) => {
                                                         window.alert(getRequestErrorMessage(err, "Не удалось добавить в корзину"));
@@ -302,14 +346,18 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
                                                 },
                                             );
                                         }}
-                                        disabled={getMaxQty(product) === 0 || (addToCartMutation.isPending && pendingCartProductId === product.id)}
+                                        disabled={
+                                            getMaxQty(product) === 0 ||
+                                            ((addToCartMutation.isPending || removeFromCartMutation.isPending) && pendingCartProductId === product.id)
+                                        }
                                     >
-                                        {addToCartMutation.isPending && pendingCartProductId === product.id ? (
+                                        {(addToCartMutation.isPending || removeFromCartMutation.isPending) && pendingCartProductId === product.id ? (
                                             <span className="flex items-center gap-2">
-                                                <Loader2 className="h-4 w-4 animate-spin" /> Добавляем
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                {cartItemIdByProductId.has(product.id) ? "Удаляем" : "Добавляем"}
                                             </span>
-                                        ) : lastAddedProductId === product.id ? (
-                                            "Добавлено"
+                                        ) : cartItemIdByProductId.has(product.id) || addedToCartIds.includes(product.id) ? (
+                                            "Убрать из корзины"
                                         ) : (
                                             <span className="flex items-center gap-2">
                                                 <ShoppingCart className="h-4 w-4" /> В корзину
