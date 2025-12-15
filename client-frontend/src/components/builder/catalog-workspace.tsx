@@ -453,7 +453,7 @@ export function CatalogWorkspace({ siteId }: CatalogWorkspaceProps) {
                     </div>
                 </aside>
 
-                <section className="rounded-2xl border border-border bg-background p-4">
+                <section className="border-x-primary border-x-2 bg-background p-0 overflow-hidden">
                     <SitePageView slug="catalog" title="Каталог" description="Предпросмотр страницы каталога" />
                 </section>
 
