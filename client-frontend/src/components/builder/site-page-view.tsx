@@ -185,7 +185,9 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
                                 block.template.key.startsWith("header-") ||
                                 block.template.key.startsWith("footer-");
 
-                            const isBorderlessCardBlock = block.template.key === "catalog-search-filter";
+                            const isBorderlessCardBlock =
+                                block.template.key === "catalog-search-filter" ||
+                                block.template.key === "catalog-product-grid";
 
                             if (isHeaderOrFooter) {
                                 return <BlockRenderer key={block.id} block={block} siteId={siteId} />;

@@ -73,15 +73,7 @@ export const BLOCK_TEMPLATE_PRESETS: Record<string, BlockPreset[]> = {
             id: "grid-default",
             name: "Каталог",
             data: {
-                title: "Все товары",
-                description: "Каталог автоматически подхватывает созданные товары",
-                pageSize: 12,
-                layout: { columns: 3 },
-                emptyState: {
-                    title: "Пока нет товаров",
-                    description: "Добавьте товары в админке",
-                    actionLabel: "Добавить товар",
-                },
+                productIds: [],
             },
         },
     ],

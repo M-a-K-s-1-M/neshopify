@@ -23,12 +23,13 @@ import { cn } from "@/lib/utils";
 import { useSiteQuery, useSitePagesQuery, usePageDetailQuery, useBlockTemplatesQuery } from "@/lib/query/hooks";
 import { SitePageView } from "./site-page-view";
 import { BlockRenderer } from "./block-registry";
-import type { BlockInstanceDto, BlockTemplateDto, CreateBlockPayload, PageDto, UpdateBlockPayload } from "@/lib/types";
+import type { BlockInstanceDto, BlockTemplateDto, CreateBlockPayload, PageDto, ProductDto, UpdateBlockPayload } from "@/lib/types";
 import { getPresetsByTemplate } from "./block-presets";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { PageBlocksApi } from "@/lib/api/page-blocks";
 import { PagesApi } from "@/lib/api/pages";
 import { CategoriesApi } from "@/lib/api/categories";
+import { ProductsApi } from "@/lib/api/products";
 import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_LAYOUT_BLOCKS, INTERNAL_LAYOUT_PAGE_SLUG } from "./default-page-blocks";
 
@@ -958,21 +959,33 @@ function BlockEditorPanel({
                     />
                 ) : (
                     <div className="space-y-4">
-                        {block.template.key === 'catalog-search-filter' ? (
-                            <CatalogSearchFilterCategoriesEditor
+                        {block.template.key === 'catalog-product-grid' ? (
+                            <CatalogProductGridProductsEditor
                                 siteId={siteId}
-                                value={Array.isArray((draftData as Record<string, unknown>).featuredCategories)
-                                    ? (((draftData as Record<string, unknown>).featuredCategories as unknown[]) as string[])
+                                value={Array.isArray((draftData as Record<string, unknown>).productIds)
+                                    ? (((draftData as Record<string, unknown>).productIds as unknown[]) as string[])
                                     : []}
-                                onChange={(next) => setDraftValue('featuredCategories', next)}
+                                onChange={(next) => setDraftValue('productIds', next)}
                             />
-                        ) : null}
+                        ) : (
+                            <>
+                                {block.template.key === 'catalog-search-filter' ? (
+                                    <CatalogSearchFilterCategoriesEditor
+                                        siteId={siteId}
+                                        value={Array.isArray((draftData as Record<string, unknown>).featuredCategories)
+                                            ? (((draftData as Record<string, unknown>).featuredCategories as unknown[]) as string[])
+                                            : []}
+                                        onChange={(next) => setDraftValue('featuredCategories', next)}
+                                    />
+                                ) : null}
 
-                        <GenericBlockDataEditor
-                            data={draftData}
-                            onChange={setDraftData}
-                            templateKey={block.template.key}
-                        />
+                                <GenericBlockDataEditor
+                                    data={draftData}
+                                    onChange={setDraftData}
+                                    templateKey={block.template.key}
+                                />
+                            </>
+                        )}
                     </div>
                 )}
 
@@ -1098,6 +1111,9 @@ function GenericBlockDataEditor({
 
     const keys = Object.keys(data).filter((key) => {
         if (templateKey === 'products-featured' && key === 'productIds') {
+            return false;
+        }
+        if (templateKey === 'catalog-product-grid' && key === 'productIds') {
             return false;
         }
         if (templateKey === 'products-featured' && (key === 'layout' || key === 'maxItems')) {
@@ -1441,6 +1457,139 @@ function CatalogSearchFilterCategoriesEditor({
                         </div>
 
                         <div className="flex justify-end">
+                            <Button type="button" size="sm" variant="outline" onClick={() => setIsOpen(false)}>
+                                Готово
+                            </Button>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
+        </div>
+    );
+}
+
+function CatalogProductGridProductsEditor({
+    siteId,
+    value,
+    onChange,
+}: {
+    siteId: string;
+    value: string[];
+    onChange: (next: string[]) => void;
+}) {
+    const [search, setSearch] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
+
+    const normalizedSelectedIds = useMemo(() => {
+        const raw = Array.isArray(value) ? value : [];
+        return raw.filter((item): item is string => typeof item === 'string' && Boolean(item));
+    }, [value]);
+
+    const selectedSet = useMemo(() => new Set(normalizedSelectedIds), [normalizedSelectedIds]);
+
+    const activeSearch = search.trim() ? search.trim() : undefined;
+
+    const { data: productsPage, isLoading } = useQuery({
+        queryKey: queryKeys.siteProductsList(siteId, 1, activeSearch, 30),
+        queryFn: () => ProductsApi.list(siteId, { page: 1, limit: 30, search: activeSearch }),
+        staleTime: 30 * 1000,
+    });
+
+    const products = productsPage?.data ?? [];
+
+    const summary = normalizedSelectedIds.length
+        ? `Выбрано: ${normalizedSelectedIds.length}`
+        : 'Выбрать товары';
+
+    const toggle = (productId: string) => {
+        const next = new Set(normalizedSelectedIds);
+        if (next.has(productId)) {
+            next.delete(productId);
+        } else {
+            next.add(productId);
+        }
+        onChange(Array.from(next));
+    };
+
+    const renderLine = (product: ProductDto) => {
+        const checked = selectedSet.has(product.id);
+        const price = Number(product.price);
+        const currency = product.currency ?? '';
+        const priceLabel = Number.isFinite(price)
+            ? `${price.toLocaleString('ru-RU')} ${currency}`.trim()
+            : '';
+
+        return (
+            <label
+                key={product.id}
+                className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-muted/40"
+            >
+                <div className="min-w-0">
+                    <p className="text-sm text-secondary truncate">{product.title}</p>
+                    {priceLabel ? (
+                        <p className="text-xs text-muted-foreground truncate">{priceLabel}</p>
+                    ) : null}
+                </div>
+
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggle(product.id)}
+                    className="h-4 w-4 rounded border-border"
+                />
+            </label>
+        );
+    };
+
+    return (
+        <div className="rounded-lg border border-border p-3 space-y-3">
+            <div>
+                <p className="text-sm font-medium text-primary">Товары</p>
+                <p className="text-xs text-muted-foreground">
+                    Если выбрать товары здесь, блок будет показывать только выбранные карточки.
+                </p>
+            </div>
+
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between">
+                        <span className="truncate">{summary}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{normalizedSelectedIds.length}</span>
+                    </Button>
+                </PopoverTrigger>
+
+                <PopoverContent align="start" className="w-96 p-3">
+                    <div className="space-y-2">
+                        <div className="space-y-2">
+                            <Label className="text-xs text-secondary">Поиск</Label>
+                            <Input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder={isLoading ? 'Загрузка товаров...' : 'Начните вводить название'}
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        <div className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                            {isLoading ? (
+                                <p className="text-xs text-muted-foreground">Загрузка...</p>
+                            ) : products.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">Ничего не найдено.</p>
+                            ) : (
+                                products.map(renderLine)
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onChange([])}
+                                disabled={normalizedSelectedIds.length === 0}
+                            >
+                                Очистить
+                            </Button>
                             <Button type="button" size="sm" variant="outline" onClick={() => setIsOpen(false)}>
                                 Готово
                             </Button>
