@@ -1187,6 +1187,76 @@ function getBlockFieldMeta(
         }
     }
 
+    if (templateKey === 'hero-brand-highlight') {
+        const key = path.join('.');
+
+        if (key === 'heading') {
+            return {
+                label: 'Заголовок',
+                description: 'Главный текст в hero-блоке.',
+            };
+        }
+
+        if (key === 'subheading') {
+            return {
+                label: 'Подзаголовок',
+                description: 'Короткое описание под заголовком.',
+            };
+        }
+
+        if (key === 'mediaUrl') {
+            return {
+                label: 'Изображение (URL)',
+                description: 'Ссылка на картинку для правой части блока.',
+            };
+        }
+
+        if (key === 'stats') {
+            return {
+                label: 'Показатели',
+                description: 'Короткие факты/цифры, отображаются карточками.',
+            };
+        }
+
+        if (key === 'ctaPrimary') {
+            return {
+                label: 'Основная кнопка',
+                description: 'Главное действие (CTA).',
+            };
+        }
+
+        if (key === 'ctaSecondary') {
+            return {
+                label: 'Вторая кнопка',
+                description: 'Дополнительное действие (необязательно).',
+            };
+        }
+
+        // Вложенные поля: stats[*].label/value
+        if (path[0] === 'stats') {
+            const last = path[path.length - 1];
+            if (last === 'label') {
+                return { label: 'Подпись' };
+            }
+            if (last === 'value') {
+                return { label: 'Значение' };
+            }
+        }
+
+        // Вложенные поля: ctaPrimary/ctaSecondary
+        if (path[0] === 'ctaPrimary' || path[0] === 'ctaSecondary') {
+            const last = path[path.length - 1];
+            if (last === 'label') {
+                return { label: 'Текст кнопки' };
+            }
+            if (last === 'href') {
+                return { label: 'Ссылка (href)' };
+            }
+        }
+
+        return {};
+    }
+
     return {};
 }
 
