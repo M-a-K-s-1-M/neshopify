@@ -959,7 +959,11 @@ function BlockEditorPanel({
                     />
                 ) : (
                     <div className="space-y-4">
-                        {block.template.key === 'catalog-product-grid' ? (
+                        {block.template.key === 'cart-items-list' ? (
+                            <p className="text-xs text-muted-foreground">
+                                У этого блока нет настраиваемых параметров.
+                            </p>
+                        ) : block.template.key === 'catalog-product-grid' ? (
                             <CatalogProductGridProductsEditor
                                 siteId={siteId}
                                 value={Array.isArray((draftData as Record<string, unknown>).productIds)
@@ -1274,6 +1278,9 @@ function GenericBlockDataEditor({
     };
 
     const keys = Object.keys(data).filter((key) => {
+        if (templateKey === 'cart-items-list') {
+            return false;
+        }
         if (templateKey === 'products-featured' && key === 'productIds') {
             return false;
         }
