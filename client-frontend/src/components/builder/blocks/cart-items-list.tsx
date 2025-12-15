@@ -17,9 +17,7 @@ import { resolveMediaUrl } from "@/lib/utils/media";
 import { cn } from "@/lib/utils";
 
 export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto; siteId: string }) {
-    const data = block.data ?? {};
-    const title = typeof data.title === "string" ? data.title : (block.template.title ?? "Корзина");
-    const note = typeof data.note === "string" ? data.note : undefined;
+    const title = block.template.title ?? "Корзина";
 
     const queryClient = useQueryClient();
     const sessionId = useMemo(() => getOrCreateCartSessionId(), []);
