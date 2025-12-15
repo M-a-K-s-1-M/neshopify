@@ -1143,6 +1143,53 @@ function findDuplicates(values: string[]): string[] {
     return Array.from(duplicates);
 }
 
+function getBlockFieldMeta(
+    templateKey: string | undefined,
+    path: string[],
+): { label?: string; description?: string } {
+    if (!templateKey) return {};
+
+    if (templateKey === 'catalog-search-filter') {
+        const key = path.join('.');
+        switch (key) {
+            case 'placeholder':
+                return {
+                    label: 'Подсказка в поиске',
+                    description: 'Текст внутри поля поиска, когда оно пустое.',
+                };
+            case 'allowCategoryFilter':
+                return {
+                    label: 'Показывать фильтр категорий',
+                    description: 'Включает выбор категории в фильтрах.',
+                };
+            case 'allowPriceFilter':
+                return {
+                    label: 'Показывать фильтр цены',
+                    description: 'Включает фильтр по цене (от/до).',
+                };
+            case 'priceRange':
+                return {
+                    label: 'Диапазон цен',
+                    description: 'Границы для фильтра цены.',
+                };
+            case 'priceRange.min':
+                return {
+                    label: 'Минимальная',
+                    description: 'Нижняя граница цены.',
+                };
+            case 'priceRange.max':
+                return {
+                    label: 'Максимальная',
+                    description: 'Верхняя граница цены.',
+                };
+            default:
+                return {};
+        }
+    }
+
+    return {};
+}
+
 function GenericBlockDataEditor({
     data,
     onChange,
@@ -1184,9 +1231,12 @@ function GenericBlockDataEditor({
             {keys.map((key) => (
                 <DataField
                     key={key}
-                    label={key}
+                    label={getBlockFieldMeta(templateKey, [key]).label ?? key}
+                    description={getBlockFieldMeta(templateKey, [key]).description}
                     value={data[key]}
                     onChange={(value) => handlePrimitiveChange(key, value)}
+                    templateKey={templateKey}
+                    path={[key]}
                 />
             ))}
         </div>
@@ -1195,19 +1245,33 @@ function GenericBlockDataEditor({
 
 function DataField({
     label,
+    description,
     value,
     onChange,
+    templateKey,
+    path,
 }: {
     label: string;
+    description?: string;
     value: unknown;
     onChange: (value: unknown) => void;
+    templateKey?: string;
+    path?: string[];
 }) {
+    const effectivePath = path ?? [label];
+    const meta = getBlockFieldMeta(templateKey, effectivePath);
+    const finalLabel = meta.label ?? label;
+    const finalDescription = meta.description ?? description;
+
     if (Array.isArray(value)) {
         return (
             <ArrayField
-                label={label}
+                label={finalLabel}
+                description={finalDescription}
                 value={value}
                 onChange={onChange}
+                templateKey={templateKey}
+                path={effectivePath}
             />
         );
     }
@@ -1215,31 +1279,40 @@ function DataField({
     if (isPlainObject(value)) {
         return (
             <ObjectField
-                label={label}
+                label={finalLabel}
+                description={finalDescription}
                 value={value}
                 onChange={(next) => onChange(next)}
+                templateKey={templateKey}
+                path={effectivePath}
             />
         );
     }
 
     if (typeof value === 'boolean') {
         return (
-            <Label className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
-                <span className="font-medium text-secondary">{label}</span>
-                <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(event) => onChange(event.target.checked)}
-                    className="h-4 w-4 rounded border-border"
-                />
-            </Label>
+            <div className="rounded-lg border border-border p-3">
+                <Label className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-medium text-secondary">{finalLabel}</span>
+                    <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={(event) => onChange(event.target.checked)}
+                        className="h-4 w-4 rounded border-border"
+                    />
+                </Label>
+                {finalDescription ? (
+                    <p className="mt-2 text-xs text-muted-foreground">{finalDescription}</p>
+                ) : null}
+            </div>
         );
     }
 
     if (typeof value === 'number') {
         return (
             <div className="space-y-1">
-                <Label className="text-xs text-secondary">{label}</Label>
+                <Label className="text-xs text-secondary">{finalLabel}</Label>
+                {finalDescription ? <p className="text-xs text-muted-foreground">{finalDescription}</p> : null}
                 <Input
                     type="number"
                     value={Number.isFinite(value) ? value : 0}
@@ -1251,7 +1324,8 @@ function DataField({
 
     return (
         <div className="space-y-1">
-            <Label className="text-xs text-secondary">{label}</Label>
+            <Label className="text-xs text-secondary">{finalLabel}</Label>
+            {finalDescription ? <p className="text-xs text-muted-foreground">{finalDescription}</p> : null}
             <Input
                 value={typeof value === 'string' ? value : value == null ? '' : String(value)}
                 onChange={(event) => onChange(event.target.value)}
@@ -1262,28 +1336,44 @@ function DataField({
 
 function ObjectField({
     label,
+    description,
     value,
     onChange,
+    templateKey,
+    path,
 }: {
     label: string;
+    description?: string;
     value: Record<string, unknown>;
     onChange: (next: Record<string, unknown>) => void;
+    templateKey?: string;
+    path?: string[];
 }) {
     const keys = Object.keys(value);
     return (
         <div className="rounded-lg border border-border p-3">
             <p className="text-sm font-medium text-primary">{label}</p>
+            {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
             <div className="mt-3 space-y-3">
                 {keys.length === 0 ? (
                     <p className="text-xs text-muted-foreground">Нет полей.</p>
                 ) : (
                     keys.map((key) => (
+                        (() => {
+                            const nextPath = [...(path ?? [label]), key];
+                            const meta = getBlockFieldMeta(templateKey, nextPath);
+                            return (
                         <DataField
                             key={key}
-                            label={key}
+                            label={meta.label ?? key}
+                            description={meta.description}
                             value={value[key]}
                             onChange={(nextValue) => onChange({ ...value, [key]: nextValue })}
+                            templateKey={templateKey}
+                            path={nextPath}
                         />
+                            );
+                        })()
                     ))
                 )}
             </div>
@@ -1293,12 +1383,18 @@ function ObjectField({
 
 function ArrayField({
     label,
+    description,
     value,
     onChange,
+    templateKey,
+    path,
 }: {
     label: string;
+    description?: string;
     value: unknown[];
     onChange: (next: unknown) => void;
+    templateKey?: string;
+    path?: string[];
 }) {
     const isObjects = value.some((item) => isPlainObject(item));
     const canAdd = true;
@@ -1332,6 +1428,7 @@ function ArrayField({
                     </Button>
                 ) : null}
             </div>
+            {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
             <div className="mt-3 space-y-3">
                 {value.length === 0 ? (
                     <p className="text-xs text-muted-foreground">Список пуст.</p>
@@ -1354,6 +1451,8 @@ function ArrayField({
                                             next[index] = nextObject;
                                             onChange(next);
                                         }}
+                                        templateKey={templateKey}
+                                        path={[...(path ?? [label]), String(index)]}
                                     />
                                 ) : (
                                     <Input
