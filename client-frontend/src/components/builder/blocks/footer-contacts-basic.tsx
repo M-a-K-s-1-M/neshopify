@@ -17,7 +17,7 @@ export function FooterContactsBlock({ block }: FooterContactsBlockProps) {
     const legal = typeof data.legal === 'string' ? data.legal : undefined;
 
     return (
-        <footer className="rounded-2xl border bg-card/70 p-6 shadow-sm">
+        <footer className="w-full bg-card px-6 py-8">
             <div className="flex flex-col gap-6 md:flex-row md:justify-between">
                 <div className="space-y-2">
                     <p className="text-lg font-semibold">{brand}</p>

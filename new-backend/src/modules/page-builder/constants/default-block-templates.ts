@@ -60,7 +60,6 @@ export const DEFAULT_BLOCK_TEMPLATES: DefaultBlockTemplate[] = [
             properties: {
                 heading: { type: "string", maxLength: 120 },
                 subheading: { type: "string", maxLength: 260 },
-                badge: { type: "string", maxLength: 32 },
                 mediaUrl: { type: ["string", "null"] },
                 stats: {
                     type: "array",

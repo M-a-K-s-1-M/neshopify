@@ -14,7 +14,6 @@ interface HeroBrandHighlightProps {
 export function HeroBrandHighlightBlock({ block }: HeroBrandHighlightProps) {
     const data = block.data ?? {};
     const stats = Array.isArray(data.stats) ? data.stats : [];
-    const badge = typeof data.badge === "string" ? data.badge : undefined;
     const heading = typeof data.heading === "string" ? data.heading : block.template.title;
     const subheading = typeof data.subheading === "string" ? data.subheading : "";
     const mediaUrl = typeof data.mediaUrl === "string" ? data.mediaUrl : undefined;
@@ -24,11 +23,6 @@ export function HeroBrandHighlightBlock({ block }: HeroBrandHighlightProps) {
     return (
         <section className="grid gap-8 lg:grid-cols-2 items-center">
             <div className="space-y-6">
-                {badge && (
-                    <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                        {badge}
-                    </span>
-                )}
                 <div className="space-y-4">
                     <h1 className="text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
                         {heading}

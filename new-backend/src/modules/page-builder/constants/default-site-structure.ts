@@ -64,7 +64,6 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
             {
                 templateKey: "hero-brand-highlight",
                 data: {
-                    badge: "Beta",
                     heading: "Создайте интернет-магазин за минуту",
                     subheading:
                         "Выберите готовые блоки, добавьте товары и начните продавать без разработчиков.",

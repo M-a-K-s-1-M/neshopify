@@ -563,7 +563,7 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                     </Drawer>
                 </aside>
 
-                <section className="rounded-2xl border border-border bg-background p-4">
+                <section className="border-x-primary border-x-2 bg-background p-0 overflow-hidden">
                     <SitePageView slug={pageSlug} title={currentPage?.title} description={currentPage?.seo?.description as string | undefined} />
                 </section>
 
@@ -843,6 +843,14 @@ function BlockEditorPanel({
             return;
         }
 
+        if (templateKey === 'hero-brand-highlight') {
+            const nextData = { ...draftData };
+            delete (nextData as Record<string, unknown>).badge;
+            onSave(block.id, { data: nextData, pinned: isGlobalHeaderOrFooter ? block.pinned : pinned, order: isGlobalHeaderOrFooter ? block.order : order, templateKey: nextTemplateKey });
+            setError(null);
+            return;
+        }
+
         onSave(block.id, { data: draftData, pinned: isGlobalHeaderOrFooter ? block.pinned : pinned, order: isGlobalHeaderOrFooter ? block.order : order, templateKey: nextTemplateKey });
         setError(null);
     };
@@ -1096,6 +1104,9 @@ function GenericBlockDataEditor({
             return false;
         }
         if (templateKey === 'catalog-search-filter' && key === 'featuredCategories') {
+            return false;
+        }
+        if (templateKey === 'hero-brand-highlight' && key === 'badge') {
             return false;
         }
         return true;
