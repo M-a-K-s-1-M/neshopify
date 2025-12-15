@@ -17,6 +17,7 @@ import { getRequestErrorMessage } from "@/lib/utils/error";
 import { resolveMediaUrl } from "@/lib/utils/media";
 import { getOrCreateCartSessionId } from "@/lib/utils/cart-session";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
+import { useCatalogFiltersOptional } from "../catalog-filters-context";
 import {
     Pagination,
     PaginationContent,
@@ -40,6 +41,46 @@ interface CatalogProductGridProps {
 const EMPTY_FAVORITES: string[] = [];
 
 const MAX_PAGE_SIZE = 30;
+
+function toFiniteNumber(value: unknown): number | undefined {
+    if (value === null || value === undefined || value === "") return undefined;
+    const num = typeof value === "number" ? value : Number(String(value).replace(/\s+/g, ""));
+    return Number.isFinite(num) ? num : undefined;
+}
+
+function applyCatalogFilters(products: ProductDto[], filters: any | null | undefined): ProductDto[] {
+    if (!filters) return products;
+
+    const search = typeof filters.search === "string" ? filters.search.trim().toLowerCase() : "";
+    const categoryIds = Array.isArray(filters.categoryIds)
+        ? (filters.categoryIds as unknown[]).filter((id): id is string => typeof id === "string" && Boolean(id))
+        : [];
+    const categorySet = categoryIds.length ? new Set(categoryIds) : null;
+
+    const min = toFiniteNumber(filters.priceMin);
+    const max = toFiniteNumber(filters.priceMax);
+
+    const hasAny = Boolean(search) || Boolean(categorySet) || min !== undefined || max !== undefined;
+    if (!hasAny) return products;
+
+    return products.filter((product) => {
+        if (search) {
+            const hay = `${product.title ?? ""} ${product.description ?? ""}`.toLowerCase();
+            if (!hay.includes(search)) return false;
+        }
+
+        if (categorySet) {
+            const categoryId = (product as any).categoryId;
+            if (typeof categoryId !== "string" || !categorySet.has(categoryId)) return false;
+        }
+
+        const price = toFiniteNumber((product as any).price);
+        if (min !== undefined && price !== undefined && price < min) return false;
+        if (max !== undefined && price !== undefined && price > max) return false;
+
+        return true;
+    });
+}
 
 function getPageItems(currentPage: number, totalPages: number) {
     if (totalPages <= 7) {
@@ -82,6 +123,8 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
 
     const favoriteIds = useFavoritesStore((state) => state.favoritesBySiteId[siteId] ?? EMPTY_FAVORITES);
     const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
+
+    const catalogFilters = useCatalogFiltersOptional();
 
     const queryClient = useQueryClient();
 
@@ -136,6 +179,25 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     const meta = { total: selectedProductIds.length, page, limit: pageSize };
     const hasAnyProducts = (meta.total ?? 0) > 0;
     const gridItems = curatedProducts ?? [];
+
+    const filteredGridItems = useMemo(() => {
+        return applyCatalogFilters(gridItems, catalogFilters?.filters);
+    }, [gridItems, catalogFilters?.filters]);
+
+    const filtersSignature = useMemo(() => {
+        const f = catalogFilters?.filters;
+        if (!f) return "";
+        const search = typeof f.search === "string" ? f.search.trim() : "";
+        const categories = Array.isArray(f.categoryIds) ? (f.categoryIds as unknown[]).filter(Boolean).join(",") : "";
+        const min = f.priceMin ?? "";
+        const max = f.priceMax ?? "";
+        return `${search}|${categories}|${min}|${max}`;
+    }, [catalogFilters?.filters]);
+
+    useEffect(() => {
+        if (!filtersSignature) return;
+        setPage(1);
+    }, [filtersSignature]);
 
     const isLoading = curatedLoading;
     const isFetching = curatedFetching;
@@ -206,9 +268,9 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                         <Skeleton key={index} className="h-64 rounded-xl" />
                     ))}
                 </div>
-            ) : gridItems.length ? (
+            ) : filteredGridItems.length ? (
                 <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
-                    {gridItems.map((product) => (
+                    {filteredGridItems.map((product) => (
                         <Card key={product.id} className="flex h-full flex-col overflow-hidden">
                             {product.media?.length ? (
                                 product.media.length > 1 ? (
@@ -385,6 +447,10 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                             </CardFooter>
                         </Card>
                     ))}
+                </div>
+            ) : hasSelection ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                    Ничего не найдено
                 </div>
             ) : (
                 <div className="py-6 text-center text-sm text-muted-foreground">
