@@ -2,21 +2,23 @@
 
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import { Loader2, Minus, Plus, ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { BlockInstanceDto } from "@/lib/types";
 import type { CartDto, CartItemDto } from "@/lib/types";
 import { CartApi } from "@/lib/api/cart";
 import { getOrCreateCartSessionId } from "@/lib/utils/cart-session";
 import { queryKeys } from "@/lib/query/keys";
 import { getRequestErrorMessage } from "@/lib/utils/error";
+import Image from "next/image";
+import { resolveMediaUrl } from "@/lib/utils/media";
+import { cn } from "@/lib/utils";
 
 export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto; siteId: string }) {
     const data = block.data ?? {};
-    const title = typeof data.title === "string" ? data.title : block.template.title;
+    const title = typeof data.title === "string" ? data.title : (block.template.title ?? "Корзина");
     const note = typeof data.note === "string" ? data.note : undefined;
 
     const queryClient = useQueryClient();
@@ -79,114 +81,188 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
     const isBusy = isFetching || updateItemMutation.isPending || removeItemMutation.isPending || clearCartMutation.isPending;
     const queryError = error ? "Не удалось загрузить корзину" : null;
 
+    const subtotal = total;
+    const shipping = 0;
+    const vat = 0;
+    const grandTotal = subtotal + shipping + vat;
+
+    const formatMoney = (amount: number, curr: string) => `${amount.toLocaleString("ru-RU")} ${curr}`;
+
     return (
         <section className="space-y-4">
-            <div>
-                <h2 className="text-2xl font-semibold">{title}</h2>
-                {note ? <p className="text-muted-foreground">{note}</p> : null}
-            </div>
 
-            <Card className="p-4">
-                {isLoading ? (
-                    <div className="space-y-3">
-                        {Array.from({ length: 3 }).map((_, idx) => (
-                            <Skeleton key={idx} className="h-10 w-full" />
-                        ))}
+            <Card className="overflow-hidden border border-border bg-card shadow-md">
+                <div className="bg-linear-to-r from-primary to-secondary px-5 py-4 text-primary-foreground">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-primary-foreground/30 bg-primary-foreground/10">
+                                <ShoppingCart className="h-4 w-4" />
+                            </div>
+                            <h2 className="text-lg font-semibold leading-tight">{title}</h2>
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => clearCartMutation.mutate()}
+                            disabled={isBusy || items.length === 0}
+                            className="text-primary-foreground hover:bg-primary-foreground/10"
+                        >
+                            {clearCartMutation.isPending ? (
+                                <span className="flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" /> Очищаем
+                                </span>
+                            ) : (
+                                "Очистить"
+                            )}
+                        </Button>
                     </div>
-                ) : items.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Корзина пуста.</p>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Товар</TableHead>
-                                <TableHead>Количество</TableHead>
-                                <TableHead className="text-right">Сумма</TableHead>
-                                <TableHead className="text-right">Действия</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
+                </div>
+
+                <div className="p-5">
+                    {isLoading ? (
+                        <div className="space-y-3">
+                            {Array.from({ length: 3 }).map((_, idx) => (
+                                <Skeleton key={idx} className="h-16 w-full" />
+                            ))}
+                        </div>
+                    ) : items.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Корзина пуста.</p>
+                    ) : (
+                        <div className="divide-y divide-border">
                             {items.map((item) => {
-                                const title = item.product?.title ?? "Товар";
-                                const maxQty = item.product?.stockStatus === "IN_STOCK" ? Math.max(1, item.product.stock) : 99;
-                                const itemCurrency = item.product?.currency ?? currency;
-                                const rowTotal = Number(item.price) * item.quantity;
+                                const product = item.product;
+                                const productTitle = product?.title ?? "Товар";
+                                const itemCurrency = product?.currency ?? currency;
+                                const unitPrice = Number(item.price) || 0;
+                                const rowTotal = unitPrice * item.quantity;
+                                const maxQty = product?.stockStatus === "IN_STOCK" ? Math.max(1, product.stock) : 99;
+                                const cover = product?.media
+                                    ?.slice()
+                                    ?.sort((a, b) => a.order - b.order)
+                                    ?.[0];
 
                                 return (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="font-medium">{title}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => {
-                                                        const next = Math.max(1, item.quantity - 1);
-                                                        updateItemMutation.mutate({ itemId: item.id, quantity: next });
-                                                    }}
-                                                    disabled={isBusy || item.quantity <= 1}
-                                                >
-                                                    <Minus className="h-4 w-4" />
-                                                </Button>
-                                                <span className="w-10 text-center text-sm">{item.quantity}</span>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="icon"
-                                                    onClick={() => {
-                                                        const next = Math.min(maxQty, item.quantity + 1);
-                                                        updateItemMutation.mutate({ itemId: item.id, quantity: next });
-                                                    }}
-                                                    disabled={isBusy || item.quantity >= maxQty}
-                                                >
-                                                    <Plus className="h-4 w-4" />
-                                                </Button>
+                                    <div key={item.id} className="py-4">
+                                        <div className="grid grid-cols-[52px_1fr] items-center gap-3 sm:grid-cols-[64px_1fr_auto_auto]">
+                                            <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted sm:h-14 sm:w-14">
+                                                {cover?.url ? (
+                                                    <Image
+                                                        src={resolveMediaUrl(cover.url)}
+                                                        alt={cover.alt ?? productTitle}
+                                                        fill
+                                                        unoptimized
+                                                        className="object-cover"
+                                                    />
+                                                ) : null}
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            {rowTotal.toLocaleString("ru-RU")} {itemCurrency}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="icon"
-                                                onClick={() => removeItemMutation.mutate(item.id)}
-                                                disabled={isBusy}
-                                                aria-label="Удалить"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
+
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-semibold text-foreground">{productTitle}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {formatMoney(unitPrice, itemCurrency)}
+                                                </p>
+                                            </div>
+
+                                            <div className="col-span-2 mt-3 flex items-center justify-between gap-3 sm:col-span-1 sm:mt-0">
+                                                <div className="flex items-center gap-2 rounded-md border border-border bg-background/40 px-2 py-1">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => {
+                                                            const next = Math.max(1, item.quantity - 1);
+                                                            updateItemMutation.mutate({ itemId: item.id, quantity: next });
+                                                        }}
+                                                        disabled={isBusy || item.quantity <= 1}
+                                                        className="h-8 w-8"
+                                                    >
+                                                        <Minus className="h-4 w-4" />
+                                                    </Button>
+                                                    <span className="w-8 text-center text-sm">{item.quantity}</span>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => {
+                                                            const next = Math.min(maxQty, item.quantity + 1);
+                                                            updateItemMutation.mutate({ itemId: item.id, quantity: next });
+                                                        }}
+                                                        disabled={isBusy || item.quantity >= maxQty}
+                                                        className="h-8 w-8"
+                                                    >
+                                                        <Plus className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+
+                                                <div className="flex items-center gap-2">
+                                                    <p className="min-w-[88px] text-right text-sm font-semibold text-foreground">
+                                                        {formatMoney(rowTotal, itemCurrency)}
+                                                    </p>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => removeItemMutation.mutate(item.id)}
+                                                        disabled={isBusy}
+                                                        aria-label="Удалить"
+                                                        className={cn(
+                                                            "h-8 w-8 text-muted-foreground",
+                                                            "hover:text-foreground hover:bg-muted/40",
+                                                        )}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 );
                             })}
-                        </TableBody>
-                    </Table>
-                )}
-            </Card>
+                        </div>
+                    )}
 
-            <Card className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <p className="text-sm text-muted-foreground">Итого</p>
-                    <p className="text-2xl font-semibold">{formattedTotal}</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => clearCartMutation.mutate()}
-                        disabled={isBusy || items.length === 0}
-                    >
-                        {clearCartMutation.isPending ? (
-                            <span className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin" /> Очищаем
-                            </span>
-                        ) : (
-                            "Очистить корзину"
-                        )}
-                    </Button>
+                    <div className="mt-6 rounded-lg border border-border bg-background/20 p-4">
+                        <p className="text-base font-semibold text-foreground">Итого</p>
+
+                        <div className="mt-3 space-y-2 text-sm">
+                            <div className="flex items-center justify-between text-muted-foreground">
+                                <span>Подытог</span>
+                                <span>{formatMoney(subtotal, currency)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-muted-foreground">
+                                <span>Доставка</span>
+                                <span>{formatMoney(shipping, currency)}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-muted-foreground">
+                                <span>НДС</span>
+                                <span>{formatMoney(vat, currency)}</span>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between border-t border-border pt-3">
+                                <span className="font-semibold">Итого</span>
+                                <span className="font-semibold text-primary">{formatMoney(grandTotal, currency)}</span>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-2">
+                            <Button
+                                type="button"
+                                disabled={isBusy || items.length === 0}
+                                className={cn(
+                                    "w-full text-primary-foreground",
+                                    "bg-linear-to-r from-primary to-secondary",
+                                    "hover:opacity-90",
+                                )}
+                            >
+                                Перейти к оформлению
+                            </Button>
+
+                            <Button type="button" variant="outline" className="w-full" disabled={isBusy}>
+                                Продолжить покупки
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </Card>
 

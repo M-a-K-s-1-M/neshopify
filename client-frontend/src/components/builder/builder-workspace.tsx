@@ -1363,15 +1363,15 @@ function ObjectField({
                             const nextPath = [...(path ?? [label]), key];
                             const meta = getBlockFieldMeta(templateKey, nextPath);
                             return (
-                        <DataField
-                            key={key}
-                            label={meta.label ?? key}
-                            description={meta.description}
-                            value={value[key]}
-                            onChange={(nextValue) => onChange({ ...value, [key]: nextValue })}
-                            templateKey={templateKey}
-                            path={nextPath}
-                        />
+                                <DataField
+                                    key={key}
+                                    label={meta.label ?? key}
+                                    description={meta.description}
+                                    value={value[key]}
+                                    onChange={(nextValue) => onChange({ ...value, [key]: nextValue })}
+                                    templateKey={templateKey}
+                                    path={nextPath}
+                                />
                             );
                         })()
                     ))
