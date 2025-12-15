@@ -51,6 +51,7 @@ export const BLOCK_TEMPLATE_PRESETS: Record<string, BlockPreset[]> = {
             data: {
                 title: "Популярные товары",
                 subtitle: "Добавьте до четырёх товаров, чтобы показать лучшие позиции",
+                background: "default",
                 productIds: [],
             },
         },
