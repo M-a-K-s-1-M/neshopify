@@ -271,7 +271,7 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
             ) : filteredGridItems.length ? (
                 <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
                     {filteredGridItems.map((product) => (
-                        <Card key={product.id} className="flex h-full flex-col overflow-hidden">
+                        <Card key={product.id} className="flex h-full flex-col overflow-hidden shadow-md">
                             {product.media?.length ? (
                                 product.media.length > 1 ? (
                                     <div className="relative h-40 w-full overflow-hidden bg-muted">
