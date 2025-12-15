@@ -81,6 +81,7 @@ export const DEFAULT_SITE_PAGES: DefaultPageBlueprint[] = [
                 data: {
                     title: "Популярные товары",
                     subtitle: "Добавьте до четырёх товаров, чтобы показать лучшие позиции",
+                    background: "default",
                     maxItems: 4,
                     layout: { columns: 4, variant: "cards" },
                     productIds: [],

@@ -101,6 +101,7 @@ export const DEFAULT_BLOCK_TEMPLATES: DefaultBlockTemplate[] = [
             properties: {
                 title: { type: "string" },
                 subtitle: { type: "string" },
+                background: { type: "string", enum: ["default", "card", "muted"], default: "default" },
                 maxItems: { type: "number", minimum: 1, maximum: 4, default: 4 },
                 layout: {
                     type: "object",

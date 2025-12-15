@@ -185,11 +185,18 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
                                 block.template.key.startsWith("header-") ||
                                 block.template.key.startsWith("footer-");
 
+                            const isFullBleedBlock = block.template.key === "products-featured";
+
                             const isBorderlessCardBlock =
                                 block.template.key === "catalog-search-filter" ||
-                                block.template.key === "catalog-product-grid";
+                                block.template.key === "catalog-product-grid" ||
+                                block.template.key === "products-featured";
 
                             if (isHeaderOrFooter) {
+                                return <BlockRenderer key={block.id} block={block} siteId={siteId} />;
+                            }
+
+                            if (isFullBleedBlock) {
                                 return <BlockRenderer key={block.id} block={block} siteId={siteId} />;
                             }
 

@@ -967,6 +967,53 @@ function BlockEditorPanel({
                                     : []}
                                 onChange={(next) => setDraftValue('productIds', next)}
                             />
+                        ) : block.template.key === 'products-featured' ? (
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-secondary">Заголовок</Label>
+                                    <Input
+                                        value={typeof (draftData as Record<string, unknown>).title === 'string'
+                                            ? ((draftData as Record<string, unknown>).title as string)
+                                            : ''}
+                                        onChange={(event) => setDraftValue('title', event.target.value)}
+                                        placeholder="Например: Бестселлеры"
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-secondary">Подзаголовок</Label>
+                                    <Input
+                                        value={typeof (draftData as Record<string, unknown>).subtitle === 'string'
+                                            ? ((draftData as Record<string, unknown>).subtitle as string)
+                                            : ''}
+                                        onChange={(event) => setDraftValue('subtitle', event.target.value)}
+                                        placeholder="Например: Любимые продукты наших клиентов"
+                                    />
+                                </div>
+
+                                <div className="space-y-1">
+                                    <Label className="text-xs text-secondary">Цвет фона</Label>
+                                    <select
+                                        value={typeof (draftData as Record<string, unknown>).background === 'string'
+                                            ? ((draftData as Record<string, unknown>).background as string)
+                                            : 'default'}
+                                        onChange={(event) => setDraftValue('background', event.target.value)}
+                                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                    >
+                                        <option value="default">Как у всех блоков</option>
+                                        <option value="card">Карточка (bg-card)</option>
+                                        <option value="muted">Светлый (bg-muted)</option>
+                                    </select>
+                                </div>
+
+                                <ProductsFeaturedProductsEditor
+                                    siteId={siteId}
+                                    value={Array.isArray((draftData as Record<string, unknown>).productIds)
+                                        ? (((draftData as Record<string, unknown>).productIds as unknown[]) as string[])
+                                        : []}
+                                    onChange={(next) => setDraftValue('productIds', next)}
+                                />
+                            </div>
                         ) : (
                             <>
                                 {block.template.key === 'catalog-search-filter' ? (
@@ -1548,6 +1595,151 @@ function CatalogProductGridProductsEditor({
                 <p className="text-xs text-muted-foreground">
                     Если выбрать товары здесь, блок будет показывать только выбранные карточки.
                 </p>
+            </div>
+
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between">
+                        <span className="truncate">{summary}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{normalizedSelectedIds.length}</span>
+                    </Button>
+                </PopoverTrigger>
+
+                <PopoverContent align="start" className="w-96 p-3">
+                    <div className="space-y-2">
+                        <div className="space-y-2">
+                            <Label className="text-xs text-secondary">Поиск</Label>
+                            <Input
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder={isLoading ? 'Загрузка товаров...' : 'Начните вводить название'}
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        <div className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                            {isLoading ? (
+                                <p className="text-xs text-muted-foreground">Загрузка...</p>
+                            ) : products.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">Ничего не найдено.</p>
+                            ) : (
+                                products.map(renderLine)
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => onChange([])}
+                                disabled={normalizedSelectedIds.length === 0}
+                            >
+                                Очистить
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" onClick={() => setIsOpen(false)}>
+                                Готово
+                            </Button>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
+        </div>
+    );
+}
+
+function ProductsFeaturedProductsEditor({
+    siteId,
+    value,
+    onChange,
+}: {
+    siteId: string;
+    value: string[];
+    onChange: (next: string[]) => void;
+}) {
+    const MAX_FEATURED = 4;
+    const [search, setSearch] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
+
+    const normalizedSelectedIds = useMemo(() => {
+        const raw = Array.isArray(value) ? value : [];
+        return raw
+            .filter((item): item is string => typeof item === 'string' && Boolean(item))
+            .slice(0, MAX_FEATURED);
+    }, [value]);
+
+    const selectedSet = useMemo(() => new Set(normalizedSelectedIds), [normalizedSelectedIds]);
+    const activeSearch = search.trim() ? search.trim() : undefined;
+
+    const { data: productsPage, isLoading } = useQuery({
+        queryKey: queryKeys.siteProductsList(siteId, 1, activeSearch, 30),
+        queryFn: () => ProductsApi.list(siteId, { page: 1, limit: 30, search: activeSearch }),
+        staleTime: 30 * 1000,
+    });
+
+    const products = productsPage?.data ?? [];
+
+    const summary = normalizedSelectedIds.length
+        ? `Выбрано: ${normalizedSelectedIds.length}`
+        : 'Выбрать товары';
+
+    const toggle = (productId: string) => {
+        const next = new Set(normalizedSelectedIds);
+        if (next.has(productId)) {
+            next.delete(productId);
+            onChange(Array.from(next));
+            return;
+        }
+
+        if (next.size >= MAX_FEATURED) {
+            return;
+        }
+
+        next.add(productId);
+        onChange(Array.from(next));
+    };
+
+    const renderLine = (product: ProductDto) => {
+        const checked = selectedSet.has(product.id);
+        const price = Number(product.price);
+        const currency = product.currency ?? '';
+        const priceLabel = Number.isFinite(price)
+            ? `${price.toLocaleString('ru-RU')} ${currency}`.trim()
+            : '';
+
+        const disableAdd = !checked && normalizedSelectedIds.length >= MAX_FEATURED;
+
+        return (
+            <label
+                key={product.id}
+                className={cn(
+                    "flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1",
+                    disableAdd ? "opacity-50" : "hover:bg-muted/40",
+                )}
+            >
+                <div className="min-w-0">
+                    <p className="text-sm text-secondary truncate">{product.title}</p>
+                    {priceLabel ? (
+                        <p className="text-xs text-muted-foreground truncate">{priceLabel}</p>
+                    ) : null}
+                </div>
+
+                <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disableAdd}
+                    onChange={() => toggle(product.id)}
+                    className="h-4 w-4 rounded border-border"
+                />
+            </label>
+        );
+    };
+
+    return (
+        <div className="rounded-lg border border-border p-3 space-y-3">
+            <div>
+                <p className="text-sm font-medium text-primary">Товары</p>
+                <p className="text-xs text-muted-foreground">Выберите до {MAX_FEATURED} товаров для витрины.</p>
             </div>
 
             <Popover open={isOpen} onOpenChange={setIsOpen}>
