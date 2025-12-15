@@ -190,6 +190,7 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
                             const isBorderlessCardBlock =
                                 block.template.key === "catalog-search-filter" ||
                                 block.template.key === "catalog-product-grid" ||
+                                block.template.key === "cart-items-list" ||
                                 block.template.key === "products-featured";
 
                             if (isHeaderOrFooter) {
