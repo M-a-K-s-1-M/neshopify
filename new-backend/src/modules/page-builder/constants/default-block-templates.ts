@@ -149,24 +149,10 @@ export const DEFAULT_BLOCK_TEMPLATES: DefaultBlockTemplate[] = [
         category: BlockCategory.PRODUCT,
         schema: {
             type: "object",
-            required: ["title", "pageSize"],
             properties: {
-                title: { type: "string" },
-                description: { type: "string" },
-                pageSize: { type: "number", minimum: 6, maximum: 24 },
-                layout: {
-                    type: "object",
-                    properties: {
-                        columns: { type: "number", minimum: 2, maximum: 4 },
-                    },
-                },
-                emptyState: {
-                    type: "object",
-                    properties: {
-                        title: { type: "string" },
-                        description: { type: "string" },
-                        actionLabel: { type: "string" },
-                    },
+                productIds: {
+                    type: "array",
+                    items: { type: "string", format: "uuid" },
                 },
             },
         },

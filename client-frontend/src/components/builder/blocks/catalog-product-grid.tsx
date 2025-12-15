@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Heart, Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,13 @@ import { getRequestErrorMessage } from "@/lib/utils/error";
 import { resolveMediaUrl } from "@/lib/utils/media";
 import { getOrCreateCartSessionId } from "@/lib/utils/cart-session";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
-import { useCatalogFiltersOptional } from "../catalog-filters-context";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+} from "@/components/ui/pagination";
 import {
     Carousel,
     CarouselContent,
@@ -33,14 +39,42 @@ interface CatalogProductGridProps {
 
 const EMPTY_FAVORITES: string[] = [];
 
+const MAX_PAGE_SIZE = 30;
+
+function getPageItems(currentPage: number, totalPages: number) {
+    if (totalPages <= 7) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const items: Array<number | "ellipsis"> = [];
+    const left = Math.max(2, currentPage - 1);
+    const right = Math.min(totalPages - 1, currentPage + 1);
+
+    items.push(1);
+
+    if (left > 2) {
+        items.push("ellipsis");
+    }
+
+    for (let p = left; p <= right; p += 1) {
+        items.push(p);
+    }
+
+    if (right < totalPages - 1) {
+        items.push("ellipsis");
+    }
+
+    items.push(totalPages);
+    return items;
+}
+
 export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridProps) {
     const data = block.data ?? {};
-    const title = typeof data.title === "string" ? data.title : "Каталог";
-    const description = typeof data.description === "string" ? data.description : undefined;
-    const emptyState = data.emptyState as { title?: string; description?: string } | undefined;
-    const pageSize = typeof data.pageSize === "number" ? data.pageSize : 12;
-    const [searchInput, setSearchInput] = useState("");
-    const [search, setSearch] = useState("");
+    const selectedProductIds = Array.isArray((data as any).productIds)
+        ? ((data as any).productIds as unknown[]).filter((id): id is string => typeof id === "string" && Boolean(id))
+        : [];
+    const hasSelection = selectedProductIds.length > 0;
+    const pageSize = MAX_PAGE_SIZE;
     const [page, setPage] = useState(1);
     const [quantityByProductId, setQuantityByProductId] = useState<Record<string, number>>({});
     const [pendingCartProductId, setPendingCartProductId] = useState<string | null>(null);
@@ -65,62 +99,48 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
         return map;
     }, [cart]);
 
-    const catalogFilters = useCatalogFiltersOptional();
-    const hasFiltersUi = Boolean(catalogFilters?.hasFiltersUi);
-
-    const activeSearch = hasFiltersUi ? catalogFilters?.filters.search || undefined : search || undefined;
-    const activeCategoryIds = hasFiltersUi ? catalogFilters?.filters.categoryIds ?? [] : [];
-    const activePriceMin = hasFiltersUi ? catalogFilters?.filters.priceMin : undefined;
-    const activePriceMax = hasFiltersUi ? catalogFilters?.filters.priceMax : undefined;
-
-    const filtersKey = useMemo(
-        () => ({
-            search: activeSearch ?? null,
-            categoryIds: activeCategoryIds.length ? [...activeCategoryIds].sort().join(',') : null,
-            priceMin: activePriceMin ?? null,
-            priceMax: activePriceMax ?? null,
-        }),
-        [activeSearch, activeCategoryIds, activePriceMin, activePriceMax],
-    );
-
     useEffect(() => {
-        // При изменении фильтров всегда возвращаемся на первую страницу.
-        if (!hasFiltersUi) return;
-        setPage(1);
-    }, [hasFiltersUi, filtersKey]);
+        const nextMaxPage = Math.max(1, Math.ceil(selectedProductIds.length / pageSize));
+        if (page > nextMaxPage) {
+            setPage(nextMaxPage);
+        }
+    }, [selectedProductIds.length, pageSize, page]);
 
-    const handleSearch = (event: React.FormEvent) => {
-        event.preventDefault();
-        setSearch(searchInput.trim());
-        setPage(1);
-    };
+    const curatedSlice = useMemo(() => {
+        if (!hasSelection) return [];
+        const start = (page - 1) * pageSize;
+        return selectedProductIds.slice(start, start + pageSize);
+    }, [hasSelection, selectedProductIds, page, pageSize]);
 
     const {
-        data: productsPage,
-        isLoading,
-        isFetching,
-        error,
+        data: curatedProducts,
+        isLoading: curatedLoading,
+        isFetching: curatedFetching,
+        error: curatedError,
     } = useQuery({
+        enabled: hasSelection,
         queryKey: [
             ...queryKeys.siteProducts(siteId),
-            "list",
-            { page, limit: pageSize, ...filtersKey },
+            "selected",
+            { ids: curatedSlice.join(","), page, limit: pageSize },
         ],
-        queryFn: () =>
-            ProductsApi.list(siteId, {
-                page,
-                limit: pageSize,
-                search: activeSearch,
-                categoryIds: activeCategoryIds,
-                priceMin: activePriceMin,
-                priceMax: activePriceMax,
-            }),
+        queryFn: async () => {
+            const results = await Promise.allSettled(curatedSlice.map((id) => ProductsApi.get(siteId, id)));
+            return results
+                .filter((r): r is PromiseFulfilledResult<ProductDto> => r.status === "fulfilled")
+                .map((r) => r.value);
+        },
         placeholderData: keepPreviousData,
     });
 
-    const gridItems = productsPage?.data ?? [];
-    const meta = productsPage?.meta ?? { total: 0, page, limit: pageSize };
-    const isBusy = isFetching && !!productsPage;
+    const meta = { total: selectedProductIds.length, page, limit: pageSize };
+    const hasAnyProducts = (meta.total ?? 0) > 0;
+    const gridItems = curatedProducts ?? [];
+
+    const isLoading = curatedLoading;
+    const isFetching = curatedFetching;
+    const error = curatedError;
+    const isBusy = isFetching && Boolean(curatedProducts);
 
     const handlePageChange = (direction: "next" | "prev") => {
         setPage((current) => {
@@ -134,6 +154,8 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     };
     const maxPage = Math.max(1, Math.ceil((meta.total || 0) / meta.limit));
     const queryError = error ? "Не удалось загрузить товары" : null;
+
+    const paginationItems = useMemo(() => getPageItems(meta.page, maxPage), [meta.page, maxPage]);
 
     const addToCartMutation = useMutation({
         mutationFn: async (payload: { productId: string; quantity: number }) => {
@@ -176,32 +198,16 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     };
 
     return (
-        <section className="space-y-4">
-            <div className="flex flex-col gap-2">
-                <h2 className="text-2xl font-semibold">{title}</h2>
-                {description && <p className="text-muted-foreground">{description}</p>}
-            </div>
-
-            {!hasFiltersUi ? (
-                <form onSubmit={handleSearch} className="flex flex-wrap gap-3">
-                    <Input
-                        placeholder="Поиск по каталогу"
-                        value={searchInput}
-                        onChange={(event) => setSearchInput(event.target.value)}
-                        className="max-w-md"
-                    />
-                    <Button type="submit">Искать</Button>
-                </form>
-            ) : null}
+        <section className="space-y-4 bg-transparent">
 
             {isLoading ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
                     {Array.from({ length: pageSize }).map((_, index) => (
                         <Skeleton key={index} className="h-64 rounded-xl" />
                     ))}
                 </div>
             ) : gridItems.length ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
                     {gridItems.map((product) => (
                         <Card key={product.id} className="flex h-full flex-col overflow-hidden">
                             {product.media?.length ? (
@@ -381,36 +387,86 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                     ))}
                 </div>
             ) : (
-                <Card className="p-6 text-center text-sm text-muted-foreground">
-                    {emptyState?.description ?? "Товары ещё не добавлены"}
-                </Card>
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                    Выберите карточки товаров в настройках блока
+                </div>
             )}
 
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>
-                    Страница {meta.page} из {maxPage}
-                </span>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        onClick={() => handlePageChange("prev")}
-                        disabled={meta.page <= 1 || isBusy}
-                    >
-                        Назад
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        type="button"
-                        onClick={() => handlePageChange("next")}
-                        disabled={meta.page >= maxPage || isBusy}
-                    >
-                        Далее
-                    </Button>
+            {maxPage > 1 ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-sm text-muted-foreground">
+                        Страница {meta.page} из {maxPage}
+                    </span>
+
+                    <Pagination className="bg-transparent border-0 shadow-none">
+                        <PaginationContent className="bg-transparent border-0 shadow-none">
+                            <PaginationItem>
+                                <PaginationLink
+                                    href="#"
+                                    size="default"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handlePageChange("prev");
+                                    }}
+                                    className={cn(
+                                        "bg-transparent border-0! shadow-none!",
+                                        "hover:bg-transparent",
+                                        (meta.page <= 1 || isBusy) ? "pointer-events-none opacity-50" : "",
+                                    )}
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Назад</span>
+                                </PaginationLink>
+                            </PaginationItem>
+
+                            {paginationItems.map((item, index) => (
+                                <PaginationItem key={`${item}-${index}`}>
+                                    {item === "ellipsis" ? (
+                                        <PaginationEllipsis className="text-muted-foreground" />
+                                    ) : (
+                                        <PaginationLink
+                                            href="#"
+                                            isActive={item === meta.page}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                if (isBusy) return;
+                                                setPage(item);
+                                            }}
+                                            className={cn(
+                                                "bg-transparent border-0! shadow-none!",
+                                                "hover:bg-transparent",
+                                                item === meta.page ? "font-semibold text-foreground" : "text-muted-foreground",
+                                                isBusy ? "pointer-events-none opacity-50" : "",
+                                            )}
+                                        >
+                                            {item}
+                                        </PaginationLink>
+                                    )}
+                                </PaginationItem>
+                            ))}
+
+                            <PaginationItem>
+                                <PaginationLink
+                                    href="#"
+                                    size="default"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handlePageChange("next");
+                                    }}
+                                    className={cn(
+                                        "bg-transparent border-0! shadow-none!",
+                                        "hover:bg-transparent",
+                                        (meta.page >= maxPage || isBusy) ? "pointer-events-none opacity-50" : "",
+                                    )}
+                                >
+                                    <span className="hidden sm:inline">Далее</span>
+                                    <ChevronRight className="h-4 w-4" />
+                                </PaginationLink>
+                            </PaginationItem>
+                        </PaginationContent>
+                    </Pagination>
                 </div>
-            </div>
+            ) : null}
 
             {queryError && <p className="text-sm text-destructive">{queryError}</p>}
         </section>

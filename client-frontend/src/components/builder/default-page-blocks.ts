@@ -126,15 +126,7 @@ const DEFAULT_PAGE_BLOCKS: Partial<Record<PageDto["type"], PreviewBlock[]>> = {
         {
             templateKey: "catalog-product-grid",
             data: {
-                title: "Все товары",
-                description: "Каталог автоматически подхватывает товары, которые вы создадите",
-                pageSize: 12,
-                layout: { columns: 3 },
-                emptyState: {
-                    title: "Пока нет товаров",
-                    description: "Добавьте товары в админке",
-                    actionLabel: "Добавить товар",
-                },
+                productIds: [],
             },
         },
     ],
