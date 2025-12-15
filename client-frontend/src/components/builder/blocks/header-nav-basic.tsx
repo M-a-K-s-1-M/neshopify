@@ -17,8 +17,8 @@ export function HeaderNavBasicBlock({ block }: HeaderNavBasicProps) {
     const sticky = Boolean(data.sticky);
 
     return (
-        <header className={`w-full ${sticky ? "sticky top-4 z-20" : "relative"}`}>
-            <div className="rounded-2xl border bg-card/70 backdrop-blur px-6 py-4 shadow-sm">
+        <header className={`w-full ${sticky ? "sticky top-0 z-20" : "relative"}`}>
+            <div className="bg-card px-6 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <Link href="/" className="font-semibold text-lg tracking-tight">
                         {logo}
@@ -48,7 +48,6 @@ export function HeaderNavBasicBlock({ block }: HeaderNavBasicProps) {
                     </div>
                 </div>
             </div>
-            <Separator className="mt-4" />
         </header>
     );
 }

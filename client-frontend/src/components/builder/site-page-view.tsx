@@ -180,11 +180,23 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
             {!isLoading && resolvedPage && blocks.length > 0 ? (
                 <CatalogFiltersProvider>
                     <div className="space-y-4">
-                        {blocks.map((block) => (
-                            <div key={block.id} className="rounded-2xl border border-border bg-card">
-                                <BlockRenderer block={block} siteId={siteId} />
-                            </div>
-                        ))}
+                        {blocks.map((block) => {
+                            const isHeaderOrFooter =
+                                block.template.key.startsWith("header-") ||
+                                block.template.key.startsWith("footer-");
+
+                            if (isHeaderOrFooter) {
+                                return <BlockRenderer key={block.id} block={block} siteId={siteId} />;
+                            }
+
+                            return (
+                                <div key={block.id} className="px-6">
+                                    <div className="rounded-2xl border border-border bg-card">
+                                        <BlockRenderer block={block} siteId={siteId} />
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </CatalogFiltersProvider>
             ) : null}

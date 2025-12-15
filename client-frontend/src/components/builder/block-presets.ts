@@ -30,7 +30,6 @@ export const BLOCK_TEMPLATE_PRESETS: Record<string, BlockPreset[]> = {
             name: "Hero с CTA",
             description: "Большой заголовок со статистикой",
             data: {
-                badge: "Beta",
                 heading: "Создайте интернет-магазин за минуту",
                 subheading:
                     "Выберите готовые блоки, добавьте товары и начните продавать без разработчиков.",
