@@ -185,8 +185,18 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
                                 block.template.key.startsWith("header-") ||
                                 block.template.key.startsWith("footer-");
 
+                            const isBorderlessCardBlock = block.template.key === "catalog-search-filter";
+
                             if (isHeaderOrFooter) {
                                 return <BlockRenderer key={block.id} block={block} siteId={siteId} />;
+                            }
+
+                            if (isBorderlessCardBlock) {
+                                return (
+                                    <div key={block.id} className="px-6">
+                                        <BlockRenderer block={block} siteId={siteId} />
+                                    </div>
+                                );
                             }
 
                             return (

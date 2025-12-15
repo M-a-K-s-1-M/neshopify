@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { BlockInstanceDto } from "@/lib/types";
@@ -94,103 +92,159 @@ export function CatalogSearchFilterBlock({ block, siteId }: CatalogSearchFilterP
         return Number.isFinite(value) ? value : undefined;
     };
 
-    const applyFilters = () => {
+    const categoryTriggerMeta = useMemo(() => {
+        if (!allowCategory || resolvedFeatured.length === 0) {
+            return null;
+        }
+
+        const total = resolvedFeatured.length;
+        const selected = selectedCategoryIds.length;
+
+        if (selected === 0 || selected === total) {
+            return "";
+        }
+
+        return String(selected);
+    }, [allowCategory, resolvedFeatured.length, selectedCategoryIds.length]);
+
+    const priceTriggerMeta = useMemo(() => {
+        if (!allowPrice) {
+            return null;
+        }
+
+        const min = parseOptionalNumber(priceMinInput);
+        const max = parseOptionalNumber(priceMaxInput);
+
+        if (min == null && max == null) {
+            return "";
+        }
+
+        if (min != null && max != null) {
+            return `${min}–${max}`;
+        }
+
+        if (min != null) {
+            return `от ${min}`;
+        }
+
+        return `до ${max}`;
+    }, [allowPrice, priceMinInput, priceMaxInput]);
+
+    useEffect(() => {
         if (!catalogFilters) return;
 
-        catalogFilters.setFilters({
-            search: searchText.trim() ? searchText.trim() : undefined,
-            categoryIds: allowCategory ? selectedCategoryIds : undefined,
-            priceMin: allowPrice ? parseOptionalNumber(priceMinInput) : undefined,
-            priceMax: allowPrice ? parseOptionalNumber(priceMaxInput) : undefined,
-        });
-    };
+        const timeout = setTimeout(() => {
+            catalogFilters.setFilters({
+                search: searchText.trim() ? searchText.trim() : undefined,
+                categoryIds: allowCategory ? selectedCategoryIds : undefined,
+                priceMin: allowPrice ? parseOptionalNumber(priceMinInput) : undefined,
+                priceMax: allowPrice ? parseOptionalNumber(priceMaxInput) : undefined,
+            });
+        }, 250);
+
+        return () => clearTimeout(timeout);
+    }, [
+        catalogFilters,
+        searchText,
+        allowCategory,
+        selectedCategoryIds,
+        allowPrice,
+        priceMinInput,
+        priceMaxInput,
+    ]);
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Фильтры каталога</CardTitle>
-                <CardDescription>
-                    Покупатели могут искать товары и быстро переключаться между категориями.
-                </CardDescription>
-            </CardHeader>
-            <div className="p-6 pt-0">
-                <form className="space-y-4">
-                    <FieldGroup>
-                        <Field>
-                            <FieldLabel>Поиск</FieldLabel>
-                            <Input
-                                placeholder={placeholder}
-                                className="w-full"
-                                value={searchText}
-                                onChange={(e) => setSearchText(e.target.value)}
-                            />
-                        </Field>
+        <div className="w-full rounded-2xl bg-card p-3 shadow-md">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                <div className="flex-1">
+                    <Input
+                        placeholder={placeholder}
+                        className="h-10 w-full"
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                    />
+                </div>
 
-                        {allowCategory && (
-                            <Field>
-                                <FieldLabel>Категории</FieldLabel>
-                                {resolvedFeatured.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">
-                                        Добавьте категории в настройках блока.
-                                    </p>
-                                ) : (
-                                    <div className="space-y-3">
-                                        <Popover open={categoryDropdownOpen} onOpenChange={setCategoryDropdownOpen}>
-                                            <PopoverTrigger asChild>
-                                                <Button type="button" variant="outline" className="w-full justify-between">
-                                                    Выбрать категории
-                                                    <span className="text-muted-foreground text-xs">{selectedCategoryIds.length}</span>
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-80 p-3" align="start">
-                                                <div className="space-y-2">
-                                                    <Input
-                                                        placeholder="Поиск категории"
-                                                        value={categorySearch}
-                                                        onChange={(event) => setCategorySearch(event.target.value)}
-                                                    />
+                {allowCategory ? (
+                    resolvedFeatured.length === 0 ? (
+                        <Button type="button" variant="outline" className="h-10 w-full justify-between md:w-[220px]" disabled>
+                            Категория
+                        </Button>
+                    ) : (
+                        <Popover open={categoryDropdownOpen} onOpenChange={setCategoryDropdownOpen}>
+                            <PopoverTrigger asChild>
+                                <Button type="button" variant="outline" className="h-10 w-full justify-between md:w-[220px]">
+                                    Категория
+                                    {categoryTriggerMeta ? (
+                                        <span className="text-muted-foreground text-xs">{categoryTriggerMeta}</span>
+                                    ) : (
+                                        <span className="text-muted-foreground text-xs">&nbsp;</span>
+                                    )}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 p-3" align="start">
+                                <div className="space-y-2">
+                                    <Input
+                                        placeholder="Поиск категории"
+                                        value={categorySearch}
+                                        onChange={(event) => setCategorySearch(event.target.value)}
+                                    />
 
-                                                    <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border border-border p-2">
-                                                        {filteredCategoryOptions.length === 0 ? (
-                                                            <p className="text-sm text-muted-foreground">Ничего не найдено.</p>
-                                                        ) : (
-                                                            filteredCategoryOptions.map((cat) => {
-                                                                const checked = selectedSet.has(cat.id);
-                                                                return (
-                                                                    <label
-                                                                        key={cat.id}
-                                                                        className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-muted/40"
-                                                                    >
-                                                                        <span className="text-sm text-muted-foreground">{cat.name}</span>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={checked}
-                                                                            onChange={() => toggleCategory(cat.id)}
-                                                                            className="h-4 w-4 rounded border-border"
-                                                                        />
-                                                                    </label>
-                                                                );
-                                                            })
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex justify-end">
-                                                        <Button type="button" variant="secondary" size="sm" onClick={() => setCategoryDropdownOpen(false)}>
-                                                            Готово
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </PopoverContent>
-                                        </Popover>
+                                    <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                                        {filteredCategoryOptions.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">Ничего не найдено.</p>
+                                        ) : (
+                                            filteredCategoryOptions.map((cat) => {
+                                                const checked = selectedSet.has(cat.id);
+                                                return (
+                                                    <label
+                                                        key={cat.id}
+                                                        className="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-muted/40"
+                                                    >
+                                                        <span className="text-sm text-muted-foreground">{cat.name}</span>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checked}
+                                                            onChange={() => toggleCategory(cat.id)}
+                                                            className="h-4 w-4 rounded border-border"
+                                                        />
+                                                    </label>
+                                                );
+                                            })
+                                        )}
                                     </div>
-                                )}
-                            </Field>
-                        )}
 
-                        {allowPrice && (
-                            <Field>
-                                <FieldLabel>Цена</FieldLabel>
-                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="flex justify-end">
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => setCategoryDropdownOpen(false)}
+                                        >
+                                            Готово
+                                        </Button>
+                                    </div>
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+                    )
+                ) : null}
+
+                {allowPrice ? (
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button type="button" variant="outline" className="h-10 w-full justify-between md:w-[180px]">
+                                Цена
+                                {priceTriggerMeta ? (
+                                    <span className="text-muted-foreground text-xs">{priceTriggerMeta}</span>
+                                ) : (
+                                    <span className="text-muted-foreground text-xs">&nbsp;</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 p-3" align="start">
+                            <div className="space-y-3">
+                                <div className="grid gap-2 sm:grid-cols-2">
                                     <Input
                                         placeholder={`от ${priceRange?.min ?? 0}`}
                                         type="number"
@@ -204,17 +258,24 @@ export function CatalogSearchFilterBlock({ block, siteId }: CatalogSearchFilterP
                                         onChange={(e) => setPriceMaxInput(e.target.value)}
                                     />
                                 </div>
-                            </Field>
-                        )}
-                    </FieldGroup>
-
-                    <div className="flex justify-end">
-                        <Button type="button" variant="secondary" onClick={applyFilters}>
-                            Применить фильтры
-                        </Button>
-                    </div>
-                </form>
+                                <div className="flex justify-end">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => {
+                                            setPriceMinInput('');
+                                            setPriceMaxInput('');
+                                        }}
+                                    >
+                                        Сбросить
+                                    </Button>
+                                </div>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                ) : null}
             </div>
-        </Card>
+        </div>
     );
 }
