@@ -1,11 +1,16 @@
 'use client'
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
     Button,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
     Drawer,
     DrawerClose,
     DrawerContent,
@@ -32,6 +37,12 @@ import { CategoriesApi } from "@/lib/api/categories";
 import { ProductsApi } from "@/lib/api/products";
 import { queryKeys } from "@/lib/query/keys";
 import { DEFAULT_LAYOUT_BLOCKS, INTERNAL_LAYOUT_PAGE_SLUG } from "./default-page-blocks";
+import {
+    ProductCardOne,
+    ProductCardThree,
+    ProductCardTwo,
+    type ProductCardDesignKey,
+} from "@/components/shudcn-ui/product-cards";
 
 interface BuilderWorkspaceProps {
     siteId: string;
@@ -562,6 +573,10 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                             </DrawerFooter>
                         </DrawerContent>
                     </Drawer>
+
+                    <Button asChild className="w-full" variant="outline">
+                        <Link href={`/sites/${siteId}/builder/catalog`}>Товары</Link>
+                    </Button>
                 </aside>
 
                 <section className="border-x-primary border-x-2 bg-background p-0 overflow-hidden">
@@ -964,13 +979,21 @@ function BlockEditorPanel({
                                 У этого блока нет настраиваемых параметров.
                             </p>
                         ) : block.template.key === 'catalog-product-grid' ? (
-                            <CatalogProductGridProductsEditor
-                                siteId={siteId}
-                                value={Array.isArray((draftData as Record<string, unknown>).productIds)
-                                    ? (((draftData as Record<string, unknown>).productIds as unknown[]) as string[])
-                                    : []}
-                                onChange={(next) => setDraftValue('productIds', next)}
-                            />
+                            <div className="space-y-4">
+                                <CatalogProductCardDesignEditor
+                                    value={typeof (draftData as Record<string, unknown>).cardDesign === 'string'
+                                        ? ((draftData as Record<string, unknown>).cardDesign as string)
+                                        : undefined}
+                                    onChange={(next) => setDraftValue('cardDesign', next)}
+                                />
+                                <CatalogProductGridProductsEditor
+                                    siteId={siteId}
+                                    value={Array.isArray((draftData as Record<string, unknown>).productIds)
+                                        ? (((draftData as Record<string, unknown>).productIds as unknown[]) as string[])
+                                        : []}
+                                    onChange={(next) => setDraftValue('productIds', next)}
+                                />
+                            </div>
                         ) : block.template.key === 'products-featured' ? (
                             <div className="space-y-4">
                                 <div className="space-y-1">
@@ -1153,6 +1176,29 @@ function getBlockFieldMeta(
 ): { label?: string; description?: string } {
     if (!templateKey) return {};
 
+    if (templateKey === 'banners') {
+        const key = path.join('.');
+        switch (key) {
+            case 'badge':
+                return {
+                    label: 'Badge',
+                    description: 'Короткая метка над заголовком (необязательно).',
+                };
+            case 'title':
+                return {
+                    label: 'Заголовок',
+                    description: 'Основной текст баннера.',
+                };
+            case 'description':
+                return {
+                    label: 'Описание',
+                    description: 'Короткое описание под заголовком.',
+                };
+            default:
+                return {};
+        }
+    }
+
     if (templateKey === 'catalog-search-filter') {
         const key = path.join('.');
         switch (key) {
@@ -1279,6 +1325,9 @@ function GenericBlockDataEditor({
 
     const keys = Object.keys(data).filter((key) => {
         if (templateKey === 'cart-items-list') {
+            return false;
+        }
+        if (templateKey === 'banners' && key === 'variant') {
             return false;
         }
         if (templateKey === 'products-featured' && key === 'productIds') {
@@ -1783,6 +1832,14 @@ function CatalogProductGridProductsEditor({
 
                 <PopoverContent align="start" className="w-96 p-3">
                     <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs text-muted-foreground">
+                                Нет нужного товара? Создайте его в каталоге.
+                            </p>
+                            <Button asChild type="button" size="sm" variant="secondary">
+                                <Link href={`/sites/${siteId}/builder/catalog`}>Создать товар</Link>
+                            </Button>
+                        </div>
                         <div className="space-y-2">
                             <Label className="text-xs text-secondary">Поиск</Label>
                             <Input
@@ -1820,6 +1877,155 @@ function CatalogProductGridProductsEditor({
                     </div>
                 </PopoverContent>
             </Popover>
+        </div>
+    );
+}
+
+const LAST_PRODUCT_CARD_DESIGN_STORAGE_KEY = "neshopify:last-product-card-design";
+
+function normalizeProductCardDesign(value: unknown): ProductCardDesignKey | null {
+    if (value === "design-01" || value === "design-02" || value === "design-03") return value;
+    return null;
+}
+
+function getLastProductCardDesign(): ProductCardDesignKey | null {
+    try {
+        return normalizeProductCardDesign(window.localStorage.getItem(LAST_PRODUCT_CARD_DESIGN_STORAGE_KEY));
+    } catch {
+        return null;
+    }
+}
+
+function setLastProductCardDesign(value: ProductCardDesignKey) {
+    try {
+        window.localStorage.setItem(LAST_PRODUCT_CARD_DESIGN_STORAGE_KEY, value);
+    } catch {
+        // ignore
+    }
+}
+
+function CatalogProductCardDesignEditor({
+    value,
+    onChange,
+}: {
+    value: string | undefined;
+    onChange: (next: ProductCardDesignKey) => void;
+}) {
+    const [open, setOpen] = useState(false);
+    const selected = normalizeProductCardDesign(value) ?? null;
+
+    useEffect(() => {
+        if (selected) return;
+        const fromStorage = getLastProductCardDesign();
+        onChange(fromStorage ?? "design-01");
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selected]);
+
+    const active = selected ?? "design-01";
+
+    const previewProduct: ProductDto = {
+        id: "__preview__",
+        siteId: "__preview__",
+        title: "Товар",
+        description: "Короткое описание товара для предпросмотра.",
+        price: 1290,
+        currency: "₽",
+        stock: 10,
+        stockStatus: "IN_STOCK",
+        media: [
+            {
+                id: "m1",
+                url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80",
+                alt: "Preview",
+                order: 1,
+            },
+            {
+                id: "m2",
+                url: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80",
+                alt: "Preview 2",
+                order: 2,
+            },
+        ],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+
+    const options: Array<{ key: ProductCardDesignKey; title: string; Component: typeof ProductCardOne }> = [
+        { key: "design-01", title: "Дизайн 1", Component: ProductCardOne },
+        { key: "design-02", title: "Дизайн 2", Component: ProductCardTwo },
+        { key: "design-03", title: "Дизайн 3", Component: ProductCardThree },
+    ];
+
+    const currentTitle = options.find((o) => o.key === active)?.title ?? "Дизайн";
+
+    return (
+        <div className="rounded-lg border border-border p-3 space-y-3">
+            <div>
+                <p className="text-sm font-medium text-primary">Дизайн карточки</p>
+                <p className="text-xs text-muted-foreground">
+                    Выберите внешний вид карточек товара для этого блока.
+                </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <Button type="button" variant="outline" className="w-full justify-between" onClick={() => setOpen(true)}>
+                    <span className="truncate">{currentTitle}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">из 3</span>
+                </Button>
+            </div>
+
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent className="sm:max-w-[900px]">
+                    <DialogHeader>
+                        <DialogTitle>Выбор дизайна карточки товара</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                        {options.map(({ key, title, Component }) => {
+                            const isActive = key === active;
+                            return (
+                                <div
+                                    key={key}
+                                    role="button"
+                                    tabIndex={0}
+                                    className={cn(
+                                        "w-full rounded-xl border p-3 text-left",
+                                        isActive ? "border-primary bg-primary/10" : "border-border hover:border-primary/40",
+                                    )}
+                                    onClick={() => {
+                                        onChange(key);
+                                        setLastProductCardDesign(key);
+                                        setOpen(false);
+                                    }}
+                                    onKeyDown={(event) => {
+                                        if (event.key !== "Enter" && event.key !== " ") return;
+                                        event.preventDefault();
+                                        onChange(key);
+                                        setLastProductCardDesign(key);
+                                        setOpen(false);
+                                    }}
+                                >
+                                    <div className="mb-2 flex items-center justify-between gap-2">
+                                        <p className={cn("text-sm font-medium", isActive ? "text-primary" : "text-foreground")}>{title}</p>
+                                        {isActive ? <span className="text-xs text-primary">Выбран</span> : null}
+                                    </div>
+                                    <div className="rounded-lg border border-border bg-background p-2">
+                                        <Component
+                                            product={previewProduct}
+                                            isFavorited
+                                            inCart={false}
+                                            cartBusy={false}
+                                            onToggleFavorite={undefined}
+                                            onToggleCart={undefined}
+                                            className="max-w-none"
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
@@ -1928,6 +2134,14 @@ function ProductsFeaturedProductsEditor({
 
                 <PopoverContent align="start" className="w-96 p-3">
                     <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                            <p className="text-xs text-muted-foreground">
+                                Нет нужного товара? Создайте его в каталоге.
+                            </p>
+                            <Button asChild type="button" size="sm" variant="secondary">
+                                <Link href={`/sites/${siteId}/builder/catalog`}>Создать товар</Link>
+                            </Button>
+                        </div>
                         <div className="space-y-2">
                             <Label className="text-xs text-secondary">Поиск</Label>
                             <Input

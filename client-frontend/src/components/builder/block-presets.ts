@@ -43,6 +43,41 @@ export const BLOCK_TEMPLATE_PRESETS: Record<string, BlockPreset[]> = {
             },
         },
     ],
+    "banners": [
+        {
+            id: "banner-01",
+            name: "Баннер (центр)",
+            description: "Badge + заголовок + описание + кнопка",
+            data: {
+                variant: "banner-01",
+                badge: "Новинка",
+                title: "Сезонные товары уже в каталоге",
+                description: "Подберите лучшие позиции и оформите заказ за пару кликов.",
+            },
+        },
+        {
+            id: "banner-02",
+            name: "Баннер (слева + CTA справа)",
+            description: "Удобен для акций и подборок",
+            data: {
+                variant: "banner-02",
+                badge: "Акция",
+                title: "Скидки на популярные товары",
+                description: "Собрали подборку бестселлеров — успейте заказать по выгодной цене.",
+            },
+        },
+        {
+            id: "banner-03",
+            name: "Баннер (компактный)",
+            description: "Лёгкий баннер для вставки между блоками",
+            data: {
+                variant: "banner-03",
+                badge: "Подборка",
+                title: "Загляните в каталог",
+                description: "Найдите товары по категориям и фильтрам.",
+            },
+        },
+    ],
     "products-featured": [
         {
             id: "featured-grid",

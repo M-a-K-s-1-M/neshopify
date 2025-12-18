@@ -65,13 +65,13 @@ export function ProfileFavoritesShowcaseBlock({
                     ))}
                 </div>
             ) : items.length === 0 ? (
-                <Card className="p-6 text-sm text-muted-foreground">
+                <Card className="bg-transparent p-6 text-sm text-muted-foreground">
                     Избранных товаров пока нет. Добавьте товары из каталога.
                 </Card>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2">
                     {items.map((item, index) => (
-                        <Card key={`${item.id}-${index}`} className="border shadow-sm">
+                        <Card key={`${item.id}-${index}`} className="border shadow-md">
                             <CardHeader>
                                 <CardTitle className="text-base">{item.title ?? "Товар"}</CardTitle>
                                 <CardDescription className="flex items-center justify-between text-sm">

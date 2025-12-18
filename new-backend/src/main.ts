@@ -76,6 +76,6 @@ async function bootstrap() {
     optionsSuccessStatus: 200,
   });
 
-  await app.listen(port);
+  await app.listen(port, () => console.log(`Server started on http://localhost:${port}`));
 }
 bootstrap();

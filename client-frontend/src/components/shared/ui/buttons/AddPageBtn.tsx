@@ -24,6 +24,11 @@ import {
     FieldLabel,
     FieldSet,
     Input,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components";
 import { PagesApi } from "@/lib/api/pages";
 import { queryKeys } from "@/lib/query/keys";
@@ -214,18 +219,22 @@ function CreatePageForm({ siteId, onSuccess }: { siteId: string; onSuccess: () =
                         render={({ field }) => (
                             <Field className="gap-2">
                                 <FieldLabel htmlFor="pageType">Тип страницы</FieldLabel>
-                                <select
-                                    id="pageType"
-                                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-                                    {...field}
+                                <Select
+                                    value={field.value}
+                                    onValueChange={(value) => field.onChange(value as PageType)}
                                     disabled={createMutation.isPending}
                                 >
-                                    {PAGE_TYPE_OPTIONS.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger id="pageType" className="w-full">
+                                        <SelectValue placeholder="Выберите тип" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {PAGE_TYPE_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </Field>
                         )}
                     />

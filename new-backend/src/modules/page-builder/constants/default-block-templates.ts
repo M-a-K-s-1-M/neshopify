@@ -91,6 +91,26 @@ export const DEFAULT_BLOCK_TEMPLATES: DefaultBlockTemplate[] = [
         },
     },
     {
+        key: "banners",
+        title: "Баннеры",
+        description: "Баннер с badge, заголовком, описанием и кнопкой в каталог",
+        category: BlockCategory.CTA,
+        schema: {
+            type: "object",
+            required: ["variant", "title", "description"],
+            properties: {
+                variant: {
+                    type: "string",
+                    enum: ["banner-01", "banner-02", "banner-03"],
+                    default: "banner-01",
+                },
+                badge: { type: "string", maxLength: 40 },
+                title: { type: "string", maxLength: 120 },
+                description: { type: "string", maxLength: 260 },
+            },
+        },
+    },
+    {
         key: "products-featured",
         title: "Популярные товары",
         description: "Сетка до 4 избранных товаров",
