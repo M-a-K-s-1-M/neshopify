@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 
 import type { BlockInstanceDto } from "@/lib/types";
+import { BannersBlock } from "./blocks/banners";
 import { CatalogProductGridBlock } from "./blocks/catalog-product-grid";
 import { CatalogSearchFilterBlock } from "./blocks/catalog-search-filter";
 import { FooterContactsBlock } from "./blocks/footer-contacts-basic";
@@ -22,6 +23,7 @@ type BlockComponent = ComponentType<BlockRendererProps>;
 const registry: Record<string, BlockComponent> = {
     "header-nav-basic": ({ block }) => <HeaderNavBasicBlock block={block} />,
     "hero-brand-highlight": ({ block }) => <HeroBrandHighlightBlock block={block} />,
+    "banners": ({ block }) => <BannersBlock block={block} />,
     "products-featured": ({ block, siteId }) => (
         <ProductsFeaturedBlock block={block} siteId={siteId} />
     ),

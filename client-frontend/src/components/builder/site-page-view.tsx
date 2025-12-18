@@ -191,7 +191,8 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
                                 block.template.key === "catalog-search-filter" ||
                                 block.template.key === "catalog-product-grid" ||
                                 block.template.key === "cart-items-list" ||
-                                block.template.key === "products-featured";
+                                block.template.key === "products-featured" ||
+                                block.template.key === "banners";
 
                             if (isHeaderOrFooter) {
                                 return <BlockRenderer key={block.id} block={block} siteId={siteId} />;

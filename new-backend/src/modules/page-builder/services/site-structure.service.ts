@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Prisma, BlockTemplate } from "../../../../generated/prisma/client";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { BlockSchemaRegistry } from "../schemas/block-schema.registry";
@@ -22,6 +22,14 @@ export class SiteStructureService {
         private readonly prisma: PrismaService,
         private readonly registry: BlockSchemaRegistry,
     ) { }
+
+    async onModuleInit() {
+        try {
+            await this.ensureDefaultTemplates(this.prisma);
+        } catch (error) {
+            this.logger.warn(`Не удалось синхронизировать дефолтные шаблоны блоков при старте: ${String(error)}`);
+        }
+    }
 
     /** Создает глобальные шаблоны и стартовые страницы для нового сайта. */
     async provisionDefaultStructure(siteId: string, client?: PrismaClientLike) {

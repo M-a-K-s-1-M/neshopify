@@ -1,0 +1,42 @@
+
+> client-frontend@0.1.0 build
+> next build
+
+   ▲ Next.js 16.0.7 (Turbopack)
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 21.4s
+   Running TypeScript ...
+   Collecting page data using 7 workers ...
+   Generating static pages using 7 workers (0/8) ...
+   Generating static pages using 7 workers (2/8) 
+   Generating static pages using 7 workers (4/8) 
+   Generating static pages using 7 workers (6/8) 
+ ✓ Generating static pages using 7 workers (8/8) in 2.5s
+   Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /[siteSlug]/cart
+├ ƒ /[siteSlug]/catalog
+├ ƒ /[siteSlug]/home
+├ ƒ /[siteSlug]/profile
+├ ○ /auth
+├ ○ /auth/register
+├ ○ /profile
+├ ○ /sites
+├ ƒ /sites/[siteId]
+├ ƒ /sites/[siteId]/builder/[pageSlug]
+├ ƒ /sites/[siteId]/builder/catalog
+├ ƒ /sites/[siteId]/settings
+├ ƒ /sites/[siteId]/settings/analytics
+├ ƒ /sites/[siteId]/settings/orders
+├ ƒ /sites/[siteId]/settings/products
+└ ƒ /sites/[siteId]/settings/users
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
