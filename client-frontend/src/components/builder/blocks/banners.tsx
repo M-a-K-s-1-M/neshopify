@@ -4,6 +4,7 @@ import Link from 'next/link'
 
 import type { BlockInstanceDto } from '@/lib/types'
 import { Button } from '@/components/ui/button'
+import { resolveSiteHref, useSiteBasePath } from "@/components/providers/site-base-path-provider";
 
 interface BannersProps {
     block: BlockInstanceDto
@@ -39,6 +40,7 @@ function BannerPillOnGradient({ children }: { children: string }) {
 }
 
 export function BannersBlock({ block }: BannersProps) {
+    const basePath = useSiteBasePath();
     const blockData = isRecord(block.data) ? block.data : {}
 
     const variant = getBannerVariant(blockData.variant)
@@ -73,7 +75,7 @@ export function BannersBlock({ block }: BannersProps) {
 
                         <div className="pt-2">
                             <Button asChild size="lg" variant="secondary" className="text-primary">
-                                <Link href="/catalog">Перейти в каталог</Link>
+                                <Link href={resolveSiteHref("/catalog", basePath)}>Перейти в каталог</Link>
                             </Button>
                         </div>
                     </div>
@@ -103,7 +105,7 @@ export function BannersBlock({ block }: BannersProps) {
                     </div>
 
                     <Button asChild size="lg" className="shrink-0">
-                        <Link href="/catalog">Перейти в каталог</Link>
+                        <Link href={resolveSiteHref("/catalog", basePath)}>Перейти в каталог</Link>
                     </Button>
                 </div>
             </section>
@@ -131,7 +133,7 @@ export function BannersBlock({ block }: BannersProps) {
                         </div>
 
                         <Button asChild variant="outline" className="shrink-0">
-                            <Link href="/catalog">Перейти в каталог</Link>
+                            <Link href={resolveSiteHref("/catalog", basePath)}>Перейти в каталог</Link>
                         </Button>
                     </div>
                 </div>

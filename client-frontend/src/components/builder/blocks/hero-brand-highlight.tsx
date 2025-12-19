@@ -6,12 +6,14 @@ import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import Link from "next/link";
 import type { BlockInstanceDto } from "@/lib/types";
+import { resolveSiteHref, useSiteBasePath } from "@/components/providers/site-base-path-provider";
 
 interface HeroBrandHighlightProps {
     block: BlockInstanceDto;
 }
 
 export function HeroBrandHighlightBlock({ block }: HeroBrandHighlightProps) {
+    const basePath = useSiteBasePath();
     const data = block.data ?? {};
     const stats = Array.isArray(data.stats) ? data.stats : [];
     const heading = typeof data.heading === "string" ? data.heading : block.template.title;
@@ -33,12 +35,12 @@ export function HeroBrandHighlightBlock({ block }: HeroBrandHighlightProps) {
                 <div className="flex flex-wrap gap-3">
                     {ctaPrimary && (
                         <Button asChild size="lg">
-                            <Link href={ctaPrimary.href ?? "#"}>{ctaPrimary.label ?? "Попробовать"}</Link>
+                            <Link href={resolveSiteHref(ctaPrimary.href ?? "#", basePath)}>{ctaPrimary.label ?? "Попробовать"}</Link>
                         </Button>
                     )}
                     {ctaSecondary && (
                         <Button variant="ghost" asChild size="lg">
-                            <Link href={ctaSecondary.href ?? "#"}>{ctaSecondary.label ?? "Подробнее"}</Link>
+                            <Link href={resolveSiteHref(ctaSecondary.href ?? "#", basePath)}>{ctaSecondary.label ?? "Подробнее"}</Link>
                         </Button>
                     )}
                 </div>

@@ -574,6 +574,16 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                         </DrawerContent>
                     </Drawer>
 
+                    <Button asChild className="w-full" variant="default">
+                        <Link
+                            href={`/preview/sites/${siteId}/${pageSlug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Предпросмотр
+                        </Link>
+                    </Button>
+
                     <Button asChild className="w-full" variant="outline">
                         <Link href={`/sites/${siteId}/builder/catalog`}>Товары</Link>
                     </Button>
