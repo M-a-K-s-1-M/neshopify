@@ -10,6 +10,7 @@ import type { BlockInstanceDto, ProductDto } from "@/lib/types";
 import { ProductsApi } from "@/lib/api/products";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/utils/media";
+import { resolveSiteHref, useSiteBasePath } from "@/components/providers/site-base-path-provider";
 
 interface ProductsFeaturedProps {
     block: BlockInstanceDto;
@@ -21,6 +22,7 @@ const MAX_FEATURED_PRODUCTS = 4;
 type ProductsFeaturedBackground = "default" | "card" | "muted";
 
 export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) {
+    const basePath = useSiteBasePath();
     const blockData =
         block.data && typeof block.data === "object" && !Array.isArray(block.data)
             ? (block.data as Record<string, unknown>)
@@ -87,7 +89,7 @@ export function ProductsFeaturedBlock({ block, siteId }: ProductsFeaturedProps) 
                     </div>
 
                     <Link
-                        href="/catalog"
+                        href={resolveSiteHref("/catalog", basePath)}
                         className="text-sm font-medium text-primary hover:underline"
                         aria-label="Перейти в каталог"
                     >

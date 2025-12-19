@@ -3,12 +3,14 @@
 import { Separator } from "@/components/ui/separator";
 import type { BlockInstanceDto } from "@/lib/types";
 import Link from "next/link";
+import { resolveSiteHref, useSiteBasePath } from "@/components/providers/site-base-path-provider";
 
 interface FooterContactsBlockProps {
     block: BlockInstanceDto;
 }
 
 export function FooterContactsBlock({ block }: FooterContactsBlockProps) {
+    const basePath = useSiteBasePath();
     const data = block.data ?? {};
     const brand = typeof data.brand === 'string' ? data.brand : block.template.title;
     const description = typeof data.description === 'string' ? data.description : undefined;
@@ -31,7 +33,7 @@ export function FooterContactsBlock({ block }: FooterContactsBlockProps) {
                         <ul className="space-y-1 text-muted-foreground">
                             {links.map((link: any) => (
                                 <li key={`${link.href}-${link.label}`}>
-                                    <Link href={(link?.href as string) ?? '#'} className="hover:text-foreground">
+                                    <Link href={resolveSiteHref((link?.href as string) ?? '#', basePath)} className="hover:text-foreground">
                                         {link?.label ?? 'Ссылка'}
                                     </Link>
                                 </li>

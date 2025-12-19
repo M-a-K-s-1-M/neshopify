@@ -20,6 +20,14 @@ export function useSiteQuery(siteId?: string) {
     });
 }
 
+export function useSitesQuery() {
+    return useQuery({
+        queryKey: queryKeys.sites(),
+        queryFn: () => SitesApi.list(),
+        staleTime: 30 * 1000,
+    });
+}
+
 export function useSitePagesQuery(siteId?: string) {
     const queryKey = siteId ? queryKeys.sitePages(siteId) : disabledPagesKey;
     return useQuery({

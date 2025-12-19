@@ -14,9 +14,10 @@ interface SitePageViewProps {
     slug: string;
     title?: string;
     description?: string;
+    variant?: "builder" | "runtime";
 }
 
-export function SitePageView({ slug, title, description }: SitePageViewProps) {
+export function SitePageView({ slug, title, description, variant = "builder" }: SitePageViewProps) {
     const params = useParams<{ siteId?: string }>();
     const rawSiteId = params?.siteId;
     const siteId = Array.isArray(rawSiteId) ? rawSiteId[0] : rawSiteId;
@@ -142,22 +143,32 @@ export function SitePageView({ slug, title, description }: SitePageViewProps) {
                     ? getRequestErrorMessage(layoutError, "Не удалось загрузить layout сайта")
                     : undefined;
 
+    const showMetaHeader = variant === "builder";
+
     return (
-        <div className="space-y-6">
-            <header className="space-y-1">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    {site?.name ?? "Сайт"} · {slug}
-                </p>
-                <h1 className="text-2xl font-semibold tracking-tight">{pageHeading}</h1>
-                {pageDescription ? <p className="text-sm text-muted-foreground">{pageDescription}</p> : null}
-            </header>
+        <div className={showMetaHeader ? "space-y-6" : "space-y-4"}>
+            {showMetaHeader ? (
+                <header className="space-y-1">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {site?.name ?? "Сайт"} · {slug}
+                    </p>
+                    <h1 className="text-2xl font-semibold tracking-tight">{pageHeading}</h1>
+                    {pageDescription ? <p className="text-sm text-muted-foreground">{pageDescription}</p> : null}
+                </header>
+            ) : null}
 
             {errorMessage ? (
                 <StateMessage variant="error" title="Ошибка" description={errorMessage} />
             ) : null}
 
             {isLoading ? (
-                <div className="flex items-center justify-center rounded-xl border border-border bg-card py-12 text-sm text-muted-foreground">
+                <div
+                    className={
+                        showMetaHeader
+                            ? "flex items-center justify-center rounded-xl border border-border bg-card py-12 text-sm text-muted-foreground"
+                            : "flex items-center justify-center py-12 text-sm text-muted-foreground"
+                    }
+                >
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Загрузка страницы
                 </div>
