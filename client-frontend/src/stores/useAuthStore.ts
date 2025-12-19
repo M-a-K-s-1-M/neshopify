@@ -13,9 +13,12 @@ interface AuthState {
 
     setUser: (user: JwtPayloadDto | null) => void;
     login: (email: string, password: string) => Promise<JwtPayloadDto>;
+    loginCustomer: (siteId: string, email: string, password: string) => Promise<JwtPayloadDto>;
     register: (email: string, password: string) => Promise<JwtPayloadDto>;
+    registerCustomer: (siteId: string, email: string, password: string) => Promise<JwtPayloadDto>;
     logout: () => Promise<void>;
     refresh: () => Promise<JwtPayloadDto | null>;
+    updateMe: (payload: { email?: string; password?: string }) => Promise<JwtPayloadDto>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -41,10 +44,40 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
     },
 
+    loginCustomer: async (siteId, email, password) => {
+        set({ isLoading: true, error: null });
+        try {
+            const res = await AuthService.loginCustomer(siteId, email, password);
+            const payload = jwtDecode<JwtPayloadDto>(res.accessToken);
+            set({ user: payload, isAuth: true });
+            return payload;
+        } catch (error) {
+            set({ error, user: null, isAuth: false });
+            throw error;
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
     register: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
             const res = await AuthService.registration(email, password);
+            const payload = jwtDecode<JwtPayloadDto>(res.accessToken);
+            set({ user: payload, isAuth: true });
+            return payload;
+        } catch (error) {
+            set({ error, user: null, isAuth: false });
+            throw error;
+        } finally {
+            set({ isLoading: false });
+        }
+    },
+
+    registerCustomer: async (siteId, email, password) => {
+        set({ isLoading: true, error: null });
+        try {
+            const res = await AuthService.registrationCustomer(siteId, email, password);
             const payload = jwtDecode<JwtPayloadDto>(res.accessToken);
             set({ user: payload, isAuth: true });
             return payload;
@@ -82,5 +115,20 @@ export const useAuthStore = create<AuthState>((set) => ({
         } finally {
             set({ isLoading: false });
         }
-    }
+    },
+
+    updateMe: async (payloadInput) => {
+        set({ isLoading: true, error: null });
+        try {
+            const res = await AuthService.updateMe(payloadInput);
+            const payload = jwtDecode<JwtPayloadDto>(res.accessToken);
+            set({ user: payload, isAuth: true });
+            return payload;
+        } catch (error) {
+            set({ error });
+            throw error;
+        } finally {
+            set({ isLoading: false });
+        }
+    },
 }));

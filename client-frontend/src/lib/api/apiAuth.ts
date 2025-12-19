@@ -7,8 +7,18 @@ export class AuthService {
         return res.data;
     }
 
+    static async loginCustomer(siteId: string, email: string, password: string): Promise<IAuthResponse> {
+        const res = await $api.post<IAuthResponse>(`/auth/login-customer/${siteId}`, { email, password });
+        return res.data;
+    }
+
     static async registration(email: string, password: string): Promise<IAuthResponse> {
         const res = await $api.post<IAuthResponse>("/auth/register", { email, password });
+        return res.data;
+    }
+
+    static async registrationCustomer(siteId: string, email: string, password: string): Promise<IAuthResponse> {
+        const res = await $api.post<IAuthResponse>(`/auth/register-customer/${siteId}`, { email, password });
         return res.data;
     }
 
@@ -18,6 +28,11 @@ export class AuthService {
 
     static async refresh(): Promise<IAuthResponse> {
         const res = await $api.post<IAuthResponse>("/auth/refresh");
+        return res.data;
+    }
+
+    static async updateMe(payload: { email?: string; password?: string }): Promise<IAuthResponse> {
+        const res = await $api.patch<IAuthResponse>("/auth/me", payload);
         return res.data;
     }
 

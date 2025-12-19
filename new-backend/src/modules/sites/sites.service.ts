@@ -203,8 +203,8 @@ export class SitesService {
 
     /** Добавляет участника по email и задает роль. */
     async addMember(siteId: string, dto: AddMemberDto, currentUserId: string) {
-        const targetUser = await this.prisma.user.findUnique({
-            where: { email: dto.email },
+        const targetUser = await this.prisma.user.findFirst({
+            where: { email: dto.email, authScope: 'platform' },
             select: { id: true },
         });
 

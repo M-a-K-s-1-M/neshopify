@@ -70,6 +70,7 @@ export class SiteAccessGuard implements CanActivate {
         const isOwner = site.ownerId === user.sub;
         const isMember = site.members.length > 0;
         const isAdmin = user.roles?.includes('ADMIN');
+        const isCustomerForThisSite = user.roles?.includes('CUSTOMER') && user.siteId === siteId;
 
         if (requirement === SiteAccessRequirement.OWNER) {
             if (isOwner || isAdmin) {
@@ -78,7 +79,8 @@ export class SiteAccessGuard implements CanActivate {
             throw new ForbiddenException('Недостаточно прав: требуется владелец сайта');
         }
 
-        if (isOwner || isMember || isAdmin) {
+        // MEMBER: допускаем владельца/участника/админа, а также покупателя своего магазина.
+        if (isOwner || isMember || isAdmin || isCustomerForThisSite) {
             return true;
         }
 

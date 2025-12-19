@@ -4,6 +4,7 @@ import { PageBlocksController } from './controllers/page-blocks.controller';
 import { BlockTemplatesController } from './controllers/block-templates.controller';
 import { CommentTemplatesController } from './controllers/comment-templates.controller';
 import { BlockCommentsController } from './controllers/block-comments.controller';
+import { StorefrontController } from './controllers/storefront.controller';
 import { PagesService } from './services/pages.service';
 import { PageBlocksService } from './services/page-blocks.service';
 import { BlockTemplatesService } from './services/block-templates.service';
@@ -20,6 +21,7 @@ import { SiteStructureService } from './services/site-structure.service';
         BlockTemplatesController,
         CommentTemplatesController,
         BlockCommentsController,
+        StorefrontController,
     ],
     providers: [
         PagesService,

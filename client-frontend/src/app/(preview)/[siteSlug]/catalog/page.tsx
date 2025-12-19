@@ -1,7 +1,10 @@
-import React from 'react'
+import StorefrontSlugPageClient from "../[[...pageSlug]]/storefront-slug-page-client";
 
-export default function PreviewCatalog() {
-    return (
-        <div>PreviewCatalog</div>
-    )
+export default async function StorefrontCatalogPage({
+    params,
+}: {
+    params: Promise<{ siteSlug: string }>;
+}) {
+    const { siteSlug } = await params;
+    return <StorefrontSlugPageClient siteSlug={siteSlug} pageSlug={["catalog"]} />;
 }

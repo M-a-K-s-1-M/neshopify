@@ -4,12 +4,23 @@ import { Button, Field, FieldError, FieldGroup, FieldLabel, FieldSet, Input } fr
 import { IRegisterForm } from "@/lib"
 import { getRequestErrorMessage } from "@/lib/utils/error"
 import { useAuthStore } from "@/stores/useAuthStore"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Controller, SubmitHandler, useForm } from "react-hook-form"
+
+function getSafeReturnTo(returnTo: string | null, fallback: string) {
+    if (!returnTo) return fallback
+    const trimmed = returnTo.trim()
+    if (!trimmed) return fallback
+    if (!trimmed.startsWith('/')) return fallback
+    if (trimmed.startsWith('//')) return fallback
+    return trimmed
+}
 
 export function RegisterForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const registerUser = useAuthStore((state) => state.register)
+    const registerCustomer = useAuthStore((state) => state.registerCustomer)
     const isLoading = useAuthStore((state) => state.isLoading)
 
     const form = useForm<IRegisterForm>({
@@ -30,8 +41,16 @@ export function RegisterForm() {
         }
 
         try {
-            await registerUser(data.email, data.password)
-            router.replace('/sites')
+            const siteId = searchParams.get('siteId')
+
+            if (siteId) {
+                await registerCustomer(siteId, data.email, data.password)
+            } else {
+                await registerUser(data.email, data.password)
+            }
+
+            const returnTo = getSafeReturnTo(searchParams.get('returnTo'), '/sites')
+            router.replace(returnTo)
         } catch (error) {
             const message = getRequestErrorMessage(error, 'Не удалось завершить регистрацию. Попробуйте ещё раз.')
             form.setError('root', { type: 'server', message })

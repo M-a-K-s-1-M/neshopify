@@ -5,7 +5,14 @@ import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 
 import { BlockRenderer } from "./block-registry";
-import { useSiteQuery, useSitePagesQuery, usePageDetailQuery } from "@/lib/query/hooks";
+import {
+    usePageDetailQuery,
+    useSitePagesQuery,
+    useSiteQuery,
+    useStorefrontPageDetailQuery,
+    useStorefrontSitePagesQuery,
+    useStorefrontSiteQuery,
+} from "@/lib/query/hooks";
 import { getDefaultBlocksForPageType, INTERNAL_LAYOUT_PAGE_SLUG } from "./default-page-blocks";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { CatalogFiltersProvider } from "./catalog-filters-context";
@@ -15,14 +22,18 @@ interface SitePageViewProps {
     title?: string;
     description?: string;
     variant?: "builder" | "runtime";
+    siteIdOverride?: string;
 }
 
-export function SitePageView({ slug, title, description, variant = "builder" }: SitePageViewProps) {
+export function SitePageView({ slug, title, description, variant = "builder", siteIdOverride }: SitePageViewProps) {
     const params = useParams<{ siteId?: string }>();
     const rawSiteId = params?.siteId;
     const siteId = Array.isArray(rawSiteId) ? rawSiteId[0] : rawSiteId;
+    const isRuntime = variant === "runtime";
 
-    if (!siteId) {
+    const effectiveSiteId = siteIdOverride ?? siteId;
+
+    if (!effectiveSiteId) {
         return (
             <StateMessage
                 variant="error"
@@ -32,17 +43,22 @@ export function SitePageView({ slug, title, description, variant = "builder" }: 
         );
     }
 
-    const {
-        data: site,
-        isLoading: siteLoading,
-        error: siteError,
-    } = useSiteQuery(siteId);
+    const builderEnabled = !isRuntime;
+    const storefrontEnabled = isRuntime;
 
-    const {
-        data: pages,
-        isLoading: pagesLoading,
-        error: pagesError,
-    } = useSitePagesQuery(siteId);
+    const siteQuery = useSiteQuery(effectiveSiteId, { enabled: builderEnabled });
+    const storefrontSiteQuery = useStorefrontSiteQuery(effectiveSiteId, { enabled: storefrontEnabled });
+
+    const pagesQuery = useSitePagesQuery(effectiveSiteId, { enabled: builderEnabled });
+    const storefrontPagesQuery = useStorefrontSitePagesQuery(effectiveSiteId, { enabled: storefrontEnabled });
+
+    const site = isRuntime ? storefrontSiteQuery.data : siteQuery.data;
+    const siteLoading = isRuntime ? storefrontSiteQuery.isLoading : siteQuery.isLoading;
+    const siteError = isRuntime ? storefrontSiteQuery.error : siteQuery.error;
+
+    const pages = isRuntime ? storefrontPagesQuery.data : pagesQuery.data;
+    const pagesLoading = isRuntime ? storefrontPagesQuery.isLoading : pagesQuery.isLoading;
+    const pagesError = isRuntime ? storefrontPagesQuery.error : pagesQuery.error;
 
     const layoutPage = useMemo(
         () => pages?.find((page) => page.slug === INTERNAL_LAYOUT_PAGE_SLUG),
@@ -52,17 +68,21 @@ export function SitePageView({ slug, title, description, variant = "builder" }: 
     const currentPage = useMemo(() => pages?.find((page) => page.slug === slug), [pages, slug]);
     const pageId = currentPage?.id;
 
-    const {
-        data: layoutPageDetail,
-        isLoading: layoutLoading,
-        error: layoutError,
-    } = usePageDetailQuery(siteId, layoutPage?.id);
+    const layoutPageDetailQuery = usePageDetailQuery(effectiveSiteId, layoutPage?.id, { enabled: builderEnabled });
+    const layoutStorefrontPageDetailQuery = useStorefrontPageDetailQuery(effectiveSiteId, layoutPage?.id, {
+        enabled: storefrontEnabled,
+    });
 
-    const {
-        data: pageDetail,
-        isLoading: pageLoading,
-        error: pageError,
-    } = usePageDetailQuery(siteId, pageId);
+    const pageDetailQuery = usePageDetailQuery(effectiveSiteId, pageId, { enabled: builderEnabled });
+    const storefrontPageDetailQuery = useStorefrontPageDetailQuery(effectiveSiteId, pageId, { enabled: storefrontEnabled });
+
+    const layoutPageDetail = isRuntime ? layoutStorefrontPageDetailQuery.data : layoutPageDetailQuery.data;
+    const layoutLoading = isRuntime ? layoutStorefrontPageDetailQuery.isLoading : layoutPageDetailQuery.isLoading;
+    const layoutError = isRuntime ? layoutStorefrontPageDetailQuery.error : layoutPageDetailQuery.error;
+
+    const pageDetail = isRuntime ? storefrontPageDetailQuery.data : pageDetailQuery.data;
+    const pageLoading = isRuntime ? storefrontPageDetailQuery.isLoading : pageDetailQuery.isLoading;
+    const pageError = isRuntime ? storefrontPageDetailQuery.error : pageDetailQuery.error;
 
     const resolvedPage = pageDetail ?? currentPage;
 
@@ -206,17 +226,17 @@ export function SitePageView({ slug, title, description, variant = "builder" }: 
                                 block.template.key === "banners";
 
                             if (isHeaderOrFooter) {
-                                return <BlockRenderer key={block.id} block={block} siteId={siteId} />;
+                                return <BlockRenderer key={block.id} block={block} siteId={effectiveSiteId} />;
                             }
 
                             if (isFullBleedBlock) {
-                                return <BlockRenderer key={block.id} block={block} siteId={siteId} />;
+                                return <BlockRenderer key={block.id} block={block} siteId={effectiveSiteId} />;
                             }
 
                             if (isBorderlessCardBlock) {
                                 return (
                                     <div key={block.id} className="px-6">
-                                        <BlockRenderer block={block} siteId={siteId} />
+                                        <BlockRenderer block={block} siteId={effectiveSiteId} />
                                     </div>
                                 );
                             }
@@ -224,7 +244,7 @@ export function SitePageView({ slug, title, description, variant = "builder" }: 
                             return (
                                 <div key={block.id} className="px-6">
                                     <div className="rounded-2xl border border-border bg-card">
-                                        <BlockRenderer block={block} siteId={siteId} />
+                                        <BlockRenderer block={block} siteId={effectiveSiteId} />
                                     </div>
                                 </div>
                             );

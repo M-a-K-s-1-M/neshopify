@@ -4,11 +4,22 @@ import { Button, Field, FieldError, FieldGroup, FieldLabel, FieldSet, Input } fr
 import { IAuthForm } from "@/lib"
 import { getRequestErrorMessage } from "@/lib/utils/error"
 import { useAuthStore } from "@/stores/useAuthStore"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Controller, SubmitHandler, useForm } from "react-hook-form"
+
+function getSafeReturnTo(returnTo: string | null, fallback: string) {
+    if (!returnTo) return fallback
+    const trimmed = returnTo.trim()
+    if (!trimmed) return fallback
+    // only allow same-origin relative paths
+    if (!trimmed.startsWith('/')) return fallback
+    if (trimmed.startsWith('//')) return fallback
+    return trimmed
+}
 
 export function LoginForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const login = useAuthStore((state) => state.login)
     const isLoading = useAuthStore((state) => state.isLoading)
 
@@ -24,7 +35,8 @@ export function LoginForm() {
         form.clearErrors('root')
         try {
             await login(data.email, data.password)
-            router.replace('/sites')
+            const returnTo = getSafeReturnTo(searchParams.get('returnTo'), '/sites')
+            router.replace(returnTo)
         } catch (error) {
             const message = getRequestErrorMessage(error, 'Не удалось войти. Попробуйте ещё раз.')
             form.setError('root', { type: 'server', message })

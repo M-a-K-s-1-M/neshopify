@@ -8,10 +8,12 @@ import {
   Get,
   Param,
   UnauthorizedException,
+  Patch,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
+import { UpdateMeDto } from "./dto/update-me.dto";
 import { JwtAuthGuard, JwtRefreshGuard, RolesGuard } from "../../common/guards";
 import { Roles } from "./decorators/roles.decorator";
 import type { Request, Response } from "express";
@@ -106,6 +108,34 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
+  /** Логин покупателя конкретного сайта. */
+  @Post("login-customer/:siteId")
+  @ApiOkResponse({ type: AccessTokenResponseDto })
+  async loginCustomer(
+    @Body() dto: LoginDto,
+    @Param("siteId") siteId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const tokens = await this.auth.loginCustomer(dto, siteId);
+
+    res.cookie("accessToken", tokens.accessToken, {
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 15,
+    });
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+    });
+
+    return { accessToken: tokens.accessToken };
+  }
+
   /** Логин администратора с дополнительной проверкой роли. */
   @Post("login-admin")
   @ApiOkResponse({ type: AccessTokenResponseDto })
@@ -180,6 +210,41 @@ export class AuthController {
     }
 
     return this.auth.getCurrentUser(user.sub);
+  }
+
+  /** Обновляет email/пароль текущего пользователя и перевыпускает токены. */
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOkResponse({ type: AccessTokenResponseDto })
+  @Patch("me")
+  async updateMe(
+    @Req() req: Request,
+    @Body() dto: UpdateMeDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const user = req.user as JwtPayload | undefined;
+    if (!user) {
+      throw new UnauthorizedException("Пользователь не найден");
+    }
+
+    const tokens = await this.auth.updateMe(user.sub, dto);
+
+    res.cookie("accessToken", tokens.accessToken, {
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 15,
+    });
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      sameSite: this.isProd ? "none" : "lax",
+      secure: this.isProd,
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 30,
+    });
+
+    return { accessToken: tokens.accessToken };
   }
 
   /** Проверка доступа администратора (health-check для панели). */
