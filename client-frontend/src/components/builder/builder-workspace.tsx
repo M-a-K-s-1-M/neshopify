@@ -575,13 +575,25 @@ export function BuilderWorkspace({ siteId, pageSlug }: BuilderWorkspaceProps) {
                     </Drawer>
 
                     <Button asChild className="w-full" variant="default">
-                        <Link
-                            href={`/preview/sites/${siteId}/${pageSlug}`}
+                        <a
+                            href={(() => {
+                                const raw = typeof pageSlug === 'string' ? pageSlug.trim() : '';
+                                const encoded = raw
+                                    ? raw
+                                        .split('/')
+                                        .filter(Boolean)
+                                        .map((part) => encodeURIComponent(part))
+                                        .join('/')
+                                    : '';
+                                return encoded
+                                    ? `/preview/sites/${siteId}/${encoded}`
+                                    : `/preview/sites/${siteId}`;
+                            })()}
                             target="_blank"
                             rel="noreferrer"
                         >
                             Предпросмотр
-                        </Link>
+                        </a>
                     </Button>
 
                     <Button asChild className="w-full" variant="outline">

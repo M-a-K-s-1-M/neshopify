@@ -41,7 +41,22 @@ $api.interceptors.response.use(
                 return $api.request(originalRequest); // повторяем исходный запрос
             } catch {
                 // если refresh не удался — можно, например, редирект на логин
-                window.location.href = "/auth";
+                const returnTo = `${window.location.pathname}${window.location.search}`;
+                const params = new URLSearchParams();
+                if (returnTo) params.set('returnTo', returnTo);
+
+                const match = window.location.pathname.match(/^\/preview\/sites\/([^/]+)(?:\/|$)/);
+                if (match?.[1]) {
+                    const siteId = match[1];
+                    const url = params.toString()
+                        ? `/preview/sites/${siteId}/auth?${params.toString()}`
+                        : `/preview/sites/${siteId}/auth`;
+                    window.location.href = url;
+                    return Promise.reject(error);
+                }
+
+                const url = params.toString() ? `/auth?${params.toString()}` : '/auth';
+                window.location.href = url;
                 return Promise.reject(error);
             }
         }

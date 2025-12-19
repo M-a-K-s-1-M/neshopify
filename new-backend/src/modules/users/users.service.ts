@@ -93,8 +93,9 @@ export class UsersService {
 
     /** Ищет пользователя по email с ролями. */
     async getByEmail(email: string) {
-        return await this.prisma.user.findUnique({
-            where: { email },
+        // Админская часть управляет пользователями платформы.
+        return await this.prisma.user.findFirst({
+            where: { email, authScope: 'platform' },
             include: {
                 userRoles: {
                     include: { role: true }

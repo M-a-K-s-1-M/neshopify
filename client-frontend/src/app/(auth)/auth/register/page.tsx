@@ -1,7 +1,10 @@
 import { RegisterForm } from "@/components";
+import { Suspense } from "react";
 
 export default function Register() {
     return (
-        <RegisterForm />
+        <Suspense fallback={null}>
+            <RegisterForm />
+        </Suspense>
     )
 }
