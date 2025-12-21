@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
-import { AddPageBtn, HeaderPage, SettingsSiteBtn } from "@/components";
+import { AddPageBtn, HeaderPage, PreviewSiteBtn, PublishSiteBtn, SettingsSiteBtn, UnpublishSiteBtn } from "@/components";
 import { PageCard } from "@/components/dashboard/site/page-card";
 import { INTERNAL_LAYOUT_PAGE_SLUG } from "@/components/builder/default-page-blocks";
 import { SitesApi } from "@/lib/api/sites";
@@ -61,6 +61,12 @@ export default function Site() {
 
                 <div className="flex flex-wrap gap-2">
                     <SettingsSiteBtn href={`/sites/${siteId}/settings`} />
+                    <PreviewSiteBtn href={`/preview/sites/${siteId}`} />
+                    {site?.status === 'PUBLISHED' ? (
+                        <UnpublishSiteBtn siteId={siteId} />
+                    ) : (
+                        <PublishSiteBtn siteId={siteId} />
+                    )}
                     <AddPageBtn siteId={siteId} />
                 </div>
             </HeaderPage>

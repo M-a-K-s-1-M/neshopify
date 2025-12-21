@@ -32,6 +32,16 @@ export class SitesApi {
         return res.data;
     }
 
+    static async publish(siteId: string): Promise<SiteDto> {
+        const res = await $api.post<SiteDto>(`/sites/${siteId}/publish`);
+        return res.data;
+    }
+
+    static async unpublish(siteId: string): Promise<SiteDto> {
+        const res = await $api.post<SiteDto>(`/sites/${siteId}/unpublish`);
+        return res.data;
+    }
+
     static async remove(siteId: string): Promise<void> {
         await $api.delete(`/sites/${siteId}`);
     }

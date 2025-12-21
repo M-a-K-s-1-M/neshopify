@@ -159,6 +159,54 @@ export class SitesService {
         }
     }
 
+    /** Переводит сайт в статус PUBLISHED и проставляет publishedAt. */
+    async publish(siteId: string) {
+        const existing = await this.siteDelegate.findUnique({
+            where: { id: siteId },
+            select: { id: true, status: true },
+        });
+
+        if (!existing) {
+            throw new NotFoundException('Сайт не найден');
+        }
+
+        if (existing.status === 'ARCHIVED') {
+            throw new BadRequestException('Нельзя опубликовать архивный сайт');
+        }
+
+        return this.siteDelegate.update({
+            where: { id: siteId },
+            data: {
+                status: 'PUBLISHED',
+                publishedAt: new Date(),
+            },
+        });
+    }
+
+    /** Переводит сайт в статус DRAFT и очищает publishedAt. */
+    async unpublish(siteId: string) {
+        const existing = await this.siteDelegate.findUnique({
+            where: { id: siteId },
+            select: { id: true, status: true },
+        });
+
+        if (!existing) {
+            throw new NotFoundException('Сайт не найден');
+        }
+
+        if (existing.status === 'ARCHIVED') {
+            throw new BadRequestException('Нельзя снять с публикации архивный сайт');
+        }
+
+        return this.siteDelegate.update({
+            where: { id: siteId },
+            data: {
+                status: 'DRAFT',
+                publishedAt: null,
+            },
+        });
+    }
+
     /** Полностью удаляет сайт вместе с зависимыми сущностями. */
     async remove(siteId: string) {
         return this.prisma.$transaction(async (tx) => {

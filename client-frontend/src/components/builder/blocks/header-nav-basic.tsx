@@ -8,16 +8,25 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 
-function extractPreviewSiteId(basePath: string) {
-    const match = basePath.match(/^\/preview\/sites\/([^/]+)(?:\/|$)/);
-    return match?.[1] ?? null;
+function extractStoreSiteId(basePath: string) {
+    // Preview route: /preview/sites/:siteId/...
+    const previewMatch = basePath.match(/^\/preview\/sites\/([^/]+)(?:\/|$)/);
+    if (previewMatch?.[1]) return previewMatch[1];
+
+    // Published route: /:siteId(uuid)/:siteSlug/...
+    const publishedMatch = basePath.match(
+        /^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/[^/]+)?(?:\/|$)/i
+    );
+    if (publishedMatch?.[1]) return publishedMatch[1];
+
+    return null;
 }
 
 function buildAuthHref({ baseAuthPath, basePath, returnTo }: { baseAuthPath: string; basePath: string; returnTo: string }) {
     const params = new URLSearchParams();
     params.set('returnTo', returnTo);
 
-    const siteId = extractPreviewSiteId(basePath);
+    const siteId = extractStoreSiteId(basePath);
     if (siteId) params.set('siteId', siteId);
 
     return params.toString() ? `${baseAuthPath}?${params.toString()}` : baseAuthPath;
@@ -45,9 +54,9 @@ export function HeaderNavBasicBlock({ block }: HeaderNavBasicProps) {
     const logo = typeof data.logo === 'string' ? data.logo : block.template.title;
     const sticky = Boolean(data.sticky);
 
-    const previewSiteId = extractPreviewSiteId(basePath);
-    const inStoreContext = Boolean(previewSiteId);
-    const isStoreAuthed = isCustomerForCurrentStore(user, previewSiteId);
+    const storeSiteId = extractStoreSiteId(basePath);
+    const inStoreContext = Boolean(storeSiteId);
+    const isStoreAuthed = isCustomerForCurrentStore(user, storeSiteId);
 
     const returnTo = useMemo(() => {
         const query = searchParams.toString();

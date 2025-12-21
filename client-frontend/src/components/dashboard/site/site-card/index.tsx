@@ -36,7 +36,9 @@ const STATUS_STYLES: Record<SiteStatus, string> = {
 export function SiteCard({ site }: SiteCardProps) {
     const dashboardHref = `/sites/${site.id}`;
     const builderHref = `/sites/${site.id}/builder/home`;
-    const publicHref = site.domain ? `https://${site.domain}` : null;
+    const publicHref = site.domain ? `https://${site.domain}` : `/${site.id}/${site.slug}`;
+    const isPublished = site.status === 'PUBLISHED';
+    const isExternalPublicHref = publicHref.startsWith('http://') || publicHref.startsWith('https://');
     const domainLabel = site.domain ?? `${site.slug}.cosmiq.store`;
 
     return (
@@ -51,10 +53,21 @@ export function SiteCard({ site }: SiteCardProps) {
                     </span>
                 </CardTitle>
                 <CardDescription className="text-sm text-muted-foreground">
-                    {domainLabel}
+                    {isPublished ? (
+                        <Link
+                            href={publicHref}
+                            className="hover:underline"
+                            target={isExternalPublicHref ? "_blank" : undefined}
+                            rel={isExternalPublicHref ? "noreferrer" : undefined}
+                        >
+                            {domainLabel}
+                        </Link>
+                    ) : (
+                        domainLabel
+                    )}
                 </CardDescription>
                 <CardAction>
-                    <ActionsSiteBtn siteId={site.id} />
+                    <ActionsSiteBtn siteId={site.id} status={site.status} />
                 </CardAction>
             </CardHeader>
 
@@ -77,27 +90,25 @@ export function SiteCard({ site }: SiteCardProps) {
                         </Button>
                     </ButtonGroup>
 
-                    <ButtonGroup>
-                        <Button
-                            variant={'ghost'}
-                            size={'sm'}
-                            className="cursor-pointer"
-                            disabled={!publicHref}
-                            asChild={Boolean(publicHref)}
-                        >
-                            {publicHref ? (
-                                <Link href={publicHref} target="_blank" rel="noreferrer">
+                    {isPublished ? (
+                        <ButtonGroup>
+                            <Button
+                                variant={'ghost'}
+                                size={'sm'}
+                                className="cursor-pointer"
+                                asChild
+                            >
+                                <Link
+                                    href={publicHref}
+                                    target={isExternalPublicHref ? "_blank" : undefined}
+                                    rel={isExternalPublicHref ? "noreferrer" : undefined}
+                                >
                                     <LinkIcon className="mr-2 h-4 w-4" />
                                     {domainLabel}
                                 </Link>
-                            ) : (
-                                <span className="inline-flex items-center text-muted-foreground">
-                                    <LinkIcon className="mr-2 h-4 w-4" />
-                                    {domainLabel}
-                                </span>
-                            )}
-                        </Button>
-                    </ButtonGroup>
+                            </Button>
+                        </ButtonGroup>
+                    ) : null}
                 </div>
             </CardFooter>
         </Card>
