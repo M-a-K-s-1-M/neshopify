@@ -55,6 +55,20 @@ $api.interceptors.response.use(
                     return Promise.reject(error);
                 }
 
+                // Published storefront: /{siteId(uuid)}/{siteSlug}/...
+                const publishedMatch = window.location.pathname.match(
+                    /^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/([^/]+)(?:\/|$)/i
+                );
+                if (publishedMatch?.[1] && publishedMatch?.[2]) {
+                    const [, siteId, siteSlug] = publishedMatch;
+                    const basePath = `/${siteId}/${siteSlug}`;
+                    const url = params.toString()
+                        ? `${basePath}/auth?${params.toString()}`
+                        : `${basePath}/auth`;
+                    window.location.href = url;
+                    return Promise.reject(error);
+                }
+
                 const url = params.toString() ? `/auth?${params.toString()}` : '/auth';
                 window.location.href = url;
                 return Promise.reject(error);

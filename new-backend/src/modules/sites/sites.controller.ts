@@ -82,6 +82,26 @@ export class SitesController {
         return this.sitesService.update(id, dto);
     }
 
+    /** Публикует сайт (делает доступным публично). */
+    @Post(':id/publish')
+    @Roles('SITE_OWNER', 'ADMIN')
+    @SiteAccess(SiteAccessRequirement.OWNER)
+    @UseGuards(RolesGuard, SiteAccessGuard)
+    @ApiOkResponse({ type: SiteResponseDto })
+    async publish(@Param('id') id: string) {
+        return this.sitesService.publish(id);
+    }
+
+    /** Снимает сайт с публикации (возвращает в черновик). */
+    @Post(':id/unpublish')
+    @Roles('SITE_OWNER', 'ADMIN')
+    @SiteAccess(SiteAccessRequirement.OWNER)
+    @UseGuards(RolesGuard, SiteAccessGuard)
+    @ApiOkResponse({ type: SiteResponseDto })
+    async unpublish(@Param('id') id: string) {
+        return this.sitesService.unpublish(id);
+    }
+
     /** Удаляет сайт. */
     @Delete(':id')
     @Roles('SITE_OWNER', 'ADMIN')
