@@ -1,8 +1,9 @@
-import { IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CartContextDto {
-    @ApiProperty({ description: 'Сессионный идентификатор покупателя' })
+    @ApiPropertyOptional({ description: 'Сессионный идентификатор покупателя (для гостя)' })
+    @IsOptional()
     @IsString()
-    sessionId: string;
+    sessionId?: string;
 }

@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { BlockInstanceDto, ProductDto } from "@/lib/types";
 import { ProductsApi } from "@/lib/api/products";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 const EMPTY_FAVORITES: string[] = [];
 
@@ -20,7 +21,16 @@ export function ProfileFavoritesShowcaseBlock({
     const title = typeof data.title === "string" ? data.title : block.template.title;
     const subtitle = typeof data.subtitle === "string" ? data.subtitle : undefined;
 
-    const favoriteIds = useFavoritesStore((state) => state.favoritesBySiteId[siteId] ?? EMPTY_FAVORITES);
+    const user = useAuthStore((s) => s.user);
+    const customerUserId = useMemo(() => {
+        if (!user) return null;
+        const roles: string[] = Array.isArray((user as any).roles) ? (user as any).roles : [];
+        if (!roles.includes('CUSTOMER')) return null;
+        if ((user as any).siteId !== siteId) return null;
+        return typeof (user as any).sub === 'string' ? (user as any).sub : null;
+    }, [siteId, user]);
+
+    const favoriteIds = useFavoritesStore((state) => state.getFavorites(siteId, customerUserId) ?? EMPTY_FAVORITES);
     const favoriteKey = useMemo(() => favoriteIds.slice().sort().join(','), [favoriteIds]);
     const [items, setItems] = useState<ProductDto[]>([]);
     const [loading, setLoading] = useState(false);

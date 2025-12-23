@@ -3,34 +3,45 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface FavoritesState {
-    favoritesBySiteId: Record<string, string[]>;
+function favoritesKey(siteId: string, userId?: string | null) {
+    return `${siteId}::${userId ?? 'anon'}`;
+}
 
-    isFavorite: (siteId: string, productId: string) => boolean;
-    toggleFavorite: (siteId: string, productId: string) => void;
+interface FavoritesState {
+    favoritesByKey: Record<string, string[]>;
+
+    getFavorites: (siteId: string, userId?: string | null) => string[];
+    isFavorite: (siteId: string, productId: string, userId?: string | null) => boolean;
+    toggleFavorite: (siteId: string, productId: string, userId?: string | null) => void;
 }
 
 export const useFavoritesStore = create<FavoritesState>()(
     persist(
         (set, get) => ({
-            favoritesBySiteId: {},
+            favoritesByKey: {},
 
-            isFavorite: (siteId, productId) => {
-                const list = get().favoritesBySiteId[siteId] ?? [];
+            getFavorites: (siteId, userId) => {
+                const key = favoritesKey(siteId, userId);
+                return get().favoritesByKey[key] ?? [];
+            },
+
+            isFavorite: (siteId, productId, userId) => {
+                const list = get().getFavorites(siteId, userId);
                 return list.includes(productId);
             },
 
-            toggleFavorite: (siteId, productId) => {
+            toggleFavorite: (siteId, productId, userId) => {
                 set((state) => {
-                    const current = state.favoritesBySiteId[siteId] ?? [];
+                    const key = favoritesKey(siteId, userId);
+                    const current = state.favoritesByKey[key] ?? [];
                     const next = current.includes(productId)
                         ? current.filter((id) => id !== productId)
                         : [...current, productId];
 
                     return {
-                        favoritesBySiteId: {
-                            ...state.favoritesBySiteId,
-                            [siteId]: next,
+                        favoritesByKey: {
+                            ...state.favoritesByKey,
+                            [key]: next,
                         },
                     };
                 });
@@ -38,7 +49,15 @@ export const useFavoritesStore = create<FavoritesState>()(
         }),
         {
             name: 'neshopify.favorites',
-            version: 1,
+            version: 2,
+            migrate: (persisted: any, version) => {
+                // v1 хранил избранное только по siteId => оно «протекало» между аккаунтами.
+                // Чтобы гарантировать приватность, начинаем с чистого состояния.
+                if (version === 0 || version === 1) {
+                    return { favoritesByKey: {} };
+                }
+                return persisted;
+            },
         },
     ),
 );
