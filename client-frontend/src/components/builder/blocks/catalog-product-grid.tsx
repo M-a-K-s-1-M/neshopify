@@ -42,8 +42,6 @@ interface CatalogProductGridProps {
     siteId: string;
 }
 
-const EMPTY_FAVORITES: string[] = [];
-
 const MAX_PAGE_SIZE = 30;
 
 const DEFAULT_CARD_DESIGN: ProductCardDesignKey = "design-01";
@@ -154,7 +152,7 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     const [addedToCartIds, setAddedToCartIds] = useState<string[]>([]);
 
     const customerUserId = useMemo(() => resolveCustomerUserId(user, siteId), [siteId, user]);
-    const favoriteIds = useFavoritesStore((state) => state.getFavorites(siteId, customerUserId) ?? EMPTY_FAVORITES);
+    const favoriteIds = useFavoritesStore((state) => state.getFavorites(siteId, customerUserId));
     const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
     const catalogFilters = useCatalogFiltersOptional();
