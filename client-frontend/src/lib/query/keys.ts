@@ -10,6 +10,20 @@ export const queryKeys = {
     siteProductsList: (siteId: string, page: number, search?: string, limit?: number) =>
         ["sites", siteId, "products", { page, search: search ?? null, limit: limit ?? null }] as const,
     siteCategories: (siteId: string) => ["sites", siteId, "categories"] as const,
-    siteCart: (siteId: string, sessionId?: string) =>
-        ["sites", siteId, "cart", { sessionId: sessionId ?? null }] as const,
+    siteCart: (
+        siteId: string,
+        ctx?: {
+            userId?: string | null;
+            sessionId?: string | null;
+        },
+    ) =>
+        [
+            "sites",
+            siteId,
+            "cart",
+            {
+                userId: ctx?.userId ?? null,
+                sessionId: ctx?.sessionId ?? null,
+            },
+        ] as const,
 };

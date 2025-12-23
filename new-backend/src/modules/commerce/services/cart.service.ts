@@ -12,8 +12,8 @@ export class CartService {
     constructor(private readonly prisma: PrismaService) { }
 
     /** Возвращает корзину с продуктами либо выбрасывает 404. */
-    async getCart(siteId: string, sessionId: string) {
-        const cart = await this.resolveCart(siteId, sessionId, true);
+    async getCart(siteId: string, opts: { sessionId?: string; userId?: string }, createIfMissing = true) {
+        const cart = await this.resolveCart(siteId, opts, createIfMissing);
         if (!cart) {
             throw new NotFoundException('Корзина не найдена');
         }
@@ -31,8 +31,8 @@ export class CartService {
     }
 
     /** Добавляет новый товар или обновляет количество существующего. */
-    async addItem(siteId: string, dto: AddCartItemDto) {
-        const cart = await this.resolveCart(siteId, dto.sessionId, true);
+    async addItem(siteId: string, dto: AddCartItemDto, userId?: string) {
+        const cart = await this.resolveCart(siteId, { sessionId: dto.sessionId, userId }, true);
         if (!cart) {
             throw new NotFoundException('Корзина не найдена');
         }
@@ -60,12 +60,12 @@ export class CartService {
             });
         }
 
-        return this.getCart(siteId, dto.sessionId);
+        return this.getCart(siteId, { sessionId: dto.sessionId, userId }, true);
     }
 
     /** Обновляет количество для конкретной позиции корзины. */
-    async updateItem(siteId: string, itemId: string, dto: UpdateCartItemDto) {
-        const cart = await this.resolveCart(siteId, dto.sessionId, false);
+    async updateItem(siteId: string, itemId: string, dto: UpdateCartItemDto, userId?: string) {
+        const cart = await this.resolveCart(siteId, { sessionId: dto.sessionId, userId }, false);
         if (!cart) {
             throw new NotFoundException('Корзина не найдена');
         }
@@ -83,29 +83,29 @@ export class CartService {
             data: { quantity: dto.quantity },
         });
 
-        return this.getCart(siteId, dto.sessionId);
+        return this.getCart(siteId, { sessionId: dto.sessionId, userId }, true);
     }
 
     /** Удаляет позицию и возвращает актуальное состояние корзины. */
-    async removeItem(siteId: string, itemId: string, sessionId: string) {
-        const cart = await this.resolveCart(siteId, sessionId, false);
+    async removeItem(siteId: string, itemId: string, opts: { sessionId?: string; userId?: string }) {
+        const cart = await this.resolveCart(siteId, opts, false);
         if (!cart) {
-            return this.emptyCart(siteId, sessionId);
+            return this.emptyCart(siteId, opts.sessionId);
         }
 
         await this.prisma.cartItem.deleteMany({ where: { id: itemId, cartId: cart.id } });
-        return this.getCart(siteId, sessionId);
+        return this.getCart(siteId, opts, true);
     }
 
     /** Очистка всех позиций корзины пользователя. */
-    async clearCart(siteId: string, sessionId: string) {
-        const cart = await this.resolveCart(siteId, sessionId, false);
+    async clearCart(siteId: string, opts: { sessionId?: string; userId?: string }) {
+        const cart = await this.resolveCart(siteId, opts, false);
         if (!cart) {
-            return this.emptyCart(siteId, sessionId);
+            return this.emptyCart(siteId, opts.sessionId);
         }
 
         await this.prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
-        return this.getCart(siteId, sessionId);
+        return this.getCart(siteId, opts, true);
     }
 
     /** Вспомогательный метод для удаления всех позиций по cartId (используется заказами). */
@@ -113,19 +113,25 @@ export class CartService {
         await this.prisma.cartItem.deleteMany({ where: { cartId } });
     }
 
-    /** Ищет или создает корзину по siteId/sessionId. */
-    private async resolveCart(siteId: string, sessionId: string, createIfMissing: boolean) {
-        if (!sessionId) {
-            throw new BadRequestException('Не указан sessionId');
+    /** Ищет или создает корзину по siteId/userId (для авторизованных) или siteId/sessionId (для гостей). */
+    private async resolveCart(siteId: string, opts: { sessionId?: string; userId?: string }, createIfMissing: boolean) {
+        const userId = opts.userId;
+        const sessionId = opts.sessionId;
+
+        if (!userId && !sessionId) {
+            throw new BadRequestException('Не указан userId или sessionId');
         }
 
-        let cart = await this.prisma.cart.findFirst({ where: { siteId, sessionId } });
+        let cart = userId
+            ? await this.prisma.cart.findFirst({ where: { siteId, userId } })
+            : await this.prisma.cart.findFirst({ where: { siteId, sessionId } });
 
         if (!cart && createIfMissing) {
             cart = await this.prisma.cart.create({
                 data: {
                     siteId,
-                    sessionId,
+                    userId: userId ?? null,
+                    sessionId: userId ? null : (sessionId ?? null),
                 },
             });
         }
@@ -143,10 +149,10 @@ export class CartService {
     }
 
     /** Возвращает пустую корзину-заглушку, если реальная еще не создана. */
-    private async emptyCart(siteId: string, sessionId: string) {
+    private async emptyCart(siteId: string, sessionId?: string) {
         return {
             siteId,
-            sessionId,
+            sessionId: sessionId ?? null,
             items: [],
             total: new Prisma.Decimal(0),
         };

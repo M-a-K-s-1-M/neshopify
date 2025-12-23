@@ -9,30 +9,44 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { BlockInstanceDto } from "@/lib/types";
 import type { CartDto, CartItemDto } from "@/lib/types";
 import { CartApi } from "@/lib/api/cart";
-import { getOrCreateCartSessionId } from "@/lib/utils/cart-session";
 import { queryKeys } from "@/lib/query/keys";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import Image from "next/image";
 import { resolveMediaUrl } from "@/lib/utils/media";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/useAuthStore";
+
+function resolveCustomerUserId(user: any, siteId: string) {
+    if (!user) return null;
+    const roles: string[] = Array.isArray(user.roles) ? user.roles : [];
+    if (!roles.includes('CUSTOMER')) return null;
+    if (user.siteId !== siteId) return null;
+    return typeof user.sub === 'string' ? user.sub : null;
+}
 
 export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto; siteId: string }) {
     const title = block.template.title ?? "Корзина";
 
     const queryClient = useQueryClient();
-    const sessionId = useMemo(() => getOrCreateCartSessionId(), []);
+    const user = useAuthStore((s) => s.user);
+    const customerUserId = useMemo(() => resolveCustomerUserId(user, siteId), [siteId, user]);
+    const cartQueryKey = useMemo(
+        () => queryKeys.siteCart(siteId, { userId: customerUserId ?? null }),
+        [customerUserId, siteId],
+    );
 
     const { data: cart, isLoading, isFetching, error } = useQuery<CartDto>({
-        queryKey: queryKeys.siteCart(siteId, sessionId),
-        queryFn: () => CartApi.getCart(siteId, sessionId),
+        enabled: Boolean(customerUserId),
+        queryKey: cartQueryKey,
+        queryFn: () => CartApi.getCart(siteId),
     });
 
     const updateItemMutation = useMutation({
         mutationFn: async (payload: { itemId: string; quantity: number }) => {
-            return CartApi.updateItem(siteId, payload.itemId, { quantity: payload.quantity, sessionId });
+            return CartApi.updateItem(siteId, payload.itemId, { quantity: payload.quantity });
         },
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: queryKeys.siteCart(siteId, sessionId) });
+            await queryClient.invalidateQueries({ queryKey: cartQueryKey });
         },
         onError: (err) => {
             window.alert(getRequestErrorMessage(err, "Не удалось обновить количество"));
@@ -41,10 +55,10 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
 
     const removeItemMutation = useMutation({
         mutationFn: async (itemId: string) => {
-            return CartApi.removeItem(siteId, itemId, sessionId);
+            return CartApi.removeItem(siteId, itemId);
         },
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: queryKeys.siteCart(siteId, sessionId) });
+            await queryClient.invalidateQueries({ queryKey: cartQueryKey });
         },
         onError: (err) => {
             window.alert(getRequestErrorMessage(err, "Не удалось удалить товар из корзины"));
@@ -53,10 +67,10 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
 
     const clearCartMutation = useMutation({
         mutationFn: async () => {
-            return CartApi.clear(siteId, sessionId);
+            return CartApi.clear(siteId);
         },
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: queryKeys.siteCart(siteId, sessionId) });
+            await queryClient.invalidateQueries({ queryKey: cartQueryKey });
         },
         onError: (err) => {
             window.alert(getRequestErrorMessage(err, "Не удалось очистить корзину"));

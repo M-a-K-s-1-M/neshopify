@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BlockInstanceDto, ProductDto } from "@/lib/types";
@@ -12,7 +13,9 @@ import { queryKeys } from "@/lib/query/keys";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { getOrCreateCartSessionId } from "@/lib/utils/cart-session";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useCatalogFiltersOptional } from "../catalog-filters-context";
+import { useSiteBasePath } from "@/components/providers/site-base-path-provider";
 import {
     Pagination,
     PaginationContent,
@@ -117,7 +120,28 @@ function getPageItems(currentPage: number, totalPages: number) {
     return items;
 }
 
+function isCustomerForCurrentStore(user: any, siteId: string) {
+    if (!user) return false;
+    const roles: string[] = Array.isArray(user.roles) ? user.roles : [];
+    return roles.includes('CUSTOMER') && user.siteId === siteId;
+}
+
+function resolveCustomerUserId(user: any, siteId: string) {
+    if (!user) return null;
+    const roles: string[] = Array.isArray(user.roles) ? user.roles : [];
+    if (!roles.includes('CUSTOMER')) return null;
+    if (user.siteId !== siteId) return null;
+    return typeof user.sub === 'string' ? user.sub : null;
+}
+
 export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridProps) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const basePath = useSiteBasePath();
+    const user = useAuthStore((s) => s.user);
+    const refresh = useAuthStore((s) => s.refresh);
+
     const data = block.data ?? {};
     const cardDesign = normalizeCardDesign((data as any).cardDesign);
     const selectedProductIds = Array.isArray((data as any).productIds)
@@ -129,17 +153,48 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
     const [pendingCartProductId, setPendingCartProductId] = useState<string | null>(null);
     const [addedToCartIds, setAddedToCartIds] = useState<string[]>([]);
 
-    const favoriteIds = useFavoritesStore((state) => state.favoritesBySiteId[siteId] ?? EMPTY_FAVORITES);
+    const customerUserId = useMemo(() => resolveCustomerUserId(user, siteId), [siteId, user]);
+    const favoriteIds = useFavoritesStore((state) => state.getFavorites(siteId, customerUserId) ?? EMPTY_FAVORITES);
     const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
     const catalogFilters = useCatalogFiltersOptional();
 
     const queryClient = useQueryClient();
 
-    const sessionId = useMemo(() => getOrCreateCartSessionId(), []);
+    const normalizedBasePath = useMemo(() => basePath.replace(/\/+$/, ""), [basePath]);
+    const returnTo = useMemo(() => {
+        const query = searchParams.toString();
+        return query ? `${pathname}?${query}` : pathname;
+    }, [pathname, searchParams]);
+
+    const redirectToStoreAuth = useMemo(() => {
+        return () => {
+            if (!normalizedBasePath) return;
+            const params = new URLSearchParams();
+            if (returnTo) params.set('returnTo', returnTo);
+            const url = params.toString()
+                ? `${normalizedBasePath}/auth?${params.toString()}`
+                : `${normalizedBasePath}/auth`;
+            router.push(url);
+        };
+    }, [normalizedBasePath, returnTo, router]);
+
+    const ensureCustomerAuth = useMemo(() => {
+        return async () => {
+            const payload = user ?? (await refresh());
+            return Boolean(payload && isCustomerForCurrentStore(payload, siteId));
+        };
+    }, [refresh, siteId, user]);
+
+    const cartQueryKey = useMemo(
+        () => queryKeys.siteCart(siteId, { userId: customerUserId ?? null }),
+        [customerUserId, siteId],
+    );
+
     const { data: cart } = useQuery({
-        queryKey: queryKeys.siteCart(siteId, sessionId),
-        queryFn: () => CartApi.getCart(siteId, sessionId),
+        enabled: Boolean(customerUserId),
+        queryKey: cartQueryKey,
+        queryFn: () => CartApi.getCart(siteId),
     });
 
     const cartItemIdByProductId = useMemo(() => {
@@ -238,9 +293,9 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
             const itemId = cartItemIdByProductId.get(productId);
             if (!itemId) {
                 // Если по какой-то причине itemId не найден — просто рефетчим корзину.
-                return CartApi.getCart(siteId, sessionId);
+                return CartApi.getCart(siteId);
             }
-            return CartApi.removeItem(siteId, itemId, sessionId);
+            return CartApi.removeItem(siteId, itemId);
         },
     });
 
@@ -270,42 +325,61 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                             (addToCartMutation.isPending || removeFromCartMutation.isPending) && pendingCartProductId === product.id;
 
                         const handleToggleCart = () => {
-                            const max = getMaxQty(product);
-                            if (max === 0) return;
+                            void (async () => {
+                                const max = getMaxQty(product);
+                                if (max === 0) return;
 
-                            setPendingCartProductId(product.id);
+                                const authed = await ensureCustomerAuth();
+                                if (!authed) {
+                                    redirectToStoreAuth();
+                                    return;
+                                }
 
-                            if (cartItemIdByProductId.has(product.id)) {
-                                removeFromCartMutation.mutate(product.id, {
-                                    onSuccess: (nextCart) => {
-                                        queryClient.setQueryData(queryKeys.siteCart(siteId, sessionId), nextCart);
-                                        setAddedToCartIds((prev) => prev.filter((id) => id !== product.id));
-                                    },
-                                    onError: (err) => {
-                                        window.alert(getRequestErrorMessage(err, "Не удалось убрать из корзины"));
-                                    },
-                                    onSettled: () => {
-                                        setPendingCartProductId(null);
-                                    },
-                                });
-                                return;
-                            }
+                                setPendingCartProductId(product.id);
 
-                            addToCartMutation.mutate(
-                                { productId: product.id, quantity: 1 },
-                                {
-                                    onSuccess: (nextCart) => {
-                                        queryClient.setQueryData(queryKeys.siteCart(siteId, sessionId), nextCart);
-                                        setAddedToCartIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
+                                if (cartItemIdByProductId.has(product.id)) {
+                                    removeFromCartMutation.mutate(product.id, {
+                                        onSuccess: (nextCart) => {
+                                            queryClient.setQueryData(cartQueryKey, nextCart);
+                                            setAddedToCartIds((prev) => prev.filter((id) => id !== product.id));
+                                        },
+                                        onError: (err) => {
+                                            window.alert(getRequestErrorMessage(err, "Не удалось убрать из корзины"));
+                                        },
+                                        onSettled: () => {
+                                            setPendingCartProductId(null);
+                                        },
+                                    });
+                                    return;
+                                }
+
+                                addToCartMutation.mutate(
+                                    { productId: product.id, quantity: 1 },
+                                    {
+                                        onSuccess: (nextCart) => {
+                                            queryClient.setQueryData(cartQueryKey, nextCart);
+                                            setAddedToCartIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
+                                        },
+                                        onError: (err) => {
+                                            window.alert(getRequestErrorMessage(err, "Не удалось добавить в корзину"));
+                                        },
+                                        onSettled: () => {
+                                            setPendingCartProductId(null);
+                                        },
                                     },
-                                    onError: (err) => {
-                                        window.alert(getRequestErrorMessage(err, "Не удалось добавить в корзину"));
-                                    },
-                                    onSettled: () => {
-                                        setPendingCartProductId(null);
-                                    },
-                                },
-                            );
+                                );
+                            })();
+                        };
+
+                        const handleToggleFavorite = () => {
+                            void (async () => {
+                                const authed = await ensureCustomerAuth();
+                                if (!authed) {
+                                    redirectToStoreAuth();
+                                    return;
+                                }
+                                toggleFavorite(siteId, product.id, customerUserId);
+                            })();
                         };
 
                         return (
@@ -314,7 +388,7 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                                 product={product}
                                 className="max-w-none h-full"
                                 isFavorited={favoriteIds.includes(product.id)}
-                                onToggleFavorite={() => toggleFavorite(siteId, product.id)}
+                                onToggleFavorite={handleToggleFavorite}
                                 inCart={inCart}
                                 cartBusy={busy}
                                 onToggleCart={handleToggleCart}

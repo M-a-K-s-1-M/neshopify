@@ -292,6 +292,7 @@ model Cart {
   orders    Order[]
 
   @@unique([siteId, sessionId])
+  @@unique([siteId, userId])
   @@map("carts")
 }
 

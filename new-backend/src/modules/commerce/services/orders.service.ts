@@ -20,8 +20,12 @@ export class OrdersService {
     /**
      * Преобразует текущую корзину в заказ, копирует позиции и очищает корзину после сохранения.
      */
-    async checkout(siteId: string, dto: CheckoutDto) {
-        const cart = await this.cartService.getCart(siteId, dto.sessionId);
+    async checkout(siteId: string, dto: CheckoutDto, userId?: string) {
+        const cart = await this.cartService.getCart(
+            siteId,
+            { sessionId: dto.sessionId, userId },
+            false,
+        );
 
         if (!cart || cart.items.length === 0) {
             throw new BadRequestException('Корзина пуста');
