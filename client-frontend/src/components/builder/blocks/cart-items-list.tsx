@@ -15,6 +15,8 @@ import Image from "next/image";
 import { resolveMediaUrl } from "@/lib/utils/media";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { usePathname } from "next/navigation";
+import { StorefrontApi } from "@/lib/api/storefront";
 
 function resolveCustomerUserId(user: any, siteId: string) {
     if (!user) return null;
@@ -26,6 +28,8 @@ function resolveCustomerUserId(user: any, siteId: string) {
 
 export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto; siteId: string }) {
     const title = block.template.title ?? "Корзина";
+
+    const pathname = usePathname();
 
     const queryClient = useQueryClient();
     const user = useAuthStore((s) => s.user);
@@ -77,6 +81,57 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
         },
     });
 
+    const checkoutStripeMutation = useMutation({
+        mutationFn: async () => {
+            const email = user?.email;
+            if (!email) {
+                throw new Error('Не удалось определить email пользователя');
+            }
+
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            const parts = (pathname ?? '').split('/').filter(Boolean);
+
+            // Варианты URL storefront:
+            // 1) /{slug}/...  (slug-only)
+            // 2) /{siteId}/{slug}/... (id+slug)
+            // Для return URL Stripe нужен именно slug-only, потому что страницы /{slug}/checkout/* существуют.
+            const slugFromPath = (() => {
+                if (parts.length === 0) return null;
+                const first = parts[0];
+                const second = parts[1];
+                if (first && uuidRegex.test(first) && second) return second;
+                return first;
+            })();
+
+            let storefrontSlug: string | null = null;
+            try {
+                const siteDto = await StorefrontApi.getSite(siteId);
+                storefrontSlug = siteDto?.slug ?? null;
+            } catch {
+                storefrontSlug = null;
+            }
+
+            const safeSlug = (storefrontSlug ?? slugFromPath ?? '').replace(/^\/+/, '');
+            const basePath = safeSlug ? `/${siteId}/${safeSlug}` : `/${siteId}`;
+
+            const origin = window.location.origin;
+            const successUrl = `${origin}${basePath}/checkout/success`;
+            const cancelUrl = `${origin}${basePath}/checkout/cancel`;
+
+            return CartApi.checkoutStripe(siteId, {
+                customerEmail: email,
+                successUrl,
+                cancelUrl,
+            });
+        },
+        onSuccess: (data) => {
+            window.location.assign(data.checkoutUrl);
+        },
+        onError: (err) => {
+            window.alert(getRequestErrorMessage(err, 'Не удалось перейти к оплате'));
+        },
+    });
+
     const items: CartItemDto[] = cart?.items ?? [];
     const currency = items.find((i) => i.product?.currency)?.product?.currency ?? "RUB";
 
@@ -90,7 +145,12 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
     }, [cart, items]);
 
     const formattedTotal = `${total.toLocaleString("ru-RU")} ${currency}`;
-    const isBusy = isFetching || updateItemMutation.isPending || removeItemMutation.isPending || clearCartMutation.isPending;
+    const isBusy =
+        isFetching ||
+        updateItemMutation.isPending ||
+        removeItemMutation.isPending ||
+        clearCartMutation.isPending ||
+        checkoutStripeMutation.isPending;
     const queryError = error ? "Не удалось загрузить корзину" : null;
 
     const subtotal = total;
@@ -266,8 +326,21 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
                                     "bg-linear-to-r from-primary to-secondary",
                                     "hover:opacity-90",
                                 )}
+                                onClick={() => {
+                                    if (!customerUserId) {
+                                        window.alert('Нужно войти как покупатель, чтобы оплатить заказ');
+                                        return;
+                                    }
+                                    checkoutStripeMutation.mutate();
+                                }}
                             >
-                                Перейти к оформлению
+                                {checkoutStripeMutation.isPending ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Loader2 className="h-4 w-4 animate-spin" /> Перенаправляем…
+                                    </span>
+                                ) : (
+                                    'Перейти к оформлению'
+                                )}
                             </Button>
 
                             <Button type="button" variant="outline" className="w-full" disabled={isBusy}>

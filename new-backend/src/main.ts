@@ -8,6 +8,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { TrimStringsPipe } from './common/pipes';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -28,6 +29,9 @@ async function bootstrap() {
 
 
   app.setGlobalPrefix('api');
+
+  // Stripe webhook требует raw body для проверки подписи.
+  app.use('/api/payments/webhooks/stripe', express.raw({ type: 'application/json' }));
 
   // Статические файлы (например, загруженные изображения товаров)
   // Важно: middleware статики не зависит от globalPrefix.
