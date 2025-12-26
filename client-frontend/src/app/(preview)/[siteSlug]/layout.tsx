@@ -1,4 +1,5 @@
 import { SiteBasePathProvider } from "@/components/providers/site-base-path-provider";
+import { AuthBootstrap } from "@/components/providers/auth-bootstrap";
 
 export default async function StorefrontSlugLayout({
     children,
@@ -10,5 +11,9 @@ export default async function StorefrontSlugLayout({
     const { siteSlug } = await params;
     const basePath = `/${siteSlug}`;
 
-    return <SiteBasePathProvider basePath={basePath}>{children}</SiteBasePathProvider>;
+    return (
+        <SiteBasePathProvider basePath={basePath}>
+            <AuthBootstrap>{children}</AuthBootstrap>
+        </SiteBasePathProvider>
+    );
 }
