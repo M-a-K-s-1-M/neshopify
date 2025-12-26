@@ -2,91 +2,56 @@
 import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Input, Separator, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components';
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { OrdersApi } from '@/lib/api/orders';
+import { queryKeys } from '@/lib/query/keys';
+import type { OrderDto } from '@/lib/types';
 
 export type LastOrder = {
     id: string;            // #ORD-2547
     customer: string;      // Имя клиента
     avatar: string;        // URL или идентификатор аватара
     date: string;          // ISO или форматированная дата
-    status: "Доставлен" | "В пути" | "Обработка";
+    status: string;        // Статус доставки
+    paymentStatus: string; // Статус оплаты
     amount: string;        // ₽8,450
 };
 
-export const data: LastOrder[] = [
-    {
-        id: "#ORD-2547asdf",
-        customer: "Мария Петрова",
-        avatar: "/images/avatars/maria.svg",
-        date: "2025-01-15",
-        status: "Доставлен",
-        amount: "8,450",
-    },
-    {
-        id: "#ORD-2546fff",
-        customer: "Дмитрий Козлов",
-        avatar: "/images/avatars/dmitry.svg",
-        date: "2025-01-15",
-        status: "В пути",
-        amount: "12,890",
-    },
-    {
-        id: "#ORD-254523423",
-        customer: "Елена Смирнова",
-        avatar: "/images/avatars/elena.svg",
-        date: "2025-01-14",
-        status: "Обработка",
-        amount: "5,670",
-    },
-    {
-        id: "#ORD-2547asdf",
-        customer: "Мария Петрова",
-        avatar: "/images/avatars/maria.svg",
-        date: "2025-01-15",
-        status: "Доставлен",
-        amount: "8,450",
-    },
-    {
-        id: "#ORD-2546gghwe22",
-        customer: "Дмитрий Козлов",
-        avatar: "/images/avatars/dmitry.svg",
-        date: "2025-01-15",
-        status: "В пути",
-        amount: "12,890",
-    },
-    {
-        id: "#ORD-2545",
-        customer: "Елена Смирнова",
-        avatar: "/images/avatars/elena.svg",
-        date: "2025-01-14",
-        status: "Обработка",
-        amount: "5,670",
-    },
-    {
-        id: "#ORD-2547",
-        customer: "Мария Петрова",
-        avatar: "/images/avatars/maria.svg",
-        date: "2025-01-15",
-        status: "Доставлен",
-        amount: "8,450",
-    },
-    {
-        id: "#ORD-2546",
-        customer: "Дмитрий Козлов",
-        avatar: "/images/avatars/dmitry.svg",
-        date: "2025-01-15",
-        status: "В пути",
-        amount: "12,890",
-    },
-    {
-        id: "#ORD-2545",
-        customer: "Елена Смирнова",
-        avatar: "/images/avatars/elena.svg",
-        date: "2025-01-14",
-        status: "Обработка",
-        amount: "5,670",
-    },
-];
+function formatDeliveryStatus(status: OrderDto['status']) {
+    switch (status) {
+        case 'FULFILLED':
+            return 'Доставлен';
+        case 'CONFIRMED':
+            return 'В пути';
+        case 'CANCELLED':
+            return 'Отменён';
+        case 'DRAFT':
+        case 'PENDING':
+        default:
+            return 'Обработка';
+    }
+}
+
+function formatPaymentStatus(status: OrderDto['paymentStatus']) {
+    switch (status) {
+        case 'PAID':
+            return 'Оплачен';
+        case 'PENDING':
+            return 'Ожидает подтверждения';
+        case 'REFUNDED':
+            return 'Возврат';
+        case 'NOT_PAID':
+        default:
+            return 'Не оплачен';
+    }
+}
+
+function formatMoney(amount: string | number) {
+    const parsed = typeof amount === 'number' ? amount : Number(amount);
+    const safe = Number.isFinite(parsed) ? parsed : 0;
+    return safe.toLocaleString('ru-RU');
+}
 
 const columns: ColumnDef<LastOrder>[] = [
     {
@@ -128,9 +93,15 @@ const columns: ColumnDef<LastOrder>[] = [
     },
     {
         accessorKey: 'status',
-        header: "Статус",
+        header: "Статус доставки",
         filterFn: 'includesString',
         cell: ({ row }) => <div>{row.getValue('status')}</div>
+    },
+    {
+        accessorKey: 'paymentStatus',
+        header: 'Статус оплаты',
+        filterFn: 'includesString',
+        cell: ({ row }) => <div>{row.getValue('paymentStatus')}</div>,
     },
     {
         accessorKey: 'amount',
@@ -179,14 +150,32 @@ const columns: ColumnDef<LastOrder>[] = [
 ]
 
 
-export function OrdersTable() {
+export function OrdersTable({ siteId }: { siteId: string }) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
+    const { data: ordersRes, isLoading, error } = useQuery({
+        queryKey: queryKeys.siteOrdersList(siteId, { limit: 100 }),
+        queryFn: () => OrdersApi.list(siteId, { limit: 100 }),
+    });
+
+    const tableData: LastOrder[] = useMemo(() => {
+        const orders = ordersRes?.data ?? [];
+        return orders.map((o) => ({
+            id: o.id,
+            customer: o.customerEmail || o.customerPhone || o.userId || '—',
+            avatar: '',
+            date: (o.createdAt ?? '').slice(0, 10),
+            status: formatDeliveryStatus(o.status),
+            paymentStatus: formatPaymentStatus(o.paymentStatus),
+            amount: formatMoney(o.total),
+        }));
+    }, [ordersRes?.data]);
+
     const table = useReactTable({
-        data,
+        data: tableData,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
@@ -245,6 +234,12 @@ export function OrdersTable() {
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
+
+            {isLoading ? (
+                <div className='py-6 text-sm text-muted-foreground'>Загружаем заказы...</div>
+            ) : error ? (
+                <div className='py-6 text-sm text-destructive'>Не удалось загрузить заказы</div>
+            ) : null}
 
             <div className='bg-sidebar overflow-hidden rounded-sm border shadow-md'>
                 <Table >

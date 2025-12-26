@@ -10,7 +10,10 @@ import { StripeService } from './services/stripe.service';
 import { SiteAccessGuard } from '../../common/guards';
 
 @Module({
-    controllers: [CartController, OrdersController, PaymentsWebhookController, StripeWebhookController],
+    // Важно: Stripe webhook имеет конкретный маршрут /payments/webhooks/stripe.
+    // Его нужно зарегистрировать раньше, чем общий /payments/webhooks/:provider,
+    // иначе "stripe" может матчиться как :provider и падать на валидации dto.
+    controllers: [CartController, OrdersController, StripeWebhookController, PaymentsWebhookController],
     providers: [CartService, OrdersService, PaymentsService, StripeService, SiteAccessGuard],
 })
 export class CommerceModule { }

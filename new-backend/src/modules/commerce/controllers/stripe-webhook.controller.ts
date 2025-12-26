@@ -13,6 +13,11 @@ import { PaymentsService } from '../services/payments.service';
 import { StripeService } from '../services/stripe.service';
 import { PaymentStatus } from '../../../../generated/prisma/client';
 
+type StripeWebhookRequest = Request & {
+    body: unknown;
+    rawBody?: Buffer;
+};
+
 @Controller('payments/webhooks/stripe')
 @ApiTags('Payments')
 export class StripeWebhookController {
@@ -24,15 +29,35 @@ export class StripeWebhookController {
     @Post()
     @ApiOkResponse({ type: ReceivedResponseDto })
     async handle(
-        @Req() req: Request & { body: Buffer },
+        @Req() req: StripeWebhookRequest,
         @Headers('stripe-signature') signature: string | undefined,
     ) {
-        const rawBody = req.body;
-        if (!Buffer.isBuffer(rawBody)) {
+        const rawBody = Buffer.isBuffer(req.rawBody)
+            ? req.rawBody
+            : Buffer.isBuffer(req.body)
+                ? (req.body as Buffer)
+                : undefined;
+
+        if (!rawBody) {
             throw new BadRequestException('Stripe webhook ожидает raw body (Buffer)');
         }
 
-        const event = this.stripeService.constructEvent(rawBody, signature);
+        let event: Stripe.Event;
+        try {
+            event = this.stripeService.constructEvent(rawBody, signature);
+        } catch (e: any) {
+            const message = typeof e?.message === 'string' ? e.message : 'unknown error';
+            // Помогаем диагностике: не логируем секреты, только факт наличия заголовка и размер body.
+            // eslint-disable-next-line no-console
+            console.error('[stripe-webhook] constructEvent failed', {
+                hasSignatureHeader: Boolean(signature),
+                bodyLength: rawBody.length,
+                contentType: req.headers['content-type'],
+                path: req.originalUrl,
+                message,
+            });
+            throw new BadRequestException(`Stripe webhook signature verification failed: ${message}`);
+        }
 
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as Stripe.Checkout.Session;
