@@ -8,12 +8,9 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { TrimStringsPipe } from './common/pipes';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import express from 'express';
 
 async function bootstrap() {
-  // Важно для Stripe webhook: требуется raw body (Buffer), иначе проверка подписи падает.
-  // Отключаем дефолтный bodyParser Nest и подключаем middleware вручную.
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
   const appEnv = configService.get<string>('app.env') ?? 'development';
@@ -31,32 +28,6 @@ async function bootstrap() {
 
 
   app.setGlobalPrefix('api');
-
-  // Stripe webhook требует raw body для проверки подписи.
-  // Самый надёжный вариант — сохранить raw bytes через verify-хук JSON parser.
-  // Тогда дальнейшая логика может работать и с распарсенным JSON, и с подписью.
-  app.use(
-    '/api/payments/webhooks/stripe',
-    express.json({
-      verify: (req, _res, buf) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (req as any).rawBody = buf;
-      },
-    }),
-  );
-
-  // Для остальных маршрутов включаем стандартный парсинг JSON/форм.
-  // Важно: исключаем Stripe webhook, иначе body-parser может сломать raw body.
-  const jsonParser = express.json();
-  const urlencodedParser = express.urlencoded({ extended: true });
-  app.use((req, res, next) => {
-    if (req.originalUrl?.startsWith('/api/payments/webhooks/stripe')) return next();
-    return jsonParser(req, res, next);
-  });
-  app.use((req, res, next) => {
-    if (req.originalUrl?.startsWith('/api/payments/webhooks/stripe')) return next();
-    return urlencodedParser(req, res, next);
-  });
 
   // Статические файлы (например, загруженные изображения товаров)
   // Важно: middleware статики не зависит от globalPrefix.
@@ -105,10 +76,6 @@ async function bootstrap() {
     optionsSuccessStatus: 200,
   });
 
-  // На Windows `localhost` часто резолвится в IPv6 ::1.
-  // Слушаем на '::', чтобы принимать и IPv6, и IPv4-mapped подключения.
-  await app.listen(port, '::');
-  // eslint-disable-next-line no-console
-  console.log(`Server started on http://localhost:${port}`);
+  await app.listen(port, () => console.log(`Server started on http://localhost:${port}`));
 }
 bootstrap();

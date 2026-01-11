@@ -45,14 +45,6 @@ class EnvironmentVariables {
     @IsOptional()
     @IsString()
     JWT_REFRESH_TTL?: string;
-
-    @IsOptional()
-    @IsString()
-    STRIPE_SECRET_KEY?: string;
-
-    @IsOptional()
-    @IsString()
-    STRIPE_WEBHOOK_SECRET?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

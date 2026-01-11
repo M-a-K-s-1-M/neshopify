@@ -22,7 +22,6 @@ export class PaymentsService {
 
         const data: Record<string, any> = {
             paymentStatus,
-            paymentProvider: provider,
         };
 
         if (paymentStatus === PaymentStatus.PAID && order.status === OrderStatus.PENDING) {
@@ -30,12 +29,9 @@ export class PaymentsService {
         }
 
         if (dto.transactionId) {
-            data.paymentIntentId = dto.transactionId;
-        }
-
-        if (dto.rawPayload) {
             data.paymentDetails = {
                 provider,
+                transactionId: dto.transactionId,
                 payload: dto.rawPayload,
             };
         }
