@@ -323,16 +323,12 @@ model Order {
   cartId String? @map("cart_id")
   cart   Cart?   @relation(fields: [cartId], references: [id])
 
-  total            Decimal       @db.Decimal(10, 2)
-  status           OrderStatus   @default(PENDING)
-  paymentStatus    PaymentStatus @default(NOT_PAID) @map("payment_status")
-  paymentProvider  String?       @map("payment_provider")
-  paymentIntentId  String?       @map("payment_intent_id")
-  paymentSessionId String?       @map("payment_session_id")
-  paymentDetails   Json?         @map("payment_details")
-  shippingAddress  Json?         @map("shipping_address")
-  customerEmail    String        @map("customer_email")
-  customerPhone    String?       @map("customer_phone")
+  total           Decimal       @db.Decimal(10, 2)
+  status          OrderStatus   @default(PENDING)
+  paymentStatus   PaymentStatus @default(NOT_PAID) @map("payment_status")
+  shippingAddress Json?         @map("shipping_address")
+  customerEmail   String        @map("customer_email")
+  customerPhone   String?       @map("customer_phone")
 
   items OrderItem[]
 

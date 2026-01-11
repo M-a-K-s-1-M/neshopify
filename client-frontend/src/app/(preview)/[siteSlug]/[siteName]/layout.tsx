@@ -1,5 +1,4 @@
 import { SiteBasePathProvider } from "@/components/providers/site-base-path-provider";
-import { AuthBootstrap } from "@/components/providers/auth-bootstrap";
 
 export default async function StorefrontIdSlugLayout({
     children,
@@ -13,9 +12,5 @@ export default async function StorefrontIdSlugLayout({
     // В этом маршруте siteSlug фактически содержит siteId (UUID), а siteName — slug сайта.
     const basePath = `/${siteSlug}/${siteName}`;
 
-    return (
-        <SiteBasePathProvider basePath={basePath}>
-            <AuthBootstrap>{children}</AuthBootstrap>
-        </SiteBasePathProvider>
-    );
+    return <SiteBasePathProvider basePath={basePath}>{children}</SiteBasePathProvider>;
 }

@@ -26,27 +26,4 @@ export const queryKeys = {
                 sessionId: ctx?.sessionId ?? null,
             },
         ] as const,
-
-    siteOrdersList: (
-        siteId: string,
-        params?: {
-            page?: number;
-            limit?: number;
-            search?: string | null;
-            status?: string | null;
-            paymentStatus?: string | null;
-        },
-    ) =>
-        [
-            "sites",
-            siteId,
-            "orders",
-            {
-                page: params?.page ?? 1,
-                limit: params?.limit ?? 100,
-                search: params?.search ?? null,
-                status: params?.status ?? null,
-                paymentStatus: params?.paymentStatus ?? null,
-            },
-        ] as const,
 };

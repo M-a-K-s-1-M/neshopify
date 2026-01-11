@@ -25,47 +25,6 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-## Stripe (test payments)
-
-### Env
-
-Добавьте в `.env` (или `.development.env`):
-
-```bash
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
-
-### Checkout
-
-Backend эндпоинт:
-
-- `POST /api/sites/:siteId/cart/checkout/stripe`
-
-Он:
-- создаёт `Order` из корзины,
-- создаёт Stripe Checkout Session,
-- возвращает `{ orderId, checkoutUrl }`.
-
-Фронтенд редиректит пользователя на `checkoutUrl`.
-
-### Webhook
-
-Webhook endpoint:
-
-- `POST /api/payments/webhooks/stripe`
-
-Для локальной разработки удобно через Stripe CLI:
-
-```bash
-stripe login
-stripe listen --forward-to http://localhost:5000/api/payments/webhooks/stripe
-```
-
-CLI выведет `whsec_...` — это значение нужно положить в `STRIPE_WEBHOOK_SECRET`.
-
-Для тестовой оплаты можно использовать стандартные тестовые карты Stripe (например, `4242 4242 4242 4242`).
-
 ## Project setup
 
 ```bash

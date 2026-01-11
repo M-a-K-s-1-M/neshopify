@@ -1,12 +1,6 @@
 import { AnalyticsSite, OrdersTable } from "@/components";
 
-export default async function Review({
-    params,
-}: {
-    params: Promise<{ siteId: string }>;
-}) {
-    const { siteId } = await params;
-
+export default function Review() {
     return (
         <div>
             <div className="mb-6">
@@ -16,7 +10,7 @@ export default async function Review({
 
             <div>
                 <h2 className="text-2xl font-bold text-secondary">Последние заказы</h2>
-                <OrdersTable siteId={siteId} />
+                <OrdersTable />
             </div>
         </div>
     )
