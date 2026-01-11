@@ -52,8 +52,24 @@ export class AuthService {
         return `site:${siteId}`;
     }
 
+    private async ensureRole(value: 'ADMIN' | 'SITE_OWNER' | 'CUSTOMER') {
+        const descriptionByValue: Record<typeof value, string> = {
+            ADMIN: 'Администратор платформы',
+            SITE_OWNER: 'Владелец интернет-магазина',
+            CUSTOMER: 'Покупатель магазина',
+        };
+
+        await this.prisma.role.upsert({
+            where: { value },
+            update: { description: descriptionByValue[value] },
+            create: { value, description: descriptionByValue[value] },
+        });
+    }
+
     /** Регистрирует владельца сайта и назначает роль SITE_OWNER. */
     async register(dto: RegisterDto) {
+        await this.ensureRole('SITE_OWNER');
+
         const exists = await this.prisma.user.findFirst({
             where: { email: dto.email, authScope: this.platformScope() },
         });
@@ -87,6 +103,8 @@ export class AuthService {
 
     /** Регистрирует покупателя конкретного сайта и выдаёт роль CUSTOMER. */
     async registerCustomer(dto: RegisterDto, siteId: string) {
+        await this.ensureRole('CUSTOMER');
+
         if (!siteId) {
             // Для привязки клиента нам нужен конкретный сайт
             throw new BadRequestException("siteId обязателен");

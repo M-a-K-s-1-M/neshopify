@@ -77,6 +77,29 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
         },
     });
 
+    const checkoutMutation = useMutation({
+        mutationFn: async () => {
+            const email = user?.email;
+            if (!email) {
+                throw new Error('Email пользователя не найден');
+            }
+
+            const current = new URL(window.location.href);
+            const cartUrl = `${current.origin}${current.pathname}`;
+            const successUrl = `${cartUrl}?checkout=success`;
+            const cancelUrl = `${cartUrl}?checkout=cancel`;
+
+            return CartApi.checkoutStripe(siteId, {
+                customerEmail: email,
+                successUrl,
+                cancelUrl,
+            });
+        },
+        onError: (err) => {
+            window.alert(getRequestErrorMessage(err, 'Не удалось начать оплату'));
+        },
+    });
+
     const items: CartItemDto[] = cart?.items ?? [];
     const currency = items.find((i) => i.product?.currency)?.product?.currency ?? "RUB";
 
@@ -90,7 +113,12 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
     }, [cart, items]);
 
     const formattedTotal = `${total.toLocaleString("ru-RU")} ${currency}`;
-    const isBusy = isFetching || updateItemMutation.isPending || removeItemMutation.isPending || clearCartMutation.isPending;
+    const isBusy =
+        isFetching ||
+        updateItemMutation.isPending ||
+        removeItemMutation.isPending ||
+        clearCartMutation.isPending ||
+        checkoutMutation.isPending;
     const queryError = error ? "Не удалось загрузить корзину" : null;
 
     const subtotal = total;
@@ -266,8 +294,25 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
                                     "bg-linear-to-r from-primary to-secondary",
                                     "hover:opacity-90",
                                 )}
+                                onClick={() => {
+                                    checkoutMutation.mutate(undefined, {
+                                        onSuccess: (res) => {
+                                            if (res?.checkoutUrl) {
+                                                window.location.href = res.checkoutUrl;
+                                            } else {
+                                                window.alert('Не удалось получить ссылку на оплату');
+                                            }
+                                        },
+                                    });
+                                }}
                             >
-                                Перейти к оформлению
+                                {checkoutMutation.isPending ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <Loader2 className="h-4 w-4 animate-spin" /> Переходим…
+                                    </span>
+                                ) : (
+                                    'Перейти к оформлению'
+                                )}
                             </Button>
 
                             <Button type="button" variant="outline" className="w-full" disabled={isBusy}>
