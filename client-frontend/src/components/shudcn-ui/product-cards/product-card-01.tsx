@@ -1,21 +1,26 @@
 "use client";
 
-import { Heart, Loader2, ShoppingCart } from "lucide-react";
+import { Heart } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 
 import { ProductCardMedia } from "./product-card-media";
+import { ProductDetailsDialog } from "./product-details-dialog";
 import { getProductPriceLabel, type ProductCardProps } from "./types";
 
 export function ProductCardOne({
 	product,
 	isFavorited = false,
 	inCart = false,
+	cartQuantity,
 	cartBusy = false,
 	onToggleFavorite,
 	onToggleCart,
+	onAddToCart,
+	onRemoveFromCart,
+	onUpdateCartQuantity,
 	className,
 }: ProductCardProps) {
 	const title = product.title ?? "Товар";
@@ -61,20 +66,15 @@ export function ProductCardOne({
 				<div className="flex items-center justify-between">
 					<p className="text-2xl font-bold">{priceLabel}</p>
 
-					<Button onClick={onToggleCart} disabled={!onToggleCart || cartBusy}>
-						{cartBusy ? (
-							<span className="flex items-center gap-2">
-								<Loader2 className="h-4 w-4 animate-spin" />
-								{inCart ? "Удаляем" : "Добавляем"}
-							</span>
-						) : inCart ? (
-							"Убрать"
-						) : (
-							<span className="flex items-center gap-2">
-								<ShoppingCart className="h-4 w-4" /> В корзину
-							</span>
-						)}
-					</Button>
+					<ProductDetailsDialog
+						product={product}
+						inCart={inCart}
+						cartQuantity={cartQuantity}
+						cartBusy={cartBusy}
+						onAddToCart={onAddToCart ?? (onToggleCart ? () => onToggleCart() : undefined)}
+						onRemoveFromCart={onRemoveFromCart ?? (onToggleCart ? () => onToggleCart() : undefined)}
+						onUpdateCartQuantity={onUpdateCartQuantity}
+					/>
 				</div>
 			</CardContent>
 		</Card>

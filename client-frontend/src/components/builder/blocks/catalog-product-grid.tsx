@@ -203,6 +203,14 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
         return map;
     }, [cart]);
 
+    const cartItemQtyByProductId = useMemo(() => {
+        const map = new Map<string, number>();
+        cart?.items?.forEach((item) => {
+            map.set(item.productId, Number(item.quantity) || 0);
+        });
+        return map;
+    }, [cart]);
+
     useEffect(() => {
         const nextMaxPage = Math.max(1, Math.ceil(selectedProductIds.length / pageSize));
         if (page > nextMaxPage) {
@@ -297,6 +305,16 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
         },
     });
 
+    const updateCartItemMutation = useMutation({
+        mutationFn: async (payload: { productId: string; quantity: number }) => {
+            const itemId = cartItemIdByProductId.get(payload.productId);
+            if (!itemId) {
+                return CartApi.getCart(siteId);
+            }
+            return CartApi.updateItem(siteId, itemId, { quantity: payload.quantity });
+        },
+    });
+
     const getMaxQty = (product: ProductDto) => {
         if (product.stockStatus === "OUT_OF_STOCK") return 0;
         if (product.stockStatus === "PREORDER") return 99;
@@ -319,13 +337,75 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                 <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
                     {filteredGridItems.map((product) => {
                         const inCart = cartItemIdByProductId.has(product.id) || addedToCartIds.includes(product.id);
+                        const cartQuantity = cartItemQtyByProductId.get(product.id) ?? (inCart ? 1 : 0);
                         const busy =
-                            (addToCartMutation.isPending || removeFromCartMutation.isPending) && pendingCartProductId === product.id;
+                            (addToCartMutation.isPending || removeFromCartMutation.isPending || updateCartItemMutation.isPending) &&
+                            pendingCartProductId === product.id;
 
-                        const handleToggleCart = () => {
+                        const handleAddToCart = (quantity: number) => {
                             void (async () => {
                                 const max = getMaxQty(product);
                                 if (max === 0) return;
+                                if (cartItemIdByProductId.has(product.id)) return;
+
+                                const authed = await ensureCustomerAuth();
+                                if (!authed) {
+                                    redirectToStoreAuth();
+                                    return;
+                                }
+
+                                const qty = Math.max(1, Math.min(max, Number(quantity) || 1));
+                                setPendingCartProductId(product.id);
+
+                                addToCartMutation.mutate(
+                                    { productId: product.id, quantity: qty },
+                                    {
+                                        onSuccess: (nextCart) => {
+                                            queryClient.setQueryData(cartQueryKey, nextCart);
+                                            setAddedToCartIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
+                                        },
+                                        onError: (err) => {
+                                            window.alert(getRequestErrorMessage(err, "Не удалось добавить в корзину"));
+                                        },
+                                        onSettled: () => {
+                                            setPendingCartProductId(null);
+                                        },
+                                    },
+                                );
+                            })();
+                        };
+
+                        const handleRemoveFromCart = () => {
+                            void (async () => {
+                                const authed = await ensureCustomerAuth();
+                                if (!authed) {
+                                    redirectToStoreAuth();
+                                    return;
+                                }
+
+                                setPendingCartProductId(product.id);
+                                removeFromCartMutation.mutate(product.id, {
+                                    onSuccess: (nextCart) => {
+                                        queryClient.setQueryData(cartQueryKey, nextCart);
+                                        setAddedToCartIds((prev) => prev.filter((id) => id !== product.id));
+                                    },
+                                    onError: (err) => {
+                                        window.alert(getRequestErrorMessage(err, "Не удалось убрать из корзины"));
+                                    },
+                                    onSettled: () => {
+                                        setPendingCartProductId(null);
+                                    },
+                                });
+                            })();
+                        };
+
+                        const handleUpdateCartQuantity = (quantity: number) => {
+                            void (async () => {
+                                if (!cartItemIdByProductId.has(product.id)) return;
+
+                                const max = getMaxQty(product);
+                                const effectiveMax = max > 0 ? max : Math.max(1, cartQuantity);
+                                const qty = Math.max(1, Math.min(effectiveMax, Number(quantity) || 1));
 
                                 const authed = await ensureCustomerAuth();
                                 if (!authed) {
@@ -334,32 +414,14 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                                 }
 
                                 setPendingCartProductId(product.id);
-
-                                if (cartItemIdByProductId.has(product.id)) {
-                                    removeFromCartMutation.mutate(product.id, {
-                                        onSuccess: (nextCart) => {
-                                            queryClient.setQueryData(cartQueryKey, nextCart);
-                                            setAddedToCartIds((prev) => prev.filter((id) => id !== product.id));
-                                        },
-                                        onError: (err) => {
-                                            window.alert(getRequestErrorMessage(err, "Не удалось убрать из корзины"));
-                                        },
-                                        onSettled: () => {
-                                            setPendingCartProductId(null);
-                                        },
-                                    });
-                                    return;
-                                }
-
-                                addToCartMutation.mutate(
-                                    { productId: product.id, quantity: 1 },
+                                updateCartItemMutation.mutate(
+                                    { productId: product.id, quantity: qty },
                                     {
                                         onSuccess: (nextCart) => {
                                             queryClient.setQueryData(cartQueryKey, nextCart);
-                                            setAddedToCartIds((prev) => (prev.includes(product.id) ? prev : [...prev, product.id]));
                                         },
                                         onError: (err) => {
-                                            window.alert(getRequestErrorMessage(err, "Не удалось добавить в корзину"));
+                                            window.alert(getRequestErrorMessage(err, "Не удалось изменить количество"));
                                         },
                                         onSettled: () => {
                                             setPendingCartProductId(null);
@@ -388,8 +450,11 @@ export function CatalogProductGridBlock({ block, siteId }: CatalogProductGridPro
                                 isFavorited={favoriteIds.includes(product.id)}
                                 onToggleFavorite={handleToggleFavorite}
                                 inCart={inCart}
+                                cartQuantity={cartQuantity}
                                 cartBusy={busy}
-                                onToggleCart={handleToggleCart}
+                                onAddToCart={handleAddToCart}
+                                onRemoveFromCart={handleRemoveFromCart}
+                                onUpdateCartQuantity={handleUpdateCartQuantity}
                             />
                         );
                     })}

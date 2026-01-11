@@ -6,9 +6,14 @@ export interface ProductCardProps {
     product: ProductDto;
     isFavorited?: boolean;
     inCart?: boolean;
+    cartQuantity?: number;
     cartBusy?: boolean;
     onToggleFavorite?: () => void;
+    /** @deprecated Use onAddToCart/onRemoveFromCart for quantity-aware actions */
     onToggleCart?: () => void;
+    onAddToCart?: (quantity: number) => void;
+    onRemoveFromCart?: () => void;
+    onUpdateCartQuantity?: (quantity: number) => void;
     className?: string;
 }
 
