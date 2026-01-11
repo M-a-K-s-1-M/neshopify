@@ -44,6 +44,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
+    "stripe": "^20.1.2",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^13.0.0"
   },
@@ -71,7 +72,7 @@
     "typescript": "^5.7.3"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node-esm prisma/seed.ts"
   },
   "jest": {
     "moduleFileExtensions": [

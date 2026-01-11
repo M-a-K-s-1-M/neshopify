@@ -5,6 +5,8 @@ import { AddCartItemDto } from '../dto/add-cart-item.dto';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
 import { CartContextDto } from '../dto/cart-context.dto';
 import { CheckoutDto } from '../dto/checkout.dto';
+import { StripeCheckoutDto } from '../dto/stripe-checkout.dto';
+import { StripeCheckoutResponseDto } from '../dto/stripe-checkout-response.dto';
 import { OrdersService } from '../services/orders.service';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { CartResponseDto, OrderResponseDto } from 'src/common/swagger/api-models';
@@ -95,5 +97,16 @@ export class CartController {
         @Body() dto: CheckoutDto,
     ) {
         return this.ordersService.checkout(siteId, dto, req.user?.sub);
+    }
+
+    /** Создает Stripe Checkout сессию на основе текущей корзины. */
+    @Post('checkout/stripe')
+    @ApiCreatedResponse({ type: StripeCheckoutResponseDto })
+    checkoutStripe(
+        @Req() req: Request & { user?: any },
+        @Param('siteId') siteId: string,
+        @Body() dto: StripeCheckoutDto,
+    ) {
+        return this.ordersService.checkoutStripe(siteId, dto, req.user?.sub);
     }
 }

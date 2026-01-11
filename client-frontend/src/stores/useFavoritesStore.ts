@@ -3,6 +3,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const EMPTY_FAVORITES: string[] = [];
+
 function favoritesKey(siteId: string, userId?: string | null) {
     return `${siteId}::${userId ?? 'anon'}`;
 }
@@ -22,7 +24,7 @@ export const useFavoritesStore = create<FavoritesState>()(
 
             getFavorites: (siteId, userId) => {
                 const key = favoritesKey(siteId, userId);
-                return get().favoritesByKey[key] ?? [];
+                return get().favoritesByKey[key] ?? EMPTY_FAVORITES;
             },
 
             isFavorite: (siteId, productId, userId) => {
@@ -33,7 +35,7 @@ export const useFavoritesStore = create<FavoritesState>()(
             toggleFavorite: (siteId, productId, userId) => {
                 set((state) => {
                     const key = favoritesKey(siteId, userId);
-                    const current = state.favoritesByKey[key] ?? [];
+                    const current = state.favoritesByKey[key] ?? EMPTY_FAVORITES;
                     const next = current.includes(productId)
                         ? current.filter((id) => id !== productId)
                         : [...current, productId];

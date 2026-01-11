@@ -12,6 +12,20 @@ export interface UpdateCartItemPayload {
     sessionId?: string;
 }
 
+export interface StripeCheckoutPayload {
+    customerEmail: string;
+    customerPhone?: string;
+    shippingAddress?: string;
+    notes?: string;
+    sessionId?: string;
+    successUrl: string;
+    cancelUrl: string;
+}
+
+export interface StripeCheckoutResponse {
+    checkoutUrl: string;
+}
+
 export class CartApi {
     static async getCart(siteId: string, sessionId?: string): Promise<CartDto> {
         const res = await $api.get<CartDto>(`/sites/${siteId}/cart`, {
@@ -51,6 +65,20 @@ export class CartApi {
     static async clear(siteId: string, sessionId?: string): Promise<CartDto> {
         const res = await $api.delete<CartDto>(`/sites/${siteId}/cart`, {
             params: sessionId ? { sessionId } : undefined,
+        });
+
+        return res.data;
+    }
+
+    static async checkoutStripe(siteId: string, payload: StripeCheckoutPayload): Promise<StripeCheckoutResponse> {
+        const res = await $api.post<StripeCheckoutResponse>(`/sites/${siteId}/cart/checkout/stripe`, {
+            customerEmail: payload.customerEmail,
+            ...(payload.customerPhone ? { customerPhone: payload.customerPhone } : {}),
+            ...(payload.shippingAddress ? { shippingAddress: payload.shippingAddress } : {}),
+            ...(payload.notes ? { notes: payload.notes } : {}),
+            ...(payload.sessionId ? { sessionId: payload.sessionId } : {}),
+            successUrl: payload.successUrl,
+            cancelUrl: payload.cancelUrl,
         });
 
         return res.data;
