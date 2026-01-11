@@ -10,7 +10,7 @@ import { StripeService } from './services/stripe.service';
 import { SiteAccessGuard } from '../../common/guards';
 
 @Module({
-    controllers: [CartController, OrdersController, PaymentsWebhookController, StripeWebhookController],
+    controllers: [CartController, OrdersController, StripeWebhookController, PaymentsWebhookController],
     providers: [CartService, OrdersService, PaymentsService, StripeService, SiteAccessGuard],
 })
 export class CommerceModule { }
