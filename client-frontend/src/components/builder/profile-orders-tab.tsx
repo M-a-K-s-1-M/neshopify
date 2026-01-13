@@ -8,10 +8,13 @@ import { ProductsApi } from "@/lib/api/products";
 import type { OrderDto, OrderStatus, ProductDto } from "@/lib/types";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductDetailsDialog } from "@/components/shudcn-ui/product-cards";
 import { resolveMediaUrl } from "@/lib/utils/media";
+
+const ORDERS_PAGE_SIZE = 4;
 
 function formatOrderStatus(status: OrderStatus): string {
     switch (status) {
@@ -69,6 +72,7 @@ export function ProfileOrdersTab({ siteId }: { siteId: string }) {
     const [error, setError] = useState<string | null>(null);
     const [orders, setOrders] = useState<OrderDto[]>([]);
     const [productsById, setProductsById] = useState<Record<string, ProductDto>>({});
+    const [page, setPage] = useState(1);
 
     const enabled = isAuth && Boolean(siteId);
 
@@ -81,7 +85,10 @@ export function ProfileOrdersTab({ siteId }: { siteId: string }) {
             setError(null);
             try {
                 const data = await OrdersApi.listMyPaid(siteId);
-                if (!cancelled) setOrders(Array.isArray(data) ? data : []);
+                if (!cancelled) {
+                    setOrders(Array.isArray(data) ? data : []);
+                    setPage(1);
+                }
             } catch (e) {
                 if (!cancelled) setError(getRequestErrorMessage(e, "Не удалось загрузить заказы"));
             } finally {
@@ -147,6 +154,15 @@ export function ProfileOrdersTab({ siteId }: { siteId: string }) {
     }, [enabled, siteId, productIds, productsById]);
 
     const hasOrders = orders.length > 0;
+    const maxPage = useMemo(() => Math.max(1, Math.ceil(orders.length / ORDERS_PAGE_SIZE)), [orders.length]);
+    const pageOrders = useMemo(() => {
+        const start = (page - 1) * ORDERS_PAGE_SIZE;
+        return orders.slice(start, start + ORDERS_PAGE_SIZE);
+    }, [orders, page]);
+
+    useEffect(() => {
+        setPage((current) => Math.min(Math.max(1, current), maxPage));
+    }, [maxPage]);
     const emptyStateText = useMemo(() => {
         if (!isAuth) return "Войдите, чтобы увидеть оплаченные заказы.";
         return "Оплаченных заказов пока нет.";
@@ -171,7 +187,31 @@ export function ProfileOrdersTab({ siteId }: { siteId: string }) {
 
     return (
         <div className="space-y-4">
-            {orders.map((order) => (
+            <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
+                <span>
+                    Стр. {page} из {maxPage}
+                </span>
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                >
+                    Назад
+                </Button>
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
+                    disabled={page >= maxPage}
+                >
+                    Далее
+                </Button>
+            </div>
+
+            {pageOrders.map((order) => (
                 <Card key={order.id}>
                     <CardHeader className="border-b">
                         <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
