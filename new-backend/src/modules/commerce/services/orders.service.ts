@@ -177,7 +177,13 @@ export class OrdersService {
     /**
      * Возвращает страницу заказов с фильтрами по статусам и поиском по контактам/позициям.
      */
-    async list(siteId: string, pagination: PaginationQuery, filters: OrderFiltersDto, includeItems = true) {
+    async list(
+        siteId: string,
+        pagination: PaginationQuery,
+        filters: OrderFiltersDto,
+        includeItems = true,
+        totalSort?: 'asc' | 'desc',
+    ) {
         const where: Prisma.OrderWhereInput = { siteId };
 
         if (filters.status) {
@@ -186,6 +192,32 @@ export class OrdersService {
 
         if (filters.paymentStatus) {
             where.paymentStatus = filters.paymentStatus;
+        }
+
+        if (filters.minTotal || filters.maxTotal) {
+            where.total = {
+                ...(filters.minTotal ? { gte: new Prisma.Decimal(filters.minTotal) } : null),
+                ...(filters.maxTotal ? { lte: new Prisma.Decimal(filters.maxTotal) } : null),
+            };
+        }
+
+        if (filters.dateFrom || filters.dateTo) {
+            const createdAt: Prisma.DateTimeFilter = {};
+            if (filters.dateFrom) {
+                const from = new Date(filters.dateFrom);
+                if (!Number.isNaN(from.getTime())) createdAt.gte = from;
+            }
+            if (filters.dateTo) {
+                const to = new Date(filters.dateTo);
+                if (!Number.isNaN(to.getTime())) {
+                    // если передали только дату — берем конец дня
+                    if (filters.dateTo.length <= 10) {
+                        to.setHours(23, 59, 59, 999);
+                    }
+                    createdAt.lte = to;
+                }
+            }
+            if (Object.keys(createdAt).length) where.createdAt = createdAt;
         }
 
         if (pagination.search) {
@@ -198,12 +230,16 @@ export class OrdersService {
 
         const skip = (pagination.page - 1) * pagination.limit;
 
+        const orderBy: Prisma.OrderOrderByWithRelationInput | Prisma.OrderOrderByWithRelationInput[] = totalSort
+            ? [{ total: totalSort }, { createdAt: 'desc' }]
+            : { createdAt: 'desc' };
+
         const [data, total] = await this.prisma.$transaction([
             this.prisma.order.findMany({
                 where,
                 skip,
                 take: pagination.limit,
-                orderBy: { createdAt: 'desc' },
+                orderBy,
                 include: includeItems ? { items: true } : undefined,
             }),
             this.prisma.order.count({ where }),

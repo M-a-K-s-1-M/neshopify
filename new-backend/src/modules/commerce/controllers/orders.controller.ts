@@ -32,9 +32,10 @@ export class OrdersController {
         @Query(new PaginationPipe({ defaultLimit: 20, maxLimit: 100 })) pagination: PaginationQuery,
         @Query() filters: OrderFiltersDto,
         @Query('includeItems') includeItems?: string,
+        @Query('totalSort') totalSort?: 'asc' | 'desc',
     ) {
         const includeItemsBool = includeItems === undefined ? true : includeItems !== 'false';
-        return this.ordersService.list(siteId, pagination, filters, includeItemsBool);
+        return this.ordersService.list(siteId, pagination, filters, includeItemsBool, totalSort);
     }
 
     /** Загружает один заказ по идентификатору. */

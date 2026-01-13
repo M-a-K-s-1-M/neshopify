@@ -7,6 +7,11 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
     Input,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
     Separator,
     Table,
     TableBody,
@@ -75,6 +80,10 @@ export function OrdersTable() {
     const [page, setPage] = useState(1);
     const limit = 10;
 
+    const [status, setStatus] = useState<OrderStatus | 'ALL'>('ALL');
+    const [date, setDate] = useState('');
+    const [totalSort, setTotalSort] = useState<'NONE' | 'asc' | 'desc'>('NONE');
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<OrdersListState>({
@@ -94,6 +103,10 @@ export function OrdersTable() {
                     limit,
                     search: search.trim() || undefined,
                     includeItems: 'false',
+                    status: status === 'ALL' ? undefined : status,
+                    dateFrom: date || undefined,
+                    dateTo: date || undefined,
+                    totalSort: totalSort === 'NONE' ? undefined : totalSort,
                 });
                 if (!cancelled) {
                     setResult({ data: res.data ?? [], meta: res.meta });
@@ -109,7 +122,7 @@ export function OrdersTable() {
         return () => {
             cancelled = true;
         };
-    }, [siteId, page, limit, search]);
+    }, [siteId, page, limit, search, status, date, totalSort]);
 
     const rows = useMemo(() => {
         return (result.data ?? []).map((o) => ({
@@ -134,7 +147,7 @@ export function OrdersTable() {
             {error ? (
                 <div className='py-2 text-sm text-destructive'>{error}</div>
             ) : null}
-            <div className='flex items-center py-4'>
+            <div className='flex items-center py-4 gap-3 flex-wrap'>
                 <Input
                     placeholder='Поиск по клиенту...'
                     value={search}
@@ -144,6 +157,66 @@ export function OrdersTable() {
                     }}
                     className='max-w-sm'
                 />
+
+                <Select
+                    value={status}
+                    onValueChange={(v) => {
+                        setStatus(v as OrderStatus | 'ALL');
+                        setPage(1);
+                    }}
+                >
+                    <SelectTrigger className='w-[170px]'>
+                        <SelectValue placeholder='Статус' />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value='ALL'>Все статусы</SelectItem>
+                        <SelectItem value='PENDING'>Обработка</SelectItem>
+                        <SelectItem value='CONFIRMED'>В пути</SelectItem>
+                        <SelectItem value='FULFILLED'>Доставлен</SelectItem>
+                        <SelectItem value='CANCELLED'>Отменен</SelectItem>
+                        <SelectItem value='DRAFT'>Черновик</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                <Input
+                    type='date'
+                    value={date}
+                    onChange={(e) => {
+                        setDate(e.target.value);
+                        setPage(1);
+                    }}
+                    className='w-[150px]'
+                />
+
+                <Select
+                    value={totalSort}
+                    onValueChange={(v) => {
+                        setTotalSort(v as 'NONE' | 'asc' | 'desc');
+                        setPage(1);
+                    }}
+                >
+                    <SelectTrigger className='w-[200px]'>
+                        <SelectValue placeholder='Сумма' />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value='NONE'>Без сортировки</SelectItem>
+                        <SelectItem value='asc'>Сумма по возрастанию</SelectItem>
+                        <SelectItem value='desc'>Сумма по убыванию</SelectItem>
+                    </SelectContent>
+                </Select>
+
+                <Button
+                    variant='secondary'
+                    onClick={() => {
+                        setSearch('');
+                        setStatus('ALL');
+                        setDate('');
+                        setTotalSort('NONE');
+                        setPage(1);
+                    }}
+                >
+                    Сбросить
+                </Button>
             </div>
 
             <div className='bg-sidebar overflow-hidden rounded-sm border shadow-md'>

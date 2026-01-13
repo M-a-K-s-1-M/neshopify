@@ -15,6 +15,11 @@ export type SiteOrdersListParams = {
     status?: string;
     paymentStatus?: string;
     includeItems?: 'true' | 'false';
+    minTotal?: string;
+    maxTotal?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    totalSort?: 'asc' | 'desc';
 };
 
 export class SiteOrdersApi {
