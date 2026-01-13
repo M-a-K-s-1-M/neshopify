@@ -2,21 +2,11 @@
 
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
-
-const chartData = [
-    { month: "Янв", users: 320 },
-    { month: "Фев", users: 410 },
-    { month: "Мар", users: 365 },
-    { month: "Апр", users: 450 },
-    { month: "Май", users: 520 },
-    { month: "Июн", users: 610 },
-    { month: "Июл", users: 580 },
-    { month: "Авг", users: 640 },
-    { month: "Сен", users: 690 },
-    { month: "Окт", users: 720 },
-    { month: "Ноя", users: 760 },
-    { month: "Дек", users: 810 },
-];
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components";
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { SiteAnalyticsApi } from "@/lib/api/analytics";
+import type { SiteRegistrationsDto } from "@/lib/types";
 
 const chartConfig: ChartConfig = {
     users: {
@@ -26,14 +16,68 @@ const chartConfig: ChartConfig = {
 };
 
 export function ChartRegisterUsers() {
+    const params = useParams();
+    const siteId = typeof params.siteId === 'string' ? params.siteId : params.siteId?.[0];
+
+    const [months, setMonths] = useState<'3' | '6' | '12'>('12');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [series, setSeries] = useState<SiteRegistrationsDto | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        const run = async () => {
+            if (!siteId) return;
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await SiteAnalyticsApi.registrations(siteId, Number(months));
+                if (!cancelled) setSeries(res);
+            } catch {
+                if (!cancelled) setError('Не удалось загрузить регистрации.');
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        run();
+        return () => {
+            cancelled = true;
+        };
+    }, [siteId, months]);
+
+    const chartData = useMemo(() => {
+        return series?.data ?? [];
+    }, [series]);
+
+    const currentUsers = series?.currentUsers ?? 0;
+    const currentLabel = series?.currentLabel ?? '';
+
     return (
         <div className="rounded-md bg-card shadow-md p-4">
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-sm text-muted-foreground">Регистрации пользователей</p>
-                    <p className="text-2xl font-semibold">810 за декабрь</p>
+                    <p className="text-2xl font-semibold">{currentUsers} {currentLabel}</p>
                 </div>
+
+                <Select value={months} onValueChange={(v) => setMonths(v as '3' | '6' | '12')}>
+                    <SelectTrigger className='w-[170px]'>
+                        <SelectValue placeholder='Период' />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value='3'>За 3 месяца</SelectItem>
+                        <SelectItem value='6'>За 6 месяцев</SelectItem>
+                        <SelectItem value='12'>За 12 месяцев</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
+            {loading ? (
+                <div className='py-2 text-sm text-muted-foreground'>Загрузка…</div>
+            ) : null}
+            {error ? (
+                <div className='py-2 text-sm text-destructive'>{error}</div>
+            ) : null}
             <ChartContainer config={chartConfig} className="mt-6 h-[260px] w-full">
                 <AreaChart
                     data={chartData}

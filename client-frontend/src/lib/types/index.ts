@@ -22,6 +22,7 @@ export type {
 	PaginatedResponse,
 	SiteUserDto,
 	SiteAnalyticsSummaryDto,
+	SiteRegistrationsDto,
 	CreateSitePayload,
 	UpdateSitePayload,
 	CreatePagePayload,

@@ -133,6 +133,17 @@ export interface SiteAnalyticsSummaryDto {
     conversionPercent: number;
 }
 
+export interface SiteRegistrationsPointDto {
+    month: string;
+    users: number;
+}
+
+export interface SiteRegistrationsDto {
+    data: SiteRegistrationsPointDto[];
+    currentLabel: string;
+    currentUsers: number;
+}
+
 export interface CreateSitePayload {
     name: string;
     slug: string;
