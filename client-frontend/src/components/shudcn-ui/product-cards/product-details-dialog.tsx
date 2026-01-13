@@ -18,6 +18,13 @@ function getMaxQty(product: ProductDto): number {
     return Math.max(0, Number(product.stock) || 0);
 }
 
+function getStockLabel(product: ProductDto): string {
+    if (product.stockStatus === "OUT_OF_STOCK") return "Нет в наличии";
+    if (product.stockStatus === "PREORDER") return "Предзаказ";
+    const stock = Math.max(0, Number(product.stock) || 0);
+    return `Осталось: ${stock}`;
+}
+
 export function ProductDetailsDialog({
     product,
     inCart,
@@ -40,6 +47,7 @@ export function ProductDetailsDialog({
     const title = product.title ?? "Товар";
     const description = product.description?.trim() ? product.description : null;
     const priceLabel = getProductPriceLabel(product);
+    const stockLabel = getStockLabel(product);
 
     const media = useMemo(
         () => product.media?.slice().sort((a, b) => a.order - b.order) ?? [],
@@ -137,6 +145,7 @@ export function ProductDetailsDialog({
                         </div>
 
                         <p className="text-3xl font-semibold">{priceLabel}</p>
+                        <p className="text-sm text-muted-foreground">{stockLabel}</p>
 
                         <div className="flex items-center gap-4">
                             <div className="flex items-center rounded-xl border">
