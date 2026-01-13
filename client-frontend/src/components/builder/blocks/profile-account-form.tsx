@@ -31,7 +31,6 @@ export function ProfileAccountFormBlock({ block }: { block: BlockInstanceDto }) 
 
     const data = block.data ?? {};
     const title = typeof data.title === "string" ? data.title : block.template.title;
-    void data;
     const fields = Array.isArray(data.fields) ? (data.fields as FieldConfig[]) : [];
     const actions = Array.isArray(data.actions) ? (data.actions as ActionConfig[]) : [];
 

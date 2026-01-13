@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 
 import { BlockRenderer } from "./block-registry";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     usePageDetailQuery,
     useSitePagesQuery,
@@ -16,6 +17,7 @@ import {
 import { getDefaultBlocksForPageType, INTERNAL_LAYOUT_PAGE_SLUG } from "./default-page-blocks";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import { CatalogFiltersProvider } from "./catalog-filters-context";
+import type { BlockInstanceDto } from "@/lib/types";
 
 interface SitePageViewProps {
     slug: string;
@@ -164,6 +166,7 @@ export function SitePageView({ slug, title, description, variant = "builder", si
                     : undefined;
 
     const showMetaHeader = variant === "builder";
+    const isProfilePage = slug === "profile";
 
     return (
         <div className={showMetaHeader ? "space-y-6" : "space-y-4"}>
@@ -210,51 +213,121 @@ export function SitePageView({ slug, title, description, variant = "builder", si
 
             {!isLoading && resolvedPage && blocks.length > 0 ? (
                 <CatalogFiltersProvider>
-                    <div className="space-y-4">
-                        {blocks.map((block) => {
-                            const isHeaderOrFooter =
-                                block.template.key.startsWith("header-") ||
-                                block.template.key.startsWith("footer-");
+                    {isProfilePage ? (
+                        <ProfileTabsLayout blocks={blocks} siteId={effectiveSiteId} />
+                    ) : (
+                        <div className="space-y-4">
+                            {blocks.map((block) => {
+                                const isHeaderOrFooter =
+                                    block.template.key.startsWith("header-") ||
+                                    block.template.key.startsWith("footer-");
 
-                            const isFullBleedBlock = block.template.key === "products-featured";
+                                const isFullBleedBlock = block.template.key === "products-featured";
 
-                            const isBorderlessCardBlock =
-                                block.template.key === "catalog-search-filter" ||
-                                block.template.key === "catalog-product-grid" ||
-                                block.template.key === "cart-items-list" ||
-                                block.template.key === "products-featured" ||
-                                block.template.key === "banners" ||
-                                block.template.key === "hero-brand-highlight" ||
-                                block.template.key === "profile-favorites-showcase" ||
-                                block.template.key === "profile-account-form";
+                                const isBorderlessCardBlock =
+                                    block.template.key === "catalog-search-filter" ||
+                                    block.template.key === "catalog-product-grid" ||
+                                    block.template.key === "cart-items-list" ||
+                                    block.template.key === "products-featured" ||
+                                    block.template.key === "banners" ||
+                                    block.template.key === "hero-brand-highlight" ||
+                                    block.template.key === "profile-favorites-showcase" ||
+                                    block.template.key === "profile-account-form";
 
-                            if (isHeaderOrFooter) {
-                                return <BlockRenderer key={block.id} block={block} siteId={effectiveSiteId} />;
-                            }
+                                if (isHeaderOrFooter) {
+                                    return <BlockRenderer key={block.id} block={block} siteId={effectiveSiteId} />;
+                                }
 
-                            if (isFullBleedBlock) {
-                                return <BlockRenderer key={block.id} block={block} siteId={effectiveSiteId} />;
-                            }
+                                if (isFullBleedBlock) {
+                                    return <BlockRenderer key={block.id} block={block} siteId={effectiveSiteId} />;
+                                }
 
-                            if (isBorderlessCardBlock) {
+                                if (isBorderlessCardBlock) {
+                                    return (
+                                        <div key={block.id} className="px-6">
+                                            <BlockRenderer block={block} siteId={effectiveSiteId} />
+                                        </div>
+                                    );
+                                }
+
                                 return (
                                     <div key={block.id} className="px-6">
-                                        <BlockRenderer block={block} siteId={effectiveSiteId} />
+                                        <div className="rounded-2xl border border-border bg-card">
+                                            <BlockRenderer block={block} siteId={effectiveSiteId} />
+                                        </div>
                                     </div>
                                 );
-                            }
-
-                            return (
-                                <div key={block.id} className="px-6">
-                                    <div className="rounded-2xl border border-border bg-card">
-                                        <BlockRenderer block={block} siteId={effectiveSiteId} />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                            })}
+                        </div>
+                    )}
                 </CatalogFiltersProvider>
             ) : null}
+        </div>
+    );
+}
+
+function ProfileTabsLayout({ blocks, siteId }: { blocks: BlockInstanceDto[]; siteId: string }) {
+    const headerBlocks = blocks.filter((block) => block.template.key.startsWith("header-"));
+    const footerBlocks = blocks.filter((block) => block.template.key.startsWith("footer-"));
+    const contentBlocks = blocks.filter(
+        (block) => !block.template.key.startsWith("header-") && !block.template.key.startsWith("footer-"),
+    );
+
+    const accountBlocks = contentBlocks.filter((block) => block.template.key === "profile-account-form");
+    const favoritesBlocks = contentBlocks.filter((block) => block.template.key === "profile-favorites-showcase");
+    const otherBlocks = contentBlocks.filter(
+        (block) => block.template.key !== "profile-account-form" && block.template.key !== "profile-favorites-showcase",
+    );
+
+    const defaultTab = accountBlocks.length > 0 ? "account" : "favorites";
+
+    return (
+        <div className="space-y-4">
+            {headerBlocks.map((block) => (
+                <BlockRenderer key={block.id} block={block} siteId={siteId} />
+            ))}
+
+            <div className="px-6">
+                <Tabs defaultValue={defaultTab} className="gap-4">
+                    <TabsList>
+                        <TabsTrigger value="account">Профиль</TabsTrigger>
+                        <TabsTrigger value="favorites">Избранное</TabsTrigger>
+                        <TabsTrigger value="orders" disabled>
+                            Заказы
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="account" className="mt-0">
+                        <div className="space-y-4">
+                            {accountBlocks.map((block) => (
+                                <BlockRenderer key={block.id} block={block} siteId={siteId} />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="favorites" className="mt-0">
+                        <div className="space-y-4">
+                            {favoritesBlocks.map((block) => (
+                                <BlockRenderer key={block.id} block={block} siteId={siteId} />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="orders" className="mt-0">
+                        <p className="text-sm text-muted-foreground">Раздел скоро появится.</p>
+                    </TabsContent>
+                </Tabs>
+            </div>
+
+            {otherBlocks.map((block) => (
+                <div key={block.id} className="px-6">
+                    <BlockRenderer block={block} siteId={siteId} />
+                </div>
+            ))}
+
+            {footerBlocks.map((block) => (
+                <BlockRenderer key={block.id} block={block} siteId={siteId} />
+            ))}
         </div>
     );
 }

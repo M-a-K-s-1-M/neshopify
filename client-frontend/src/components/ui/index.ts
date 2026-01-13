@@ -21,3 +21,4 @@ export * from './chart';
 export * from './carousel';
 export * from './select';
 export * from './pagination';
+export * from './tabs';
