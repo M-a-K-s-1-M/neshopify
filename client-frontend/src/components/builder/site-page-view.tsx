@@ -225,7 +225,8 @@ export function SitePageView({ slug, title, description, variant = "builder", si
                                 block.template.key === "products-featured" ||
                                 block.template.key === "banners" ||
                                 block.template.key === "hero-brand-highlight" ||
-                                block.template.key === "profile-favorites-showcase";
+                                block.template.key === "profile-favorites-showcase" ||
+                                block.template.key === "profile-account-form";
 
                             if (isHeaderOrFooter) {
                                 return <BlockRenderer key={block.id} block={block} siteId={effectiveSiteId} />;

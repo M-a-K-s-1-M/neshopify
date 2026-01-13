@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BlockInstanceDto } from "@/lib/types";
@@ -31,7 +31,7 @@ export function ProfileAccountFormBlock({ block }: { block: BlockInstanceDto }) 
 
     const data = block.data ?? {};
     const title = typeof data.title === "string" ? data.title : block.template.title;
-    const description = typeof data.description === "string" ? data.description : undefined;
+    void data;
     const fields = Array.isArray(data.fields) ? (data.fields as FieldConfig[]) : [];
     const actions = Array.isArray(data.actions) ? (data.actions as ActionConfig[]) : [];
 
@@ -86,81 +86,79 @@ export function ProfileAccountFormBlock({ block }: { block: BlockInstanceDto }) 
     };
 
     return (
-        <section className="space-y-4">
-            <div>
-                <h2 className="text-2xl font-semibold">{title}</h2>
-                {description ? <p className="text-muted-foreground">{description}</p> : null}
-            </div>
+        <section>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-2xl">{title}</CardTitle>
+                </CardHeader>
 
-            <Card className="space-y-4 p-6">
-                {isRuntime ? (
-                    <>
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Электронная почта</Label>
-                            <Input
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                type="email"
-                                placeholder="user@example.com"
-                                readOnly={!canEdit}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Новый пароль</Label>
-                            <Input
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                type="password"
-                                placeholder="••••••••"
-                                readOnly={!canEdit}
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-sm font-medium">Подтверждение пароля</Label>
-                            <Input
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                type="password"
-                                placeholder="••••••••"
-                                readOnly={!canEdit}
-                            />
-                        </div>
-
-                        {error ? (
-                            <p className="text-sm text-destructive">{error}</p>
-                        ) : null}
-                        {success ? (
-                            <p className="text-sm text-muted-foreground">{success}</p>
-                        ) : null}
-                    </>
-                ) : (
-                    <>
-                        {fields.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Добавьте поля в настройках блока.</p>
-                        ) : null}
-                        {fields.map((field, index) => (
-                            <div key={`${field.label ?? "field"}-${index}`} className="space-y-2">
-                                <Label className="text-sm font-medium">
-                                    {field.label ?? `Поле ${index + 1}`}
-                                </Label>
+                <CardContent className="space-y-4">
+                    {isRuntime ? (
+                        <>
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium">Электронная почта</Label>
                                 <Input
-                                    readOnly
-                                    type={field.type ?? "text"}
-                                    placeholder={field.placeholder ?? "Заполните поле"}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    type="email"
+                                    placeholder="user@example.com"
+                                    readOnly={!canEdit}
                                 />
                             </div>
-                        ))}
-                    </>
-                )}
+
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium">Новый пароль</Label>
+                                <Input
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    type="password"
+                                    placeholder="••••••••"
+                                    readOnly={!canEdit}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium">Подтверждение пароля</Label>
+                                <Input
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    type="password"
+                                    placeholder="••••••••"
+                                    readOnly={!canEdit}
+                                />
+                            </div>
+
+                            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                            {success ? <p className="text-sm text-muted-foreground">{success}</p> : null}
+                        </>
+                    ) : (
+                        <>
+                            {fields.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">Добавьте поля в настройках блока.</p>
+                            ) : null}
+                            {fields.map((field, index) => (
+                                <div key={`${field.label ?? "field"}-${index}`} className="space-y-2">
+                                    <Label className="text-sm font-medium">
+                                        {field.label ?? `Поле ${index + 1}`}
+                                    </Label>
+                                    <Input
+                                        readOnly
+                                        type={field.type ?? "text"}
+                                        placeholder={field.placeholder ?? "Заполните поле"}
+                                    />
+                                </div>
+                            ))}
+                        </>
+                    )}
+                </CardContent>
 
                 {actions.length > 0 ? (
-                    <div className="flex flex-wrap gap-3 pt-2">
-                        {actions.map((action, index) => (
+                    <CardFooter className="flex flex-wrap gap-3 border-t">
+                        {actions.map((action, index) =>
                             (() => {
-                                const label = typeof action.label === 'string' ? action.label : '';
-                                const isSave = label.toLowerCase().includes('сохран');
+                                const label = typeof action.label === "string" ? action.label : "";
+                                const isSave = label.toLowerCase().includes("сохран");
+
                                 return (
                                     <Button
                                         key={`${action.label ?? "action"}-${index}`}
@@ -170,14 +168,12 @@ export function ProfileAccountFormBlock({ block }: { block: BlockInstanceDto }) 
                                         onClick={isRuntime && isSave ? handleSave : undefined}
                                         disabled={isRuntime && isSave ? isLoading : false}
                                     >
-                                        {isLoading && isRuntime && isSave
-                                            ? "Сохраняем..."
-                                            : action.label ?? "Действие"}
+                                        {isLoading && isRuntime && isSave ? "Сохраняем..." : action.label ?? "Действие"}
                                     </Button>
                                 );
-                            })()
-                        ))}
-                    </div>
+                            })(),
+                        )}
+                    </CardFooter>
                 ) : null}
             </Card>
         </section>
