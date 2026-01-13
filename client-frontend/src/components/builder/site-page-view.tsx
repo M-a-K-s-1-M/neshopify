@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 
 import { BlockRenderer } from "./block-registry";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProfileOrdersTab } from "./profile-orders-tab";
 import {
     usePageDetailQuery,
     useSitePagesQuery,
@@ -292,9 +293,7 @@ function ProfileTabsLayout({ blocks, siteId }: { blocks: BlockInstanceDto[]; sit
                     <TabsList>
                         <TabsTrigger value="account">Профиль</TabsTrigger>
                         <TabsTrigger value="favorites">Избранное</TabsTrigger>
-                        <TabsTrigger value="orders" disabled>
-                            Заказы
-                        </TabsTrigger>
+                        <TabsTrigger value="orders">Заказы</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="account" className="mt-0">
@@ -314,7 +313,7 @@ function ProfileTabsLayout({ blocks, siteId }: { blocks: BlockInstanceDto[]; sit
                     </TabsContent>
 
                     <TabsContent value="orders" className="mt-0">
-                        <p className="text-sm text-muted-foreground">Раздел скоро появится.</p>
+                        <ProfileOrdersTab siteId={siteId} />
                     </TabsContent>
                 </Tabs>
             </div>

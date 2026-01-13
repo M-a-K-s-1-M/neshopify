@@ -250,4 +250,21 @@ export class OrdersService {
             include: { items: true },
         });
     }
+
+    /** Возвращает оплаченные заказы текущего пользователя (покупателя) для storefront. */
+    async listMyPaid(siteId: string, userId?: string) {
+        if (!userId) {
+            throw new BadRequestException('Нужно войти, чтобы увидеть заказы');
+        }
+
+        return this.prisma.order.findMany({
+            where: {
+                siteId,
+                userId,
+                paymentStatus: PaymentStatus.PAID,
+            },
+            orderBy: { createdAt: 'desc' },
+            include: { items: true },
+        });
+    }
 }
