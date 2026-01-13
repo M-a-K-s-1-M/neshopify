@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BlockInstanceDto, ProductDto } from "@/lib/types";
 import { ProductsApi } from "@/lib/api/products";
 import { useFavoritesStore } from "@/stores/useFavoritesStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { ProductCardOne } from "@/components/shudcn-ui/product-cards";
 
 const EMPTY_FAVORITES: string[] = [];
 
@@ -17,9 +17,8 @@ export function ProfileFavoritesShowcaseBlock({
     block: BlockInstanceDto;
     siteId: string;
 }) {
-    const data = block.data ?? {};
-    const title = typeof data.title === "string" ? data.title : block.template.title;
-    const subtitle = typeof data.subtitle === "string" ? data.subtitle : undefined;
+    void block;
+    const title = "Избранные товары";
 
     const user = useAuthStore((s) => s.user);
     const customerUserId = useMemo(() => {
@@ -31,6 +30,7 @@ export function ProfileFavoritesShowcaseBlock({
     }, [siteId, user]);
 
     const favoriteIds = useFavoritesStore((state) => state.getFavorites(siteId, customerUserId) ?? EMPTY_FAVORITES);
+    const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
     const favoriteKey = useMemo(() => favoriteIds.slice().sort().join(','), [favoriteIds]);
     const [items, setItems] = useState<ProductDto[]>([]);
     const [loading, setLoading] = useState(false);
@@ -62,42 +62,29 @@ export function ProfileFavoritesShowcaseBlock({
     }, [siteId, favoriteKey, favoriteIds.length]);
 
     return (
-        <section className="space-y-4">
-            <div>
-                <h2 className="text-2xl font-semibold">{title}</h2>
-                {subtitle ? <p className="text-muted-foreground">{subtitle}</p> : null}
-            </div>
+        <section className="space-y-4 bg-transparent">
+            <h2 className="text-2xl font-semibold">{title}</h2>
 
             {loading ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
                     {Array.from({ length: 2 }).map((_, idx) => (
-                        <Skeleton key={idx} className="h-28 rounded-xl" />
+                        <Skeleton key={idx} className="h-64 rounded-xl" />
                     ))}
                 </div>
             ) : items.length === 0 ? (
-                <Card className="bg-transparent p-6 text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                     Избранных товаров пока нет. Добавьте товары из каталога.
-                </Card>
+                </p>
             ) : (
-                <div className="grid gap-4 sm:grid-cols-2">
-                    {items.map((item, index) => (
-                        <Card key={`${item.id}-${index}`} className="border shadow-md">
-                            <CardHeader>
-                                <CardTitle className="text-base">{item.title ?? "Товар"}</CardTitle>
-                                <CardDescription className="flex items-center justify-between text-sm">
-                                    <span>
-                                        {Number(item.price).toLocaleString("ru-RU")} {item.currency}
-                                    </span>
-                                    <span className="text-xs uppercase text-muted-foreground">
-                                        {item.stockStatus === "OUT_OF_STOCK"
-                                            ? "Нет в наличии"
-                                            : item.stockStatus === "PREORDER"
-                                                ? "Предзаказ"
-                                                : "В наличии"}
-                                    </span>
-                                </CardDescription>
-                            </CardHeader>
-                        </Card>
+                <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
+                    {items.map((item) => (
+                        <ProductCardOne
+                            key={item.id}
+                            product={item}
+                            isFavorited
+                            onToggleFavorite={() => toggleFavorite(siteId, item.id, customerUserId)}
+                            className="max-w-none"
+                        />
                     ))}
                 </div>
             )}
