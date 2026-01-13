@@ -23,6 +23,7 @@ export type {
 	SiteUserDto,
 	SiteAnalyticsSummaryDto,
 	SiteRegistrationsDto,
+	SiteOrdersSeriesDto,
 	CreateSitePayload,
 	UpdateSitePayload,
 	CreatePagePayload,

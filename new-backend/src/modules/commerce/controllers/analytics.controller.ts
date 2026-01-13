@@ -6,6 +6,7 @@ import { Roles } from 'src/modules/auth/decorators/roles.decorator';
 import { AnalyticsService } from '../services/analytics.service';
 import { SiteAnalyticsSummaryResponseDto } from '../dto/site-analytics-summary.dto';
 import { SiteRegistrationsResponseDto } from '../dto/site-registrations.dto';
+import { SiteOrdersSeriesResponseDto } from '../dto/site-orders-series.dto';
 
 /**
  * Сводная аналитика по сайту для владельца.
@@ -33,5 +34,14 @@ export class AnalyticsController {
     @ApiOkResponse({ type: SiteRegistrationsResponseDto })
     registrations(@Param('siteId') siteId: string, @Query('months') months?: string) {
         return this.analyticsService.getSiteRegistrationsSeries(siteId, months ? Number(months) : 12);
+    }
+
+    @Get('orders')
+    @Roles('SITE_OWNER', 'ADMIN')
+    @SiteAccess(SiteAccessRequirement.OWNER)
+    @UseGuards(RolesGuard, SiteAccessGuard)
+    @ApiOkResponse({ type: SiteOrdersSeriesResponseDto })
+    orders(@Param('siteId') siteId: string, @Query('months') months?: string) {
+        return this.analyticsService.getSiteOrdersSeries(siteId, months ? Number(months) : 12);
     }
 }

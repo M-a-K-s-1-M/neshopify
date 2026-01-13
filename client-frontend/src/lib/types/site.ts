@@ -144,6 +144,17 @@ export interface SiteRegistrationsDto {
     currentUsers: number;
 }
 
+export interface SiteOrdersSeriesPointDto {
+    month: string;
+    orders: number;
+}
+
+export interface SiteOrdersSeriesDto {
+    data: SiteOrdersSeriesPointDto[];
+    currentLabel: string;
+    currentOrders: number;
+}
+
 export interface CreateSitePayload {
     name: string;
     slug: string;

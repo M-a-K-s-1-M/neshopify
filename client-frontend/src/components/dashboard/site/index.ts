@@ -4,3 +4,4 @@ export * from './sidebar-settings-site/index';
 export * from './review/index';
 export * from './tables/index';
 export * from './chart-register-users';
+export * from './chart-orders';
