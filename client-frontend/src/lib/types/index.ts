@@ -20,6 +20,7 @@ export type {
 	ProductCategoryDto,
 	StockStatus,
 	PaginatedResponse,
+	SiteUserDto,
 	CreateSitePayload,
 	UpdateSitePayload,
 	CreatePagePayload,

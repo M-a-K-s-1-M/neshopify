@@ -1,297 +1,220 @@
 'use client'
-import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Input, Separator, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components';
-import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import {
+    Button,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+    Input,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+    Separator,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components';
+import { SiteUsersApi } from '@/lib/api/site-users';
+import type { PaginatedResponse, SiteUserDto } from '@/lib/types';
+import { MoreHorizontal } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
-export type PlatformUser = {
-    id: string;
-    name: string;
-    email: string;
-    status: 'active' | 'invited' | 'suspended';
-    lastActive: string;
+type UsersListState = {
+    data: SiteUserDto[];
+    meta: PaginatedResponse<SiteUserDto>['meta'];
 };
 
-export const data: PlatformUser[] = [
-    {
-        id: 'USR-101',
-        name: 'Алексей Иванов',
-        email: 'alexey.ivanov@example.com',
-        status: 'active',
-        lastActive: '2025-01-15T09:42:00Z',
-    },
-    {
-        id: 'USR-102',
-        name: 'Мария Соколова',
-        email: 'maria.sokolova@example.com',
-        status: 'active',
-        lastActive: '2025-01-14T17:10:00Z',
-    },
-    {
-        id: 'USR-103',
-        name: 'Дмитрий Афанасьев',
-        email: 'd.afanasiev@example.com',
-        status: 'invited',
-        lastActive: '2025-01-10T12:00:00Z',
-    },
-    {
-        id: 'USR-104',
-        name: 'Екатерина Власова',
-        email: 'ekaterina.vlasova@example.com',
-        status: 'suspended',
-        lastActive: '2024-12-28T08:20:00Z',
-    },
-    {
-        id: 'USR-105',
-        name: 'Никита Романов',
-        email: 'nikita.romanov@example.com',
-        status: 'active',
-        lastActive: '2025-01-16T06:55:00Z',
-    },
-    {
-        id: 'USR-106',
-        name: 'София Андреева',
-        email: 'sofia.andreeva@example.com',
-        status: 'invited',
-        lastActive: '2025-01-12T14:25:00Z',
-    },
-    {
-        id: 'USR-107',
-        name: 'Илья Чернов',
-        email: 'ilya.chernov@example.com',
-        status: 'active',
-        lastActive: '2025-01-13T11:05:00Z',
-    },
-    {
-        id: 'USR-108',
-        name: 'Ольга Миронова',
-        email: 'olga.mironova@example.com',
-        status: 'suspended',
-        lastActive: '2024-12-30T19:40:00Z',
-    },
-    {
-        id: 'USR-109',
-        name: 'Виктор Ли',
-        email: 'victor.li@example.com',
-        status: 'active',
-        lastActive: '2025-01-11T08:15:00Z',
-    },
-    {
-        id: 'USR-110',
-        name: 'Анна Корнеева',
-        email: 'anna.korneeva@example.com',
-        status: 'invited',
-        lastActive: '2025-01-09T16:32:00Z',
-    },
-];
+function formatPublicUserId(userId: string): string {
+    const short = userId?.slice(0, 8) ?? '';
+    return `#${short || userId}`;
+}
 
-const columns: ColumnDef<PlatformUser>[] = [
-    {
-        accessorKey: 'id',
-        header: 'ID пользователя',
-        cell: ({ row }) => <span className="font-medium">{row.getValue('id')}</span>,
-    },
-    {
-        accessorKey: 'name',
-        filterFn: 'includesString',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Имя
-                <ArrowUpDown />
-            </Button>
-        ),
-        cell: ({ row }) => <span>{row.getValue('name')}</span>,
-    },
-    {
-        accessorKey: 'email',
-        filterFn: 'includesString',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Email
-                <ArrowUpDown />
-            </Button>
-        ),
-        cell: ({ row }) => <span className="text-muted-foreground">{row.getValue('email')}</span>,
-    },
-    {
-        accessorKey: 'status',
-        header: 'Статус',
-        filterFn: 'includesString',
-        cell: ({ row }) => {
-            const value = row.getValue<string>('status');
-            const labelMap: Record<PlatformUser['status'], string> = {
-                active: 'Активен',
-                invited: 'Приглашён',
-                suspended: 'Заблокирован',
-            };
+function formatDate(value: string): string {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toISOString().slice(0, 10);
+}
 
-            return (
-                <span className="rounded-full bg-muted px-3 py-1 text-xs capitalize text-muted-foreground">
-                    {labelMap[value as PlatformUser['status']]}
-                </span>
-            );
-        },
-    },
-    {
-        accessorKey: 'lastActive',
-        header: ({ column }) => (
-            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                Последняя активность
-                <ArrowUpDown />
-            </Button>
-        ),
-        cell: ({ row }) => {
-            const value = row.getValue<string>('lastActive');
-            const formatted = new Date(value).toLocaleString('ru-RU', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-
-            return <span>{formatted}</span>;
-        },
-    },
-    {
-        id: 'actions',
-        enableHiding: false,
-        cell: ({ row }) => {
-            const user = row.original;
-
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal />
-                        </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align="end" className="p-2">
-                        <DropdownMenuLabel>Действия</DropdownMenuLabel>
-
-                        <Separator />
-
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.email)}>
-                            Скопировать email
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Открыть профиль</DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            );
-        },
-    },
-];
-
+function formatStatus(banned: boolean): string {
+    return banned ? 'Заблокирован' : 'Активен';
+}
 
 export function UsersTable() {
-    const [sorting, setSorting] = useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+    const params = useParams();
+    const siteId = typeof params.siteId === 'string' ? params.siteId : params.siteId?.[0];
 
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const limit = 10;
 
-    const table = useReactTable({
-        data,
-        columns,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        onColumnVisibilityChange: setColumnVisibility,
-        state: {
-            sorting,
-            columnFilters,
-            columnVisibility,
-        },
-        initialState: {
-            pagination: {
-                pageSize: 5,
-            },
-        },
-    })
+    const [status, setStatus] = useState<'ALL' | 'active' | 'suspended'>('ALL');
+    const [lastActiveDate, setLastActiveDate] = useState('');
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [result, setResult] = useState<UsersListState>({
+        data: [],
+        meta: { total: 0, page: 1, limit },
+    });
+
+    useEffect(() => {
+        let cancelled = false;
+        const run = async () => {
+            if (!siteId) return;
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await SiteUsersApi.list(siteId, {
+                    page,
+                    limit,
+                    search: search.trim() || undefined,
+                    status: status === 'ALL' ? undefined : status,
+                    lastActiveFrom: lastActiveDate || undefined,
+                    lastActiveTo: lastActiveDate || undefined,
+                });
+                if (!cancelled) {
+                    setResult({ data: res.data ?? [], meta: res.meta });
+                }
+            } catch {
+                if (!cancelled) setError('Не удалось загрузить пользователей.');
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        run();
+        return () => {
+            cancelled = true;
+        };
+    }, [siteId, page, limit, search, status, lastActiveDate]);
+
+    const rows = useMemo(() => {
+        return (result.data ?? []).map((u) => ({
+            rawId: u.id,
+            id: formatPublicUserId(u.id),
+            email: u.email,
+            status: formatStatus(Boolean(u.banned)),
+            lastActive: formatDate(u.updatedAt),
+        }));
+    }, [result.data]);
+
+    const pageCount = Math.max(1, Math.ceil((result.meta?.total ?? 0) / (result.meta?.limit ?? limit)));
+    const canPrev = page > 1;
+    const canNext = page < pageCount;
 
     return (
         <div className='w-full'>
-            <div className='flex items-center py-4'>
+            {loading ? <div className='py-2 text-sm text-muted-foreground'>Загрузка пользователей…</div> : null}
+            {error ? <div className='py-2 text-sm text-destructive'>{error}</div> : null}
+
+            <div className='flex items-center py-4 gap-3 flex-wrap'>
                 <Input
-                    placeholder='Поиск по пользователю...'
-                    value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-                    onChange={e => table.getColumn('name')?.setFilterValue(e.target.value)}
+                    placeholder='Поиск по email...'
+                    value={search}
+                    onChange={(e) => {
+                        setSearch(e.target.value);
+                        setPage(1);
+                    }}
                     className='max-w-sm'
                 />
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant='secondary' className='ml-auto'>
-                            Колонки <ChevronDown />
-                        </Button>
-                    </DropdownMenuTrigger>
+                <Select
+                    value={status}
+                    onValueChange={(v) => {
+                        setStatus(v as 'ALL' | 'active' | 'suspended');
+                        setPage(1);
+                    }}
+                >
+                    <SelectTrigger className='w-[170px]'>
+                        <SelectValue placeholder='Статус' />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value='ALL'>Все статусы</SelectItem>
+                        <SelectItem value='active'>Активен</SelectItem>
+                        <SelectItem value='suspended'>Заблокирован</SelectItem>
+                    </SelectContent>
+                </Select>
 
-                    <DropdownMenuContent align='end'>
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                )
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Input
+                    type='date'
+                    value={lastActiveDate}
+                    onChange={(e) => {
+                        setLastActiveDate(e.target.value);
+                        setPage(1);
+                    }}
+                    className='w-[190px]'
+                />
+
+                <Button
+                    variant='secondary'
+                    onClick={() => {
+                        setSearch('');
+                        setStatus('ALL');
+                        setLastActiveDate('');
+                        setPage(1);
+                    }}
+                >
+                    Сбросить
+                </Button>
             </div>
 
             <div className='bg-sidebar overflow-hidden rounded-sm border shadow-md'>
-                <Table >
-                    <TableHeader >
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder ? null : flexRender(
-                                            header.column.columnDef.header,
-                                            header.getContext()
-                                        )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>ID</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Статус</TableHead>
+                            <TableHead>Последняя активность</TableHead>
+                            <TableHead className='w-12' />
+                        </TableRow>
                     </TableHeader>
 
                     <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && 'selected'}
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
-                                    ))}
+                        {rows.length ? (
+                            rows.map((u) => (
+                                <TableRow key={u.rawId}>
+                                    <TableCell>{u.id}</TableCell>
+                                    <TableCell className='text-muted-foreground'>{u.email}</TableCell>
+                                    <TableCell>{u.status}</TableCell>
+                                    <TableCell>{u.lastActive}</TableCell>
+                                    <TableCell className='text-right'>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant='ghost' className='h-8 w-8 p-0'>
+                                                    <MoreHorizontal />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+
+                                            <DropdownMenuContent align='end' className='p-2'>
+                                                <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                                                <Separator />
+                                                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(u.rawId)}>
+                                                    Копировать ID
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(u.email)}>
+                                                    Скопировать email
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className='h-24 text-center'
-                                >
-                                    Нет данных для отображения.
+                                <TableCell colSpan={5} className='h-24 text-center'>
+                                    {loading
+                                        ? 'Загрузка...'
+                                        : error
+                                            ? 'Не удалось загрузить пользователей.'
+                                            : 'Нет данных для отображения.'}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -299,29 +222,29 @@ export function UsersTable() {
                 </Table>
             </div>
 
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <div className="space-x-2">
+            <div className='flex items-center justify-end space-x-2 py-4'>
+                <div className='space-x-2'>
                     <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
+                        variant='outline'
+                        size='sm'
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={!canPrev}
                     >
                         Назад
                     </Button>
-                    <span className="text-sm text-muted-foreground">
-                        {table.getState().pagination.pageIndex + 1} / {table.getPageCount() || 1}
+                    <span className='text-sm text-muted-foreground'>
+                        {page} / {pageCount}
                     </span>
                     <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
+                        variant='outline'
+                        size='sm'
+                        onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                        disabled={!canNext}
                     >
                         Вперед
                     </Button>
                 </div>
             </div>
         </div>
-    )
+    );
 }

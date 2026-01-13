@@ -117,6 +117,15 @@ export interface PaginatedResponse<T> {
     };
 }
 
+export interface SiteUserDto {
+    id: string;
+    email: string;
+    banned: boolean;
+    siteId?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface CreateSitePayload {
     name: string;
     slug: string;

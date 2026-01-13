@@ -90,6 +90,20 @@ export class UserSummaryDto {
     email: string;
 }
 
+export class SiteUserResponseDto extends UserSummaryDto {
+    @ApiProperty({ type: Boolean })
+    banned: boolean;
+
+    @ApiPropertyOptional({ format: 'uuid' })
+    siteId?: string | null;
+
+    @ApiProperty({ type: String, format: 'date-time' })
+    createdAt: string;
+
+    @ApiProperty({ type: String, format: 'date-time' })
+    updatedAt: string;
+}
+
 export class RoleUserAssignmentDto {
     @ApiProperty({ format: 'uuid' })
     userId: string;
