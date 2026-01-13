@@ -14,6 +14,7 @@ const $api = axios.create({
     baseURL,
     params: {},
     withCredentials: true,
+    timeout: 15000,
 })
 
 

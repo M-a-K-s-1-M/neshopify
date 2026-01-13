@@ -177,7 +177,7 @@ export class OrdersService {
     /**
      * Возвращает страницу заказов с фильтрами по статусам и поиском по контактам/позициям.
      */
-    async list(siteId: string, pagination: PaginationQuery, filters: OrderFiltersDto) {
+    async list(siteId: string, pagination: PaginationQuery, filters: OrderFiltersDto, includeItems = true) {
         const where: Prisma.OrderWhereInput = { siteId };
 
         if (filters.status) {
@@ -204,7 +204,7 @@ export class OrdersService {
                 skip,
                 take: pagination.limit,
                 orderBy: { createdAt: 'desc' },
-                include: { items: true },
+                include: includeItems ? { items: true } : undefined,
             }),
             this.prisma.order.count({ where }),
         ]);

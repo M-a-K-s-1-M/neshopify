@@ -17,12 +17,15 @@ export interface OrderDto {
     id: string;
     siteId: string;
     userId?: string | null;
+    customerEmail?: string | null;
+    customerPhone?: string | null;
+    shippingAddress?: { text: string } | null;
     total: string | number;
     status: OrderStatus;
     paymentStatus: PaymentStatus;
     createdAt: string;
     updatedAt: string;
-    items: OrderItemDto[];
+    items?: OrderItemDto[];
 }
 
 export interface CartItemDto {

@@ -1,292 +1,202 @@
 'use client'
-import { Button, DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, Input, Separator, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components';
-import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
-import { useState } from 'react';
+import {
+    Button,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+    Input,
+    Separator,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components';
+import { MoreHorizontal } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { SiteOrdersApi } from '@/lib/api/orders';
+import type { OrderDto, OrderStatus, PaginatedResponse } from '@/lib/types';
 
-export type LastOrder = {
-    id: string;            // #ORD-2547
-    customer: string;      // Имя клиента
-    avatar: string;        // URL или идентификатор аватара
-    date: string;          // ISO или форматированная дата
-    status: "Доставлен" | "В пути" | "Обработка";
-    amount: string;        // ₽8,450
+type OrdersListState = {
+    data: OrderDto[];
+    meta: PaginatedResponse<OrderDto>['meta'];
 };
 
-export const data: LastOrder[] = [
-    {
-        id: "#ORD-2547asdf",
-        customer: "Мария Петрова",
-        avatar: "/images/avatars/maria.svg",
-        date: "2025-01-15",
-        status: "Доставлен",
-        amount: "8,450",
-    },
-    {
-        id: "#ORD-2546fff",
-        customer: "Дмитрий Козлов",
-        avatar: "/images/avatars/dmitry.svg",
-        date: "2025-01-15",
-        status: "В пути",
-        amount: "12,890",
-    },
-    {
-        id: "#ORD-254523423",
-        customer: "Елена Смирнова",
-        avatar: "/images/avatars/elena.svg",
-        date: "2025-01-14",
-        status: "Обработка",
-        amount: "5,670",
-    },
-    {
-        id: "#ORD-2547asdf",
-        customer: "Мария Петрова",
-        avatar: "/images/avatars/maria.svg",
-        date: "2025-01-15",
-        status: "Доставлен",
-        amount: "8,450",
-    },
-    {
-        id: "#ORD-2546gghwe22",
-        customer: "Дмитрий Козлов",
-        avatar: "/images/avatars/dmitry.svg",
-        date: "2025-01-15",
-        status: "В пути",
-        amount: "12,890",
-    },
-    {
-        id: "#ORD-2545",
-        customer: "Елена Смирнова",
-        avatar: "/images/avatars/elena.svg",
-        date: "2025-01-14",
-        status: "Обработка",
-        amount: "5,670",
-    },
-    {
-        id: "#ORD-2547",
-        customer: "Мария Петрова",
-        avatar: "/images/avatars/maria.svg",
-        date: "2025-01-15",
-        status: "Доставлен",
-        amount: "8,450",
-    },
-    {
-        id: "#ORD-2546",
-        customer: "Дмитрий Козлов",
-        avatar: "/images/avatars/dmitry.svg",
-        date: "2025-01-15",
-        status: "В пути",
-        amount: "12,890",
-    },
-    {
-        id: "#ORD-2545",
-        customer: "Елена Смирнова",
-        avatar: "/images/avatars/elena.svg",
-        date: "2025-01-14",
-        status: "Обработка",
-        amount: "5,670",
-    },
-];
-
-const columns: ColumnDef<LastOrder>[] = [
-    {
-        accessorKey: 'id',
-        header: "Заказ ID",
-        cell: ({ row }) => (
-            <div>{row.getValue('id')}</div>
-        )
-    },
-    {
-        accessorKey: 'customer',
-        filterFn: 'includesString',
-        header: ({ column }) => {
-            return (
-                <Button variant={'ghost'} onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Клиент
-                    <ArrowUpDown />
-                </Button>
-            )
-        },
-        cell: ({ row }) => (
-            <div>{row.getValue('customer')}</div>
-        )
-    },
-    {
-        accessorKey: 'date',
-        filterFn: 'includesString',
-        header: ({ column }) => {
-            return (
-                <Button variant={'ghost'} onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Дата
-                    <ArrowUpDown />
-                </Button>
-            )
-        },
-        cell: ({ row }) => (
-            <div>{row.getValue('date')}</div>
-        )
-    },
-    {
-        accessorKey: 'status',
-        header: "Статус",
-        filterFn: 'includesString',
-        cell: ({ row }) => <div>{row.getValue('status')}</div>
-    },
-    {
-        accessorKey: 'amount',
-        header: ({ column }) => {
-            return (
-                <Button variant={'ghost'} onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Сумма
-                    <ArrowUpDown />
-                </Button>
-            )
-        },
-        cell: ({ row }) => (
-            <div>{row.getValue('amount')}</div>
-        )
-    },
-    {
-        id: 'actions',
-        enableHiding: false,
-        cell: ({ row }) => {
-            const orders = row.original;
-
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className='h-8 w-8 p-0'>
-                            <MoreHorizontal />
-                        </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align='end' className='p-2'>
-                        <DropdownMenuLabel>Действия</DropdownMenuLabel>
-
-                        <Separator />
-
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(orders.id)}>
-                            Копировать ID заказа
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            Просмотреть пользователя
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
-        }
+function formatOrderStatus(status: OrderStatus): string {
+    switch (status) {
+        case 'FULFILLED':
+            return 'Доставлен';
+        case 'CONFIRMED':
+            return 'В пути';
+        case 'PENDING':
+            return 'Обработка';
+        case 'CANCELLED':
+            return 'Отменен';
+        case 'DRAFT':
+            return 'Черновик';
+        default:
+            return status;
     }
-]
+}
 
+function formatDate(value: string): string {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toISOString().slice(0, 10);
+}
 
+function formatAmount(value: unknown): string {
+    const n = typeof value === 'number' ? value : Number(value);
+    const safe = Number.isFinite(n) ? n : 0;
+    return safe.toLocaleString('ru-RU', { maximumFractionDigits: 2 });
+}
+
+function formatCustomer(order: OrderDto): string {
+    return (
+        order.customerEmail ||
+        order.customerPhone ||
+        (order.userId ? `user:${order.userId.slice(0, 8)}` : '—')
+    );
+}
+
+function formatPublicOrderId(orderId: string): string {
+    const short = orderId?.slice(0, 8) ?? '';
+    return `#${short || orderId}`;
+}
 export function OrdersTable() {
-    const [sorting, setSorting] = useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+    const params = useParams();
+    const siteId = typeof params.siteId === 'string' ? params.siteId : params.siteId?.[0];
 
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const limit = 10;
 
-    const table = useReactTable({
-        data,
-        columns,
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        onColumnVisibilityChange: setColumnVisibility,
-        state: {
-            sorting,
-            columnFilters,
-            columnVisibility,
-        },
-        initialState: {
-            pagination: {
-                pageSize: 5,
-            },
-        },
-    })
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [result, setResult] = useState<OrdersListState>({
+        data: [],
+        meta: { total: 0, page: 1, limit },
+    });
+
+    useEffect(() => {
+        let cancelled = false;
+        const run = async () => {
+            if (!siteId) return;
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await SiteOrdersApi.list(siteId, {
+                    page,
+                    limit,
+                    search: search.trim() || undefined,
+                    includeItems: 'false',
+                });
+                if (!cancelled) {
+                    setResult({ data: res.data ?? [], meta: res.meta });
+                }
+            } catch {
+                if (!cancelled) setError('Не удалось загрузить заказы.');
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        run();
+        return () => {
+            cancelled = true;
+        };
+    }, [siteId, page, limit, search]);
+
+    const rows = useMemo(() => {
+        return (result.data ?? []).map((o) => ({
+            id: formatPublicOrderId(o.id),
+            rawId: o.id,
+            customer: formatCustomer(o),
+            date: formatDate(o.createdAt),
+            status: formatOrderStatus(o.status),
+            amount: formatAmount(o.total),
+        }));
+    }, [result.data]);
+
+    const pageCount = Math.max(1, Math.ceil((result.meta?.total ?? 0) / (result.meta?.limit ?? limit)));
+    const canPrev = page > 1;
+    const canNext = page < pageCount;
 
     return (
         <div className='w-full'>
+            {loading ? (
+                <div className='py-2 text-sm text-muted-foreground'>Загрузка заказов…</div>
+            ) : null}
+            {error ? (
+                <div className='py-2 text-sm text-destructive'>{error}</div>
+            ) : null}
             <div className='flex items-center py-4'>
                 <Input
                     placeholder='Поиск по клиенту...'
-                    value={(table.getColumn('customer')?.getFilterValue() as string) ?? ''}
-                    onChange={e => table.getColumn('customer')?.setFilterValue(e.target.value)}
+                    value={search}
+                    onChange={(e) => {
+                        setSearch(e.target.value);
+                        setPage(1);
+                    }}
                     className='max-w-sm'
                 />
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant='secondary' className='ml-auto'>
-                            Колонки <ChevronDown />
-                        </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align='end'>
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                )
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
             </div>
 
             <div className='bg-sidebar overflow-hidden rounded-sm border shadow-md'>
                 <Table >
                     <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder ? null : flexRender(
-                                            header.column.columnDef.header,
-                                            header.getContext()
-                                        )}
-                                    </TableHead>
-                                ))}
-                            </TableRow>
-                        ))}
+                        <TableRow>
+                            <TableHead>Заказ ID</TableHead>
+                            <TableHead>
+                                Клиент
+                            </TableHead>
+                            <TableHead>
+                                Дата
+                            </TableHead>
+                            <TableHead>Статус</TableHead>
+                            <TableHead>
+                                Сумма
+                            </TableHead>
+                            <TableHead className='w-12' />
+                        </TableRow>
                     </TableHeader>
 
                     <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && 'selected'}
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
-                                        </TableCell>
-                                    ))}
+                        {rows.length ? (
+                            rows.map((o) => (
+                                <TableRow key={o.rawId}>
+                                    <TableCell>{o.id}</TableCell>
+                                    <TableCell>{o.customer}</TableCell>
+                                    <TableCell>{o.date}</TableCell>
+                                    <TableCell>{o.status}</TableCell>
+                                    <TableCell>{o.amount}</TableCell>
+                                    <TableCell className='text-right'>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className='h-8 w-8 p-0'>
+                                                    <MoreHorizontal />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+
+                                            <DropdownMenuContent align='end' className='p-2'>
+                                                <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                                                <Separator />
+                                                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(o.rawId)}>
+                                                    Копировать ID заказа
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className='h-24 text-center'
-                                >
-                                    Нет данных для отображения.
+                                <TableCell colSpan={6} className='h-24 text-center'>
+                                    {loading ? 'Загрузка...' : error ? 'Не удалось загрузить заказы.' : 'Нет данных для отображения.'}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -299,19 +209,19 @@ export function OrdersTable() {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => table.previousPage()}
-                        disabled={!table.getCanPreviousPage()}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={!canPrev}
                     >
                         Назад
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                        {table.getState().pagination.pageIndex + 1} / {table.getPageCount() || 1}
+                        {page} / {pageCount}
                     </span>
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => table.nextPage()}
-                        disabled={!table.getCanNextPage()}
+                        onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                        disabled={!canNext}
                     >
                         Вперед
                     </Button>
