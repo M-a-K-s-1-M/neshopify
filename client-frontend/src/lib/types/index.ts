@@ -21,6 +21,7 @@ export type {
 	StockStatus,
 	PaginatedResponse,
 	SiteUserDto,
+	SiteAnalyticsSummaryDto,
 	CreateSitePayload,
 	UpdateSitePayload,
 	CreatePagePayload,

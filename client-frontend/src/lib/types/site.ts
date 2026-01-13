@@ -126,6 +126,13 @@ export interface SiteUserDto {
     updatedAt: string;
 }
 
+export interface SiteAnalyticsSummaryDto {
+    totalSales: string;
+    ordersCount: number;
+    customersCount: number;
+    conversionPercent: number;
+}
+
 export interface CreateSitePayload {
     name: string;
     slug: string;
