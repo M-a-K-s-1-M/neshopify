@@ -884,6 +884,9 @@ function BlockEditorPanel({
         if (templateKey === 'hero-brand-highlight') {
             const nextData = { ...draftData };
             delete (nextData as Record<string, unknown>).badge;
+            delete (nextData as Record<string, unknown>).mediaUrl;
+            delete (nextData as Record<string, unknown>).ctaPrimary;
+            delete (nextData as Record<string, unknown>).ctaSecondary;
             onSave(block.id, { data: nextData, pinned: isGlobalHeaderOrFooter ? block.pinned : pinned, order: isGlobalHeaderOrFooter ? block.order : order, templateKey: nextTemplateKey });
             setError(null);
             return;
@@ -1276,31 +1279,10 @@ function getBlockFieldMeta(
             };
         }
 
-        if (key === 'mediaUrl') {
-            return {
-                label: 'Изображение (URL)',
-                description: 'Ссылка на картинку для правой части блока.',
-            };
-        }
-
         if (key === 'stats') {
             return {
                 label: 'Показатели',
                 description: 'Короткие факты/цифры, отображаются карточками.',
-            };
-        }
-
-        if (key === 'ctaPrimary') {
-            return {
-                label: 'Основная кнопка',
-                description: 'Главное действие (CTA).',
-            };
-        }
-
-        if (key === 'ctaSecondary') {
-            return {
-                label: 'Вторая кнопка',
-                description: 'Дополнительное действие (необязательно).',
             };
         }
 
@@ -1312,17 +1294,6 @@ function getBlockFieldMeta(
             }
             if (last === 'value') {
                 return { label: 'Значение' };
-            }
-        }
-
-        // Вложенные поля: ctaPrimary/ctaSecondary
-        if (path[0] === 'ctaPrimary' || path[0] === 'ctaSecondary') {
-            const last = path[path.length - 1];
-            if (last === 'label') {
-                return { label: 'Текст кнопки' };
-            }
-            if (last === 'href') {
-                return { label: 'Ссылка (href)' };
             }
         }
 
@@ -1365,6 +1336,9 @@ function GenericBlockDataEditor({
             return false;
         }
         if (templateKey === 'hero-brand-highlight' && key === 'badge') {
+            return false;
+        }
+        if (templateKey === 'hero-brand-highlight' && (key === 'mediaUrl' || key === 'ctaPrimary' || key === 'ctaSecondary')) {
             return false;
         }
         return true;

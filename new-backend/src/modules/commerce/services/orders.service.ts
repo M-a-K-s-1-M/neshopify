@@ -103,7 +103,6 @@ export class OrdersService {
                 total,
                 status: OrderStatus.PENDING,
                 paymentStatus: PaymentStatus.NOT_PAID,
-                paymentProvider: 'stripe',
                 shippingAddress: dto.shippingAddress ? { text: dto.shippingAddress } : undefined,
                 customerEmail: dto.customerEmail,
                 customerPhone: dto.customerPhone,
@@ -158,7 +157,6 @@ export class OrdersService {
         await this.prisma.order.update({
             where: { id: order.id },
             data: {
-                paymentSessionId: session.id,
                 paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null,
                 paymentDetails: {
                     provider: 'stripe',

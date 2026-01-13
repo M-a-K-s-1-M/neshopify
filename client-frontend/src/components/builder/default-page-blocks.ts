@@ -94,13 +94,10 @@ const DEFAULT_PAGE_BLOCKS: Partial<Record<PageDto["type"], PreviewBlock[]>> = {
                 heading: "Создайте интернет-магазин за минуту",
                 subheading:
                     "Выберите готовые блоки, добавьте товары и начните продавать без разработчиков.",
-                mediaUrl: null,
                 stats: [
                     { label: "Шаблонов", value: "20+" },
                     { label: "Каталог", value: "1 мин" },
                 ],
-                ctaPrimary: { label: "Создать сайт", href: "/builder" },
-                ctaSecondary: { label: "Посмотреть демо", href: "/preview" },
             },
         },
         {

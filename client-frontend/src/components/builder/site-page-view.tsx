@@ -223,7 +223,8 @@ export function SitePageView({ slug, title, description, variant = "builder", si
                                 block.template.key === "catalog-product-grid" ||
                                 block.template.key === "cart-items-list" ||
                                 block.template.key === "products-featured" ||
-                                block.template.key === "banners";
+                                block.template.key === "banners" ||
+                                block.template.key === "hero-brand-highlight";
 
                             if (isHeaderOrFooter) {
                                 return <BlockRenderer key={block.id} block={block} siteId={effectiveSiteId} />;

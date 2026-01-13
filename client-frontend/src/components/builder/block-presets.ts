@@ -27,19 +27,16 @@ export const BLOCK_TEMPLATE_PRESETS: Record<string, BlockPreset[]> = {
     "hero-brand-highlight": [
         {
             id: "launch-hero",
-            name: "Hero с CTA",
+            name: "Hero",
             description: "Большой заголовок со статистикой",
             data: {
                 heading: "Создайте интернет-магазин за минуту",
                 subheading:
                     "Выберите готовые блоки, добавьте товары и начните продавать без разработчиков.",
-                mediaUrl: null,
                 stats: [
                     { label: "Шаблонов", value: "20+" },
                     { label: "Каталог", value: "1 мин" },
                 ],
-                ctaPrimary: { label: "Создать сайт", href: "/builder" },
-                ctaSecondary: { label: "Посмотреть демо", href: "/preview" },
             },
         },
     ],

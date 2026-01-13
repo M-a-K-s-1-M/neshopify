@@ -143,7 +143,26 @@ export class ProductsService {
     /** Удаляет товар после проверки его существования. */
     async remove(siteId: string, productId: string) {
         await this.ensureProduct(siteId, productId);
-        await this.prisma.product.delete({ where: { id: productId } });
+
+        const orderItemsCount = await this.prisma.orderItem.count({
+            where: {
+                productId,
+                order: {
+                    siteId,
+                },
+            },
+        });
+
+        if (orderItemsCount > 0) {
+            throw new BadRequestException('Нельзя удалить товар: он используется в заказах');
+        }
+
+        await this.prisma.$transaction(async (tx) => {
+            await tx.cartItem.deleteMany({ where: { productId } });
+            await tx.productMedia.deleteMany({ where: { productId } });
+            await tx.product.delete({ where: { id: productId } });
+        });
+
         return { removed: true };
     }
 
