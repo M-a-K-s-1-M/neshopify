@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 
 import { BlockRenderer } from "./block-registry";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProfileOrdersTab } from "./profile-orders-tab";
+import { OrdersApi } from "@/lib/api/orders";
+import { useAuthStore } from "@/stores/useAuthStore";
 import {
     usePageDetailQuery,
     useSitePagesQuery,
@@ -168,6 +170,7 @@ export function SitePageView({ slug, title, description, variant = "builder", si
 
     const showMetaHeader = variant === "builder";
     const isProfilePage = slug === "profile";
+    const isCartPage = slug === "cart";
 
     return (
         <div className={showMetaHeader ? "space-y-6" : "space-y-4"}>
@@ -216,6 +219,8 @@ export function SitePageView({ slug, title, description, variant = "builder", si
                 <CatalogFiltersProvider>
                     {isProfilePage ? (
                         <ProfileTabsLayout blocks={blocks} siteId={effectiveSiteId} />
+                    ) : isCartPage ? (
+                        <CartTabsLayout blocks={blocks} siteId={effectiveSiteId} />
                     ) : (
                         <div className="space-y-4">
                             {blocks.map((block) => {
@@ -267,6 +272,12 @@ export function SitePageView({ slug, title, description, variant = "builder", si
     );
 }
 
+function isCustomerForCurrentStore(user: any, siteId: string) {
+    if (!user) return false;
+    const roles: string[] = Array.isArray(user.roles) ? user.roles : [];
+    return roles.includes('CUSTOMER') && user.siteId === siteId;
+}
+
 function ProfileTabsLayout({ blocks, siteId }: { blocks: BlockInstanceDto[]; siteId: string }) {
     const headerBlocks = blocks.filter((block) => block.template.key.startsWith("header-"));
     const footerBlocks = blocks.filter((block) => block.template.key.startsWith("footer-"));
@@ -307,6 +318,99 @@ function ProfileTabsLayout({ blocks, siteId }: { blocks: BlockInstanceDto[]; sit
                     <TabsContent value="favorites" className="mt-0">
                         <div className="space-y-4">
                             {favoritesBlocks.map((block) => (
+                                <BlockRenderer key={block.id} block={block} siteId={siteId} />
+                            ))}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="orders" className="mt-0">
+                        <ProfileOrdersTab siteId={siteId} />
+                    </TabsContent>
+                </Tabs>
+            </div>
+
+            {otherBlocks.map((block) => (
+                <div key={block.id} className="px-6">
+                    <BlockRenderer block={block} siteId={siteId} />
+                </div>
+            ))}
+
+            {footerBlocks.map((block) => (
+                <BlockRenderer key={block.id} block={block} siteId={siteId} />
+            ))}
+        </div>
+    );
+}
+
+function CartTabsLayout({ blocks, siteId }: { blocks: BlockInstanceDto[]; siteId: string }) {
+    const headerBlocks = blocks.filter((block) => block.template.key.startsWith("header-"));
+    const footerBlocks = blocks.filter((block) => block.template.key.startsWith("footer-"));
+    const contentBlocks = blocks.filter(
+        (block) => !block.template.key.startsWith("header-") && !block.template.key.startsWith("footer-"),
+    );
+
+    const cartBlocks = contentBlocks.filter((block) => block.template.key === "cart-items-list");
+    const otherBlocks = contentBlocks.filter((block) => block.template.key !== "cart-items-list");
+
+    const isAuth = useAuthStore((s) => s.isAuth);
+    const user = useAuthStore((s) => s.user);
+    const refresh = useAuthStore((s) => s.refresh);
+
+    const [hasOrders, setHasOrders] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const run = async () => {
+            if (!isAuth || !siteId) {
+                setHasOrders(false);
+                return;
+            }
+
+            const payload = user ?? (await refresh());
+            const isCustomer = Boolean(payload && isCustomerForCurrentStore(payload, siteId));
+            if (!isCustomer) {
+                setHasOrders(false);
+                return;
+            }
+
+            setHasOrders(null);
+            try {
+                const data = await OrdersApi.listMyPaid(siteId);
+                if (cancelled) return;
+                setHasOrders(Array.isArray(data) && data.length > 0);
+            } catch {
+                // Если не можем проверить — не блокируем вкладку.
+                if (!cancelled) setHasOrders(true);
+            }
+        };
+
+        run();
+        return () => {
+            cancelled = true;
+        };
+    }, [isAuth, refresh, siteId, user]);
+
+    const ordersDisabled = !isAuth || hasOrders !== true;
+
+    return (
+        <div className="space-y-4">
+            {headerBlocks.map((block) => (
+                <BlockRenderer key={block.id} block={block} siteId={siteId} />
+            ))}
+
+            <div className="px-6">
+                <Tabs defaultValue="cart" className="gap-4">
+                    <TabsList>
+                        <TabsTrigger value="cart">Корзина</TabsTrigger>
+                        <TabsTrigger value="orders" disabled={ordersDisabled}>
+                            Заказы
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="cart" className="mt-0">
+                        <div className="space-y-4">
+                            {cartBlocks.map((block) => (
                                 <BlockRenderer key={block.id} block={block} siteId={siteId} />
                             ))}
                         </div>
