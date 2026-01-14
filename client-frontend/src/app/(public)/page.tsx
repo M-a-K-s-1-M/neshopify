@@ -1,5 +1,6 @@
 import { BlurText, Magnet, RotatingText } from "@/components/index";
 import { Button } from "@/components/ui/button";
+import { WelcomePreviewImage } from "@/components/public/welcome-preview-image";
 import Link from "next/link";
 
 const heroTags = [
@@ -12,9 +13,9 @@ const heroTags = [
 export default function Welcome() {
   return (
     <>
-      <section className="h-full grid grid-cols-1 md:grid-cols-2" >
-        <div className="bg-background flex items-center justify-center text-3xl font-bold">
-          Картинка
+      <section className="h-full w-full overflow-hidden grid grid-cols-1 md:grid-cols-2 items-stretch" >
+        <div className="hidden md:block bg-background h-full w-full overflow-hidden p-0 m-0">
+          <WelcomePreviewImage />
         </div>
 
         <div className="display flex items-center justify-center p-5" >
