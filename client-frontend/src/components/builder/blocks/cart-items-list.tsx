@@ -13,6 +13,7 @@ import { ProductsApi } from "@/lib/api/products";
 import { queryKeys } from "@/lib/query/keys";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { resolveMediaUrl } from "@/lib/utils/media";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -27,6 +28,16 @@ function resolveCustomerUserId(user: any, siteId: string) {
 
 export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto; siteId: string }) {
     const title = block.template.title ?? "Корзина";
+
+    const router = useRouter();
+    const pathname = usePathname();
+    const continueShoppingHref = useMemo(() => {
+        if (!pathname) return "/catalog";
+        if (pathname === "/cart" || pathname === "/cart/") return "/catalog";
+        if (pathname.endsWith("/cart")) return pathname.replace(/\/cart$/, "/catalog");
+        if (pathname.endsWith("/cart/")) return pathname.replace(/\/cart\/$/, "/catalog");
+        return "/catalog";
+    }, [pathname]);
 
     const queryClient = useQueryClient();
     const user = useAuthStore((s) => s.user);
@@ -374,7 +385,13 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
                                 )}
                             </Button>
 
-                            <Button type="button" variant="outline" className="w-full" disabled={isBusy}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                disabled={isBusy}
+                                onClick={() => router.push(continueShoppingHref)}
+                            >
                                 Продолжить покупки
                             </Button>
                         </div>
