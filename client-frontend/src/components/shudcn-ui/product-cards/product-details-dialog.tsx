@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Loader2, ShoppingCart } from "lucide-react";
 
@@ -33,6 +33,7 @@ export function ProductDetailsDialog({
     onAddToCart,
     onRemoveFromCart,
     onUpdateCartQuantity,
+    trigger,
     className,
 }: {
     product: ProductDto;
@@ -42,6 +43,7 @@ export function ProductDetailsDialog({
     onAddToCart?: (quantity: number) => void;
     onRemoveFromCart?: () => void;
     onUpdateCartQuantity?: (quantity: number) => void;
+    trigger?: ReactNode;
     className?: string;
 }) {
     const title = product.title ?? "Товар";
@@ -88,7 +90,7 @@ export function ProductDetailsDialog({
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button className={className}>Подробнее</Button>
+                {trigger ? trigger : <Button className={className}>Подробнее</Button>}
             </DialogTrigger>
 
             <DialogContent className="sm:max-w-5xl p-0">
