@@ -35,8 +35,10 @@ export function ProfileAccountFormBlock({ block }: { block: BlockInstanceDto }) 
     const actions = Array.isArray(data.actions) ? (data.actions as ActionConfig[]) : [];
 
     const [email, setEmail] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
-    const [confirmPassword, setConfirmPassword] = useState<string>("");
+    const [keepCurrentPassword, setKeepCurrentPassword] = useState<boolean>(true);
+    const [currentPassword, setCurrentPassword] = useState<string>("");
+    const [newPassword, setNewPassword] = useState<string>("");
+    const [confirmNewPassword, setConfirmNewPassword] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
@@ -50,6 +52,14 @@ export function ProfileAccountFormBlock({ block }: { block: BlockInstanceDto }) 
 
     const canEdit = isRuntime && isAuth;
 
+    useEffect(() => {
+        if (keepCurrentPassword) {
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmNewPassword("");
+        }
+    }, [keepCurrentPassword]);
+
     const handleSave = async () => {
         setError(null);
         setSuccess(null);
@@ -59,25 +69,50 @@ export function ProfileAccountFormBlock({ block }: { block: BlockInstanceDto }) 
             return;
         }
 
-        if (password && password !== confirmPassword) {
-            setError("Пароли не совпадают");
+        const trimmedEmail = email.trim();
+        if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+            setError('Неверный формат email');
             return;
         }
 
-        const payload: { email?: string; password?: string } = {};
-        const trimmedEmail = email.trim();
-        if (trimmedEmail && trimmedEmail !== initialEmail) payload.email = trimmedEmail;
-        if (password) payload.password = password;
+        if (!keepCurrentPassword) {
+            if (!currentPassword) {
+                setError('Введите текущий пароль');
+                return;
+            }
+            if (!newPassword) {
+                setError('Введите новый пароль');
+                return;
+            }
+            if (newPassword.length < 6) {
+                setError('Пароль должен содержать минимум 6 символов');
+                return;
+            }
+            if (newPassword !== confirmNewPassword) {
+                setError('Пароли не совпадают');
+                return;
+            }
+            if (currentPassword === newPassword) {
+                setError('Новый пароль должен отличаться от текущего');
+                return;
+            }
+        }
 
-        if (!payload.email && !payload.password) {
+        const payload: { email?: string; currentPassword?: string; newPassword?: string } = {};
+        if (trimmedEmail && trimmedEmail !== initialEmail) payload.email = trimmedEmail;
+        if (!keepCurrentPassword) {
+            payload.currentPassword = currentPassword;
+            payload.newPassword = newPassword;
+        }
+
+        if (!payload.email && !payload.newPassword) {
             setSuccess("Нечего сохранять");
             return;
         }
 
         try {
             await updateMe(payload);
-            setPassword("");
-            setConfirmPassword("");
+            setKeepCurrentPassword(true);
             setSuccess("Сохранено");
         } catch (e) {
             setError(getRequestErrorMessage(e, "Не удалось сохранить изменения"));
@@ -106,25 +141,49 @@ export function ProfileAccountFormBlock({ block }: { block: BlockInstanceDto }) 
                             </div>
 
                             <div className="space-y-2">
+                                <Label className="text-sm font-medium">Старый пароль</Label>
+                                <Input
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    type="password"
+                                    placeholder="Введите старый пароль"
+                                    readOnly={!canEdit || keepCurrentPassword}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
                                 <Label className="text-sm font-medium">Новый пароль</Label>
                                 <Input
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
                                     type="password"
-                                    placeholder="••••••••"
-                                    readOnly={!canEdit}
+                                    placeholder="Введите новый пароль"
+                                    readOnly={!canEdit || keepCurrentPassword}
                                 />
                             </div>
 
                             <div className="space-y-2">
                                 <Label className="text-sm font-medium">Подтверждение пароля</Label>
                                 <Input
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    value={confirmNewPassword}
+                                    onChange={(e) => setConfirmNewPassword(e.target.value)}
                                     type="password"
-                                    placeholder="••••••••"
-                                    readOnly={!canEdit}
+                                    placeholder="Подтвердите новый пароль"
+                                    readOnly={!canEdit || keepCurrentPassword}
                                 />
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    id="keepCurrentPassword"
+                                    type="checkbox"
+                                    checked={keepCurrentPassword}
+                                    onChange={(e) => setKeepCurrentPassword(e.target.checked)}
+                                    disabled={!canEdit}
+                                />
+                                <Label htmlFor="keepCurrentPassword" className="text-sm font-medium">
+                                    Оставить старый пароль
+                                </Label>
                             </div>
 
                             {error ? <p className="text-sm text-destructive">{error}</p> : null}

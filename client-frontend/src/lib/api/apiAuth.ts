@@ -31,7 +31,7 @@ export class AuthService {
         return res.data;
     }
 
-    static async updateMe(payload: { email?: string; password?: string }): Promise<IAuthResponse> {
+    static async updateMe(payload: { email?: string; password?: string; currentPassword?: string; newPassword?: string }): Promise<IAuthResponse> {
         const res = await $api.patch<IAuthResponse>("/auth/me", payload);
         return res.data;
     }

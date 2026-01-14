@@ -18,7 +18,7 @@ interface AuthState {
     registerCustomer: (siteId: string, email: string, password: string) => Promise<JwtPayloadDto>;
     logout: () => Promise<void>;
     refresh: () => Promise<JwtPayloadDto | null>;
-    updateMe: (payload: { email?: string; password?: string }) => Promise<JwtPayloadDto>;
+    updateMe: (payload: { email?: string; password?: string; currentPassword?: string; newPassword?: string }) => Promise<JwtPayloadDto>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({

@@ -273,27 +273,50 @@ export class AuthService {
 
     /** Обновляет email/пароль текущего пользователя и перевыпускает токены. */
     async updateMe(userId: string, dto: UpdateMeDto) {
-        if (!dto.email && !dto.password) {
+        const nextEmail = typeof dto.email === 'string' ? dto.email.trim() : undefined;
+        const nextPassword = dto.newPassword ?? dto.password;
+
+        if (!nextEmail && !nextPassword) {
             // Нечего обновлять — просто вернуть актуальные токены по текущему пользователю
             const current = await this.getCurrentUser(userId);
             return this.generateTokens(current);
         }
 
-        if (dto.email) {
+        if (nextEmail) {
             const current = await this.prisma.user.findUnique({ where: { id: userId } });
             if (!current) throw new UnauthorizedException('Пользователь не найден');
 
             const existing = await this.prisma.user.findFirst({
-                where: { email: dto.email, authScope: current.authScope },
+                where: {
+                    authScope: current.authScope,
+                    email: { equals: nextEmail, mode: 'insensitive' },
+                },
             });
             if (existing && existing.id !== userId) {
                 throw new BadRequestException("Email уже используется");
             }
         }
 
+        if (nextPassword) {
+            if (!dto.currentPassword) {
+                throw new BadRequestException('Нужно указать текущий пароль');
+            }
+
+            const current = await this.prisma.user.findUnique({
+                where: { id: userId },
+                omit: { passwordHash: false },
+            });
+            if (!current) throw new UnauthorizedException('Пользователь не найден');
+
+            const ok = await bcrypt.compare(dto.currentPassword, current.passwordHash);
+            if (!ok) {
+                throw new BadRequestException('Неверный текущий пароль');
+            }
+        }
+
         const data: { email?: string; passwordHash?: string } = {};
-        if (dto.email) data.email = dto.email;
-        if (dto.password) data.passwordHash = await bcrypt.hash(dto.password, 10);
+        if (nextEmail) data.email = nextEmail;
+        if (nextPassword) data.passwordHash = await bcrypt.hash(nextPassword, 10);
 
         const user = await this.prisma.user.update({
             where: { id: userId },
