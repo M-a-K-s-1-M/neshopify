@@ -1,14 +1,15 @@
 'use client'
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Minus, Plus, ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BlockInstanceDto } from "@/lib/types";
-import type { CartDto, CartItemDto } from "@/lib/types";
+import type { CartDto, CartItemDto, ProductDto } from "@/lib/types";
 import { CartApi } from "@/lib/api/cart";
+import { ProductsApi } from "@/lib/api/products";
 import { queryKeys } from "@/lib/query/keys";
 import { getRequestErrorMessage } from "@/lib/utils/error";
 import Image from "next/image";
@@ -40,6 +41,8 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
         queryKey: cartQueryKey,
         queryFn: () => CartApi.getCart(siteId),
     });
+
+    const [productsById, setProductsById] = useState<Record<string, ProductDto>>({});
 
     const updateItemMutation = useMutation({
         mutationFn: async (payload: { itemId: string; quantity: number }) => {
@@ -102,6 +105,61 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
 
     const items: CartItemDto[] = cart?.items ?? [];
     const currency = items.find((i) => i.product?.currency)?.product?.currency ?? "RUB";
+
+    const missingProductIds = useMemo(() => {
+        if (!items.length) return [] as string[];
+        const ids = new Set<string>();
+        for (const item of items) {
+            const pid = item.productId;
+            if (!pid) continue;
+
+            const embedded = item.product;
+            const embeddedHasMedia = Boolean(embedded?.media?.length);
+            if (embeddedHasMedia) continue;
+
+            const cached = productsById[pid];
+            const cachedHasMedia = Boolean(cached?.media?.length);
+            if (cachedHasMedia) continue;
+
+            ids.add(pid);
+        }
+        return Array.from(ids);
+    }, [items, productsById]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const run = async () => {
+            if (!customerUserId) return;
+            if (!siteId) return;
+            if (missingProductIds.length === 0) return;
+
+            const fetched = await Promise.all(
+                missingProductIds.map(async (id) => {
+                    try {
+                        return await ProductsApi.get(siteId, id);
+                    } catch {
+                        return null;
+                    }
+                }),
+            );
+
+            if (cancelled) return;
+            setProductsById((prev) => {
+                const next = { ...prev };
+                for (const p of fetched) {
+                    if (p?.id) next[p.id] = p;
+                }
+                return next;
+            });
+        };
+
+        void run();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [customerUserId, missingProductIds, siteId]);
 
     const total = useMemo(() => {
         if (!cart) return 0;
@@ -172,7 +230,8 @@ export function CartItemsListBlock({ block, siteId }: { block: BlockInstanceDto;
                     ) : (
                         <div className="divide-y divide-border">
                             {items.map((item) => {
-                                const product = item.product;
+                                const fetched = productsById[item.productId];
+                                const product = fetched ?? item.product;
                                 const productTitle = product?.title ?? "Товар";
                                 const itemCurrency = product?.currency ?? currency;
                                 const unitPrice = Number(item.price) || 0;
